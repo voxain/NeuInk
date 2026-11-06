@@ -938,13 +938,6 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
           KOREADER_STORE.saveToFile();
         },
         "koPassword", StrId::STR_KOREADER_SYNC));
-    add(SettingInfo::DynamicString(
-        StrId::STR_SYNC_SERVER_URL, [] { return KOREADER_STORE.getServerUrl(); },
-        [](const std::string& v) {
-          KOREADER_STORE.setServerUrl(v);
-          KOREADER_STORE.saveToFile();
-        },
-        "koServerUrl", StrId::STR_KOREADER_SYNC));
     add(SettingInfo::DynamicEnum(
         StrId::STR_DOCUMENT_MATCHING, {StrId::STR_FILENAME, StrId::STR_BINARY},
         [] { return static_cast<uint8_t>(KOREADER_STORE.getMatchMethod()); },

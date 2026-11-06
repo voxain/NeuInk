@@ -28,7 +28,6 @@ class KOReaderCredentialStore : public PersistableStore<KOReaderCredentialStore>
  private:
   std::string username;
   std::string password;
-  std::string serverUrl;                                            // Custom sync server URL (empty = default)
   DocumentMatchMethod matchMethod = DocumentMatchMethod::FILENAME;  // Default to filename for compatibility
   bool sendMetadata = false;                                        // Send document metadata with progress sync
   KOReaderSyncBehavior syncBehavior = KOReaderSyncBehavior::SMART;
@@ -61,14 +60,7 @@ class KOReaderCredentialStore : public PersistableStore<KOReaderCredentialStore>
   // Check if credentials are set
   bool hasCredentials() const;
 
-  // Server URL management
-  void setServerUrl(const std::string& url);
-  const std::string& getServerUrl() const {
-    ensureLoaded();
-    return serverUrl;
-  }
-
-  // Get base URL for API calls (with http:// normalization if no protocol, falls back to default)
+  // Base URL for API calls: always the fixed default sync server
   std::string getBaseUrl() const;
 
   // Whether API calls target the CrossPoint sync server that supports protocol extensions.
