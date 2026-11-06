@@ -8,6 +8,11 @@
   confirmed it. SHA-384 is now enabled, and the build refuses to compile without
   it. NeuInk 0.1.0 has this fault, so a 0.1.0 reader cannot install this fix
   online: use **SD Card Firmware Update** once.
+- Fixed a second reason online firmware downloads failed, with the bar showing the
+  size and stopping at 0 bytes. The reader does not set its system clock at boot, so
+  the certificate date checks of the pinned download ran against 1970 and wolfSSL
+  could not even load the pinned root. The download now syncs the clock first, with
+  the same NTP step KOReader sync uses.
 - Added `scripts/wolfssl_pin_check/check.sh`, which handshakes with the pinned
   GitHub hosts using the reader's own wolfSSL source and settings. Run it before a
   release and whenever GitHub changes its certificates.

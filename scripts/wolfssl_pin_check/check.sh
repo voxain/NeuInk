@@ -61,6 +61,14 @@ check() {  # host pinned-root other-root
     fi
   done
 }
+# The reader never sets its clock at boot, so OtaUpdater syncs it over NTP before the
+# download. The checks below run on this computer's (correct) clock, like the reader
+# after that sync; this control shows that an unset clock really does fail.
+if FAKE_EPOCH=0 "$WORK/client" github.com "$WORK/usertrust.pem" auto >/dev/null; then
+  echo "  FAIL  an unset clock (1970) unexpectedly verifies; the date check is not active"; status=1
+else
+  echo "  ok    an unset clock (1970) fails, as expected: the reader must sync its clock first"
+fi
 check github.com usertrust isrg
 check release-assets.githubusercontent.com isrg usertrust
 check objects.githubusercontent.com isrg usertrust

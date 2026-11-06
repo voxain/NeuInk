@@ -9,7 +9,17 @@
 #include <unistd.h>
 
 #include <wolfssl/wolfcrypt/settings.h>
+#include <time.h>
 #include <wolfssl/ssl.h>
+#include <wolfssl/wolfcrypt/asn_public.h>
+
+// FAKE_EPOCH (seconds) stands in for the reader's clock; unset means this computer's clock.
+static long fakeEpoch = -1;
+static time_t clockNow(time_t* t) {
+  const time_t v = fakeEpoch < 0 ? time(NULL) : (time_t)fakeEpoch;
+  if (t) *t = v;
+  return v;
+}
 
 int main(int argc, char** argv) {
   if (argc != 4) {
@@ -39,6 +49,8 @@ int main(int argc, char** argv) {
     return 2;
   }
 
+  if (getenv("FAKE_EPOCH")) fakeEpoch = atol(getenv("FAKE_EPOCH"));
+  wc_SetTimeCb(clockNow);
   wolfSSL_Init();
   WOLFSSL_METHOD* m = !strcmp(method, "tls13")   ? wolfTLSv1_3_client_method()
                       : !strcmp(method, "tls12") ? wolfTLSv1_2_client_method()
