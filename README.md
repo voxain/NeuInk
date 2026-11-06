@@ -170,6 +170,17 @@ build also writes the menu-language packs to `.pio/lang-packs/default/`. Develop
 [docs/development](docs/development). The [upstream sync guide](docs/neuink/UPSTREAM-SYNC.md)
 explains how to bring in changes from the projects this one forks.
 
+## Security notes
+
+- **Custom sync servers are not supported, for security reasons.** KOReader sync
+  talks only to the built-in server, `sync.crosspointreader.com`, and checks its
+  certificate. A custom server cannot be checked the same way, so the firmware
+  refuses it rather than send your sync credentials to an unverified host.
+- **Firmware downloads come only from GitHub**, over https with pinned
+  certificates, and the release SHA-256 digest is checked before anything is
+  installed.
+- Plain http sync is not supported.
+
 ## Contributing
 
 Bug reports, ideas and pull requests are welcome. Please read

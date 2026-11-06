@@ -447,9 +447,10 @@ OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate(ProgressCallback onProgres
 
   HttpDownloader::DownloadOptions downloadOptions;
   downloadOptions.shouldCancel = isCancellationRequested;
-  // wolfSSL currently has no CA bundle, so only use it when the trusted release
-  // manifest supplied a digest that pins the firmware bytes. Older HTTPS
-  // releases without a digest retain the verified esp_http_client path.
+  // The wolfSSL transport has no CA bundle; it checks only the pinned release
+  // hosts (ReleaseTrust.h). Use it only when the trusted release manifest
+  // supplied a digest that pins the firmware bytes. Other releases use the
+  // verified esp_http_client path.
   if (hasManifestSha256) downloadOptions.transport = HttpDownloader::Transport::WOLFSSL;
   LOG_INF("OTA", "Staging firmware download: url=%s heap=%u maxAlloc=%u", otaUrl.c_str(), ESP.getFreeHeap(),
           ESP.getMaxAllocHeap());
