@@ -124,3 +124,4 @@ add_subdirectory(calendar_math)
 
 add_subdirectory(book_rating_text)
 add_subdirectory(koreader_trust)
+add_subdirectory(release_trust)

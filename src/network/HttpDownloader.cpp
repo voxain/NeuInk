@@ -7,6 +7,7 @@
 #include <base64.h>
 #if defined(FREEINK_NET_WOLFSSL)
 #include <SecureHttpClient.h>
+#include "network/ReleaseTrust.h"
 #endif
 #include <esp_crt_bundle.h>
 #include <esp_http_client.h>
@@ -148,10 +149,14 @@ HttpDownloader::DownloadError runGetWolfSsl(const std::string& url, const std::s
     freeink::SecureHttpClient http;
     http.setTimeout(sink.timeoutMs > 0 ? static_cast<int>(sink.timeoutMs) : HTTP_TIMEOUT_MS);
     // This wolfSSL path is only used for OTA firmware that has a release digest.
-    // The digest, taken from the verified release check, is the integrity
-    // check, so the TLS layer does not verify the peer. Cross-origin hops omit
-    // Basic credentials.
-    http.setInsecure();
+    // Each hop must be https to a host with a pinned root (ReleaseTrust.h); any
+    // other host is refused. Cross-origin hops omit Basic credentials.
+    const char* trustRoot = releasetrust::rootFor(currentUrl);
+    if (!trustRoot) {
+      LOG_ERR("HTTP", "Refusing download from a host without a pinned certificate: %s", currentUrl.c_str());
+      return HttpDownloader::HTTP_ERROR;
+    }
+    http.setCACert(trustRoot);
     if (!http.begin(currentUrl)) {
       LOG_ERR("HTTP", "wolfSSL rejected URL: %s", currentUrl.c_str());
       return HttpDownloader::HTTP_ERROR;
