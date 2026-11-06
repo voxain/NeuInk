@@ -200,6 +200,5 @@ the projects it comes from, and the same licence applies to them: CrossPoint Rea
   Vazirmatn Project Authors), Inter (Rasmus Andersson and the Inter Project Authors)
 - Speed ideas in VARAGH 1.1.0 were inspired by studying
   [microreader](https://github.com/CidVonHighwind/microreader) (no code copied).
-- Parts of the VARAGH code and this README's changes were written with Claude (Anthropic).
 
 Dictionary data is not included; see [Dictionaries](docs/neuink/DICTIONARIES.md).
