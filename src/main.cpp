@@ -120,6 +120,7 @@ inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_
 #include "simulator/SimulatorSmokeTest.h"
 #endif
 #include "util/BatteryDiagnosticLog.h"
+#include "util/BatteryHistory.h"
 #include "util/ButtonNavigator.h"
 #include "util/ButtonShortcutController.h"
 #include "util/LanguagePacks.h"
@@ -1237,6 +1238,9 @@ void enterDeepSleep(bool fromTimeout) {
 
   // Last chance to sample: startDeepSleep() cuts the SD rail on X3, so nothing
   // can be written again until the next wake.
+#if NEUINK_BATTERY_HISTORY
+  BatteryHistory::sample();
+#endif
   BatteryDiagnosticLog::record(BatteryDiagnosticLog::Event::Sleep, BoardConfig::ACTIVE.name);
   refreshSpeedLogContext();
   SpeedLog::record(SpeedLog::Event::Sleep, millis());
@@ -1785,6 +1789,14 @@ static void idleWait(const uint32_t ms) {
 }
 
 void loop() {
+#if NEUINK_BATTERY_HISTORY
+  // The battery graph: at wake and then every 15 minutes while awake, from the level the status bar reads anyway.
+  static unsigned long lastBatterySampleMs = 0;
+  if (lastBatterySampleMs == 0 || millis() - lastBatterySampleMs >= BatteryHistory::kSampleEveryMs) {
+    lastBatterySampleMs = millis() | 1;
+    BatteryHistory::sample();
+  }
+#endif
   static unsigned long maxLoopDuration = 0;
   const unsigned long loopStartTime = millis();
   static unsigned long lastMemPrint = 0;
