@@ -13,8 +13,7 @@ Things deliberately left for later. Each one says when to pick it up.
   Language packs and updates need the release to exist.
 - **Final logo.** Replace `src/images/neuink-logo.png` with the hand-made logo,
   then run `scripts/generate_logo.py` to refresh the boot, sleep and web logos.
-- **Check the sleep wordmark on the device.** Its placement was worked out from
-  the display code, not measured. Adjust the offsets in
-  `src/activities/boot_sleep/SleepActivity.cpp` if it's off.
-- **Merge.** Merge `feature/neuink-setup` into `development`, then `development`
-  into `main`, once the setup work is finished.
+- **Boot screen text.** The boot screen still shows the name as text. Replace it
+  with the wordmark if the sleep screen's look is the one to keep.
+- **Sync server.** If custom sync servers are wanted back, add their roots to
+  `lib/KOReaderSync/KOReaderTrust.h`. Custom servers are removed for now.
