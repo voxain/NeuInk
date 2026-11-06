@@ -1642,7 +1642,8 @@ void setup() {
     bool launched = false;
     switch (static_cast<NetworkBootTarget>(snapshotTarget)) {
       case NetworkBootTarget::OTA: {
-        auto otaActivity = makeUniqueNoThrow<OtaUpdateActivity>(renderer, mappedInputManager);
+        auto otaActivity = makeUniqueNoThrow<OtaUpdateActivity>(renderer, mappedInputManager,
+                                                                firmware_targets::fromPayload(snapshotPayload));
         if (otaActivity) {
           activityManager.replaceActivity(std::move(otaActivity));
           launched = true;

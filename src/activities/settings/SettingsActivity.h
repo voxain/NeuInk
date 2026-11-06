@@ -46,6 +46,7 @@ enum class SettingAction {
   ResetGlobalStats,
   ClearCache,
   CheckForUpdates,
+  SwitchFirmware,
   SdFirmwareUpdate,
   Language,
   KeyboardLayouts,
@@ -309,6 +310,7 @@ class SettingsActivity final : public Activity {
   void openScreenMarginPicker(const SettingInfo& setting);
   void openWordSpacingPicker();
   void openLanguagePicker();
+  void openSwitchFirmwarePicker();
   void applyLanguage(uint8_t langIndex);
   void openIdleTimeThresholdPicker();
   void toggleCurrentSetting();

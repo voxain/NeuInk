@@ -15,6 +15,11 @@
 //     SHA-256 96:BC:EC:06:26:49:76:F3:74:60:77:9A:CF:28:C5:A7:CF:E8:A3:C0:AA:E1:1A:8F:FC:EE:05:C0:BD:DF:08:C6
 //     valid until 2035-06-04
 // Renew before the earliest of those dates, or when GitHub moves to a different CA.
+//
+// "Checked" means a real handshake with the device's wolfSSL settings, not just
+// openssl: run scripts/wolfssl_pin_check/check.sh before a release and whenever
+// GitHub's certificates change. The github.com chain is signed with SHA-384 and
+// needs WOLFSSL_SHA384 in the build; without it the download fails (error -232).
 
 namespace releasetrust {
 

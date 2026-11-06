@@ -1,5 +1,32 @@
 # NeuInk changelog
 
+## [NeuInk 0.2.0] - 2026-11-06
+
+Adds switching to VARAGH, CrossInk or CrossPoint from the settings, and repairs online
+firmware downloads, which did not work in 0.1.0. A reader on 0.1.0 cannot download this
+release itself: copy `firmware-x4-pro.bin` to the SD card and use **Settings → System →
+SD Card Firmware Update** once. Online updates work from 0.2.0 on.
+
+- Fixed online firmware downloads, including NeuInk's own updates. The reader's
+  wolfSSL was built without SHA-384, so it could not verify the certificate chain
+  of `github.com` and the download stopped with "Update failed" right after you
+  confirmed it. SHA-384 is now enabled, and the build refuses to compile without
+  it. NeuInk 0.1.0 has this fault, so a 0.1.0 reader cannot install this fix
+  online: use **SD Card Firmware Update** once.
+- Fixed a second reason online firmware downloads failed, with the bar showing the
+  size and stopping at 0 bytes. The reader does not set its system clock at boot, so
+  the certificate date checks of the pinned download ran against 1970 and wolfSSL
+  could not even load the pinned root. The download now syncs the clock first, with
+  the same NTP step KOReader sync uses.
+- Added `scripts/wolfssl_pin_check/check.sh`, which handshakes with the pinned
+  GitHub hosts using the reader's own wolfSSL source and settings. Run it before a
+  release and whenever GitHub changes its certificates.
+- Added **Settings → System → Switch to Another Firmware**. It installs the latest
+  VARAGH, CrossInk or CrossPoint release over WiFi, after a warning that says SD card
+  files and books should stay safe but a backup is sensible. It reuses the OTA updater
+  and the pinned GitHub certificates, matches each project's own release asset name
+  for the device, and refuses a release that has no SHA-256 digest.
+
 ## [NeuInk 0.1.0] - 2026-11-06
 
 First NeuInk release. NeuInk numbers its own versions from 0.1.0 and no longer shows

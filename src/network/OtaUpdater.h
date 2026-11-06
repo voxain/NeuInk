@@ -3,7 +3,10 @@
 #include <atomic>
 #include <string>
 
+#include "FirmwareTargets.h"
+
 class OtaUpdater {
+  firmware_targets::Target target = firmware_targets::Target::NEUINK;
   bool updateAvailable = false;
   std::string latestVersion;
   std::string otaUrl;
@@ -36,7 +39,12 @@ class OtaUpdater {
 
   size_t getTotalSize() const { return totalSize; }
 
-  OtaUpdater() = default;
+  // NEUINK is the normal update. Any other target is a cross-grade: it reads that
+  // project's latest release and installs it whatever its version number is.
+  explicit OtaUpdater(const firmware_targets::Target updateTarget = firmware_targets::Target::NEUINK)
+      : target(updateTarget) {}
+  firmware_targets::Target getTarget() const { return target; }
+  bool isCrossGrade() const { return firmware_targets::isCrossGrade(target); }
   bool isUpdateNewer() const;
   const std::string& getLatestVersion() const;
   OtaUpdaterError checkForUpdate();
