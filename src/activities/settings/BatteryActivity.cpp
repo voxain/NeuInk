@@ -105,7 +105,6 @@ void BatteryActivity::render(RenderLock&&) {
       const int px = plotX + half * i / last;
       const int py = levelY(levels[i]);
       if (havePrevious) renderer.drawLine(previousX, previousY, px, py, 3, true);
-      renderer.fillRoundedRect(px - 3, py - 3, 7, 7, 3, Color::Black);
       previousX = px;
       previousY = py;
       havePrevious = true;
@@ -124,7 +123,7 @@ void BatteryActivity::render(RenderLock&&) {
     }
     const float denominator = count * sumXX - sumX * sumX;
     if (lastIndex >= 0 && count >= 3 && denominator > 0.0f) {
-      const float slope = (count * sumXY - sumX * sumY) / denominator;  // percent per quarter hour
+      const float slope = (count * sumXY - sumX * sumY) / denominator;  // percent per bucket
       const float from = levels[lastIndex];
       const int steps = BatteryHistory::kBuckets;
       int fromX = plotX + half * lastIndex / last;
@@ -134,7 +133,7 @@ void BatteryActivity::render(RenderLock&&) {
         level = level < 0.0f ? 0.0f : (level > 100.0f ? 100.0f : level);
         const int toX = middle + half * k / steps;
         const int toY = levelY(level);
-        if ((k / 4) % 2 == 0) renderer.drawLine(fromX, fromY, toX, toY, 3, true);  // dashed: an estimate
+        if ((k / 12) % 2 == 0) renderer.drawLine(fromX, fromY, toX, toY, 3, true);  // dashed: an estimate
         fromX = toX;
         fromY = toY;
         if (level <= 0.0f || level >= 100.0f) break;
@@ -154,25 +153,28 @@ void BatteryActivity::render(RenderLock&&) {
   renderer.drawText(UI_10_FONT_ID, kSide, y, tr(STR_APPS_TIME), true, EpdFontFamily::BOLD);
   y += renderer.getLineHeight(UI_10_FONT_ID) + 8;
   bool any = false;
-  for (const apps::Info& app : apps::kAll) {
-    const uint32_t week = AppUsage::secondsWeek(app.id);
-    if (week == 0) continue;
+  // The reader first, then the apps.
+  const auto row = [&](const StrId name, const uint8_t slot) {
+    const uint32_t week = AppUsage::secondsWeek(slot);
+    if (week == 0) return;
     any = true;
     constexpr int rowHeight = 40;
     renderer.fillRoundedRect(kSide, y, width - 2 * kSide, rowHeight, rowHeight / 2, Color::LightGray);
     const int textY = y + (rowHeight - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
-    renderer.drawText(UI_10_FONT_ID, kSide + 20, textY, I18N.get(app.name), true);
+    renderer.drawText(UI_10_FONT_ID, kSide + 20, textY, I18N.get(name), true);
     // "today · week"
     char today[16];
     char thisWeek[16];
     char duration[40];
-    formatCompactReadingDuration(AppUsage::secondsToday(app.id), today, sizeof(today));
+    formatCompactReadingDuration(AppUsage::secondsToday(slot), today, sizeof(today));
     formatCompactReadingDuration(week, thisWeek, sizeof(thisWeek));
     snprintf(duration, sizeof(duration), "%s  \xC2\xB7  %s", today, thisWeek);
     renderer.drawText(UI_10_FONT_ID, width - kSide - 20 - renderer.getTextWidth(UI_10_FONT_ID, duration, EpdFontFamily::BOLD),
                       textY, duration, true, EpdFontFamily::BOLD);
     y += rowHeight + 6;
-  }
+  };
+  row(StrId::STR_CAT_READER, AppUsage::kReader);
+  for (const apps::Info& app : apps::kAll) row(app.name, app.id);
   if (!any) renderer.drawText(SMALL_FONT_ID, kSide, y, tr(STR_NO_APP_TIME), true);
 
   const auto labels = mappedInput.mapLabels(mappedInput.withBackArrow(tr(STR_BACK)), "", "", "");

@@ -15,12 +15,12 @@
 #endif
 
 namespace {
-constexpr uint32_t kMagic = 0x41505532;  // "APU2"
+constexpr uint32_t kMagic = 0x41505533;  // "APU3"
 
 struct Totals {
   uint32_t magic;
   uint32_t day;  // the newest local day in the ring
-  uint32_t seconds[AppUsage::kDays][apps::kIdCount];  // by day % kDays
+  uint32_t seconds[AppUsage::kDays][AppUsage::kSlots];  // by day % kDays
 };
 RTC_DATA_ATTR Totals totals;
 
@@ -49,7 +49,12 @@ uint32_t rollDay() {
   return day;
 }
 
-uint8_t appIdOf(const std::string& activityName) {
+// The slot a screen belongs to, or 0 for one that is only part of another's visit.
+uint8_t slotOf(const std::string& activityName) {
+  if (activityName == "Reader" || activityName == "EpubReader" || activityName == "TxtReader" ||
+      activityName == "XtcReader") {
+    return AppUsage::kReader;
+  }
   const apps::Info* app = apps::findByActivityName(activityName);
   return app ? static_cast<uint8_t>(app->id) : 0;
 }
@@ -58,26 +63,26 @@ uint8_t appIdOf(const std::string& activityName) {
 namespace AppUsage {
 
 void enter(const std::string& activityName) {
-  const uint8_t id = appIdOf(activityName);
+  const uint8_t id = slotOf(activityName);
   if (id == 0 || runningId == id) return;
   runningId = id;
   runningSince = millis();
 }
 
 void exit(const std::string& activityName) {
-  const uint8_t id = appIdOf(activityName);
+  const uint8_t id = slotOf(activityName);
   if (id == 0 || runningId != id) return;
   totals.seconds[rollDay() % kDays][id] += (millis() - runningSince) / 1000;
   runningId = 0;
 }
 
-uint32_t secondsToday(const apps::Id id) {
+uint32_t secondsToday(const uint8_t id) {
   uint32_t seconds = totals.seconds[rollDay() % kDays][id];
   if (runningId == id) seconds += (millis() - runningSince) / 1000;
   return seconds;
 }
 
-uint32_t secondsWeek(const apps::Id id) {
+uint32_t secondsWeek(const uint8_t id) {
   rollDay();
   uint32_t seconds = runningId == id ? (millis() - runningSince) / 1000 : 0;
   for (const auto& day : totals.seconds) seconds += day[id];

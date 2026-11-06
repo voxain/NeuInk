@@ -7,8 +7,8 @@
   for the plates). Library: Recently Opened lists never-opened books after the recent ones, by title; grid
   covers and page dots are round. Settings: rows keep a fixed size and scroll, and are ordered General,
   Display, Reader, Battery, Network, Dictionaries, Controls, Library, Apps, Stats, About.
-- X4 Pro: Settings > Battery shows the charge level, a graph of the last 24 hours (a point every quarter hour)
-  with an estimate for the next 24, and the time spent in each app today and over the last week. It takes the levels from the reads the status bar already does and keeps 48 bytes in RTC memory:
+- X4 Pro: Settings > Battery shows the charge level, a graph of the last 24 hours (a point every five minutes)
+  with an estimate for the next 24, and the time spent in the reader and each app today and over the last week. It takes the levels from the reads the status bar already does and keeps about 0.5 KB in RTC memory:
   no extra gauge reads, no SD writes, nothing during deep sleep. App time is added up when a screen starts and
   ends, so sleeping with an app open never counts.
 - Games: fixed the broken Chess, Checkers and Go boards (the board now fits the screen),

@@ -13,16 +13,16 @@
 #endif
 
 namespace {
-constexpr uint32_t kMagic = 0x42415432;  // "BAT2"
+constexpr uint32_t kMagic = 0x42415433;  // "BAT3"
 
 struct History {
   uint32_t magic;
-  uint32_t newest;  // the quarter hour (minutes since day 0 / 15) of the latest sample
+  uint32_t newest;  // the bucket (minutes since day 0 / kBucketMinutes) of the latest sample
   uint8_t levels[BatteryHistory::kBuckets];
 };
 RTC_DATA_ATTR History history;
 
-// The current quarter hour, from the local clock; false while there is none.
+// The current bucket, from the local clock; false while there is none.
 bool currentBucket(uint32_t& bucket) {
   ReadingStatsDateTime now;
   if (!getCurrentLocalReadingStatsDateTime(now) || !now.isValid()) return false;
@@ -37,7 +37,7 @@ void clear(const uint32_t bucket) {
   memset(history.levels, BatteryHistory::kNone, sizeof(history.levels));
 }
 
-// Brings the ring up to `bucket`: quarter hours since the last sample are empty; a clock that went back, or a gap
+// Brings the ring up to `bucket`: buckets since the last sample are empty; a clock that went back, or a gap
 // of a day, starts again.
 void advance(const uint32_t bucket) {
   if (history.magic != kMagic || bucket < history.newest || bucket - history.newest >= BatteryHistory::kBuckets) {
