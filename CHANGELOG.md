@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+- Fixed online firmware downloads, including NeuInk's own updates. The reader's
+  wolfSSL was built without SHA-384, so it could not verify the certificate chain
+  of `github.com` and the download stopped with "Update failed" right after you
+  confirmed it. SHA-384 is now enabled, and the build refuses to compile without
+  it. NeuInk 0.1.0 has this fault, so a 0.1.0 reader cannot install this fix
+  online: use **SD Card Firmware Update** once.
+- Added `scripts/wolfssl_pin_check/check.sh`, which handshakes with the pinned
+  GitHub hosts using the reader's own wolfSSL source and settings. Run it before a
+  release and whenever GitHub changes its certificates.
 - Added **Settings → System → Switch to Another Firmware**. It installs the latest
   VARAGH, CrossInk or CrossPoint release over WiFi, after a warning that says SD card
   files and books should stay safe but a backup is sensible. It reuses the OTA updater

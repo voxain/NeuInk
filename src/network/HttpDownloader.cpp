@@ -22,6 +22,13 @@
 #include "network/HttpRedirectPolicy.h"
 #include "network/WifiPowerSaveGuard.h"
 
+// The pinned firmware download (ReleaseTrust.h) validates github.com's chain, which
+// is signed with SHA-384. A wolfSSL build without it fails the first hop at runtime
+// (error -232), so refuse to build that combination.
+#if defined(FREEINK_NET_WOLFSSL) && !defined(WOLFSSL_SHA384)
+#error "wolfSSL needs WOLFSSL_SHA384 to verify the pinned release hosts (see platformio.ini)"
+#endif
+
 namespace {
 constexpr size_t PROGRESS_UPDATE_BYTES = 64 * 1024;
 constexpr uint32_t PROGRESS_UPDATE_MS = 250;
