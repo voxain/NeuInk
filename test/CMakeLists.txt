@@ -123,3 +123,4 @@ add_subdirectory(go_game)
 add_subdirectory(calendar_math)
 
 add_subdirectory(book_rating_text)
+add_subdirectory(koreader_trust)

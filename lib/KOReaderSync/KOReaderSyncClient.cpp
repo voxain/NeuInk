@@ -1,5 +1,7 @@
 #include "KOReaderSyncClient.h"
 
+#include "KOReaderTrust.h"
+
 #include <ArduinoJson.h>
 #ifdef SIMULATOR
 #include <ArduinoJsonStringCompat.h>
@@ -182,7 +184,12 @@ KOReaderSyncClient::Error KOReaderSyncClient::authenticate() {
 
   if (isHttpsUrl(url)) {
     secureClient.reset(new WiFiClientSecure);
-    secureClient->setInsecure();
+    const char* trustRoot = koreader::trustRootFor(url);
+    if (!trustRoot) {
+      LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+      return NETWORK_ERROR;
+    }
+    secureClient->setCACert(trustRoot);
     http.begin(*secureClient, url.c_str());
   } else {
     http.begin(plainClient, url.c_str());
@@ -216,7 +223,12 @@ KOReaderSyncClient::Error KOReaderSyncClient::authenticate() {
   return SERVER_ERROR;
 #else
   freeink::SecureHttpClient http;
-  http.setInsecure();
+  const char* trustRoot = koreader::trustRootFor(url);
+  if (!trustRoot) {
+    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+    return NETWORK_ERROR;
+  }
+  http.setCACert(trustRoot);
   if (!http.begin(url)) {
     LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
     return NETWORK_ERROR;
@@ -302,7 +314,12 @@ KOReaderSyncClient::Error KOReaderSyncClient::createUser() {
   serializeJson(doc, body);
 
   freeink::SecureHttpClient http;
-  http.setInsecure();
+  const char* trustRoot = koreader::trustRootFor(url);
+  if (!trustRoot) {
+    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+    return NETWORK_ERROR;
+  }
+  http.setCACert(trustRoot);
   if (!http.begin(url)) {
     LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
     return NETWORK_ERROR;
@@ -341,7 +358,12 @@ KOReaderSyncClient::Error KOReaderSyncClient::getProgress(const std::string& doc
 
   if (isHttpsUrl(url)) {
     secureClient.reset(new WiFiClientSecure);
-    secureClient->setInsecure();
+    const char* trustRoot = koreader::trustRootFor(url);
+    if (!trustRoot) {
+      LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+      return NETWORK_ERROR;
+    }
+    secureClient->setCACert(trustRoot);
     http.begin(*secureClient, url.c_str());
   } else {
     http.begin(plainClient, url.c_str());
@@ -396,7 +418,12 @@ KOReaderSyncClient::Error KOReaderSyncClient::getProgress(const std::string& doc
   return SERVER_ERROR;
 #else
   freeink::SecureHttpClient http;
-  http.setInsecure();
+  const char* trustRoot = koreader::trustRootFor(url);
+  if (!trustRoot) {
+    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+    return NETWORK_ERROR;
+  }
+  http.setCACert(trustRoot);
   if (!http.begin(url)) {
     LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
     return NETWORK_ERROR;
@@ -525,7 +552,12 @@ KOReaderSyncClient::Error KOReaderSyncClient::updateProgress(const KOReaderProgr
 
   if (isHttpsUrl(url)) {
     secureClient.reset(new WiFiClientSecure);
-    secureClient->setInsecure();
+    const char* trustRoot = koreader::trustRootFor(url);
+    if (!trustRoot) {
+      LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+      return NETWORK_ERROR;
+    }
+    secureClient->setCACert(trustRoot);
     http.begin(*secureClient, url.c_str());
   } else {
     http.begin(plainClient, url.c_str());
@@ -546,7 +578,12 @@ KOReaderSyncClient::Error KOReaderSyncClient::updateProgress(const KOReaderProgr
   return SERVER_ERROR;
 #else
   freeink::SecureHttpClient http;
-  http.setInsecure();
+  const char* trustRoot = koreader::trustRootFor(url);
+  if (!trustRoot) {
+    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+    return NETWORK_ERROR;
+  }
+  http.setCACert(trustRoot);
   if (!http.begin(url)) {
     LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
     return NETWORK_ERROR;
