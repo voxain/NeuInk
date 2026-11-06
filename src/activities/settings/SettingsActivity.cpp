@@ -660,7 +660,7 @@ void SettingsActivity::openWordSpacingPicker() {
 }
 
 void SettingsActivity::openLanguagePicker() {
-  // VARAGH: every language; one left out of this firmware is marked for
+  // NeuInk: every language; one left out of this firmware is marked for
   // download until its pack is on the SD card (util/LanguagePacks).
   std::vector<std::string> options;
   options.reserve(std::size(ALL_SORTED_LANGUAGE_INDICES));

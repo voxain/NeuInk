@@ -11,10 +11,10 @@
 #include "ScalableAssets.generated.h"
 namespace {
 std::optional<HalScalableFont> faces[8];
-// VARAGH: Persian letters the reader fonts lack, borrowed glyph by glyph (regular and bold).
+// NeuInk: Persian letters the reader fonts lack, borrowed glyph by glyph (regular and bold).
 std::optional<HalScalableFont> persianFace;
 std::optional<HalScalableFont> persianBoldFace;
-// VARAGH: pronunciation (IPA) letters and combining marks, the family's shared fallback.
+// NeuInk: pronunciation (IPA) letters and combining marks, the family's shared fallback.
 std::optional<HalScalableFont> ipaFace;
 bool ready[2] = {};
 const uint8_t* const assets[] = {lexenddeca_regularOutline,    lexenddeca_boldOutline,  lexenddeca_italicOutline,

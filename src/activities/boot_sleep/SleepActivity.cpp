@@ -556,7 +556,7 @@ void SleepActivity::onEnter() {
   } else if (showSleepPopup) {
     GUI.drawPopup(renderer, tr(STR_ENTERING_SLEEP));
   }
-  // VARAGH: every sleep screen is laid out in portrait. Reset it whatever was
+  // NeuInk: every sleep screen is laid out in portrait. Reset it whatever was
   // open: a turned screen that was not the reader itself (a menu or popup over
   // a rotated book) used to leave the sleep screen drawn sideways.
   renderer.setOrientation(GfxRenderer::Orientation::Portrait);
@@ -923,7 +923,7 @@ void SleepActivity::renderDashboardSleepScreen() const {
   renderer.displayBuffer(HalDisplay::HALF_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }
 
-// VARAGH: the Clock app's calendar. The reader is off while it sleeps, so the
+// NeuInk: the Clock app's calendar. The reader is off while it sleeps, so the
 // screen carries the date, which stays right until midnight, and no time.
 void SleepActivity::renderClockSleepScreen() const {
   calmath::DateTime time;

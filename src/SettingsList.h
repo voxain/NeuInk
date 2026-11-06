@@ -520,7 +520,7 @@ inline void appendShortcutOptions(SettingInfo& setting, const ShortcutOptionCata
   setting.enumRawValues.reserve(QuickActions::shortcutActionOrder.size() + 4 + extraOptions);
 
   if (catalog == ShortcutOptionCatalog::HomeButton) {
-    // VARAGH: Back (one step; from a book it returns Home) and Home (straight
+    // NeuInk: Back (one step; from a book it returns Home) and Home (straight
     // to the Home screen) are separate choices.
     setting.enumValues.push_back(StrId::STR_BACK);
     setting.enumRawValues.push_back(CrossPointSettings::HOME_BUTTON_BACK_HOME);
@@ -747,14 +747,14 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
     add(SettingInfo::Enum(StrId::STR_WORD_SELECT_HOLD, &CrossPointSettings::wordSelectHold,
                           {StrId::STR_HOLD_FAST, StrId::STR_HOLD_NORMAL, StrId::STR_HOLD_SLOW, StrId::STR_HOLD_VERY_SLOW},
                           "wordSelectHold", StrId::STR_CAT_READER));
-    // VARAGH: in the order of CrossPointSettings::WORD_HOLD_ACTION.
+    // NeuInk: in the order of CrossPointSettings::WORD_HOLD_ACTION.
     add(SettingInfo::Enum(
         StrId::STR_WORD_HOLD_ACTION, &CrossPointSettings::wordHoldAction,
         {StrId::STR_LOOKUP_SHORT, StrId::STR_WORD_HOLD_ASK, StrId::STR_SAVE_CLIPPING, StrId::STR_ADD_TO},
         "wordHoldAction", StrId::STR_CAT_READER));
     add(SettingInfo::Toggle(StrId::STR_TAP_TO_LOOK_UP, &CrossPointSettings::tapToLookUp, "tapToLookUp",
                             StrId::STR_CAT_READER));
-    // VARAGH: only on the boards where Wi-Fi fits next to an open book.
+    // NeuInk: only on the boards where Wi-Fi fits next to an open book.
     if constexpr (HalPowerManager::LOW_POWER_FREQ >= 80) {
       add(SettingInfo::Toggle(StrId::STR_ONLINE_WIFI_ALWAYS, &CrossPointSettings::onlineDictWifiAlwaysOn,
                               "onlineDictWifiAlwaysOn", StrId::STR_CAT_READER));

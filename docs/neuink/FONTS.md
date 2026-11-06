@@ -1,11 +1,11 @@
-# Fonts in VARAGH
+# Fonts in NeuInk
 
 ## Which font to use
 
 Select **NotoVazir** as the reader font:
 **Settings → Reader → Font Options → Font Family → NotoVazir.**
 
-NotoVazir has every letter VARAGH needs in one font: English and German
+NotoVazir has every letter NeuInk needs in one font: English and German
 (Noto Serif), Persian and Arabic (Vazirmatn), IPA pronunciation letters and
 symbols (Noto Serif, Noto Sans Math). With it selected, books, dictionary
 definitions, highlights and flashcards all display correctly.
@@ -13,7 +13,7 @@ definitions, highlights and flashcards all display correctly.
 ### Using another reader font
 
 On the X4 Pro you can pick any other font too. When that font cannot draw a
-Persian word or a pronunciation symbol, VARAGH draws that word in NotoVazir at
+Persian word or a pronunciation symbol, NeuInk draws that word in NotoVazir at
 the same size (the rest of the text stays in your font). This needs NotoVazir,
 or another installed font with Persian and IPA letters, in `/.fonts/`.
 
@@ -22,7 +22,7 @@ automatically, because a whole book reads better in one font.
 
 ## Installing NotoVazir
 
-Copy the `NotoVazir` folder from `varagh-sd-card-*.zip` (in each release) to
+Copy the `NotoVazir` folder from `neuink-sd-card-*.zip` (in each release) to
 `/.fonts/NotoVazir/` on the SD card. It contains sizes 10, 12, 14, 16, 18 and 20.
 
 ## Building NotoVazir yourself
@@ -63,7 +63,7 @@ so the merged font may keep the name NotoVazir.
 
 ## Built-in menu font
 
-The menu font (Inter) is compiled into the firmware. VARAGH adds IPA letters
+The menu font (Inter) is compiled into the firmware. NeuInk adds IPA letters
 (U+0250–U+02FF) from Inter as small supplement fonts
 (`lib/EpdFont/builtinFonts/inter_ipa_*.h`), generated with:
 

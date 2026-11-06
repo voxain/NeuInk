@@ -312,7 +312,7 @@ inline void drawHeader(GfxRenderer& renderer, const MappedInputManager& input, c
   }
 }
 
-// VARAGH: the apps on readers without a touch screen (X4 Classic, X3). Each
+// NeuInk: the apps on readers without a touch screen (X4 Classic, X3). Each
 // screen lists what can be tapped while it draws; the direction buttons move a
 // frame to the nearest of those in that direction and Confirm taps it, so the
 // games keep their touch logic. On a touch screen it only passes taps through.

@@ -50,8 +50,8 @@ constexpr uint32_t SECTION_CACHE_MAGIC = 0x535843FF;  // bytes: 0xFF, "CXS"
 // v78: Inline CSS padding affects dialogue and other styled text positions.
 // v79: Hangul word boundaries and line-end splits change cached page positions.
 // v80: Small EPUB images can share text lines, changing cached page positions.
-// VARAGH: v181 = CrossInk v80 + VARAGH script fallback (Persian/IPA words are
-// measured in the fallback font). VARAGH numbers start at 181 so its caches
+// NeuInk: v181 = CrossInk v80 + NeuInk script fallback (Persian/IPA words are
+// measured in the fallback font). NeuInk numbers start at 181 so its caches
 // never match a CrossInk cache of the same number (VARAGH 1.0/1.1.0 used v78).
 // 183: hyphen/dash line breaks; 184: boxes; 185: font sizes + drop caps (VARAGH 1.3.1).
 // 188: built-in Persian letters + first-strong-letter paragraph direction.

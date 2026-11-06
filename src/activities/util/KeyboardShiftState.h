@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-// VARAGH: Shift and Caps Lock on the on-screen keyboard's letter layers.
+// NeuInk: Shift and Caps Lock on the on-screen keyboard's letter layers.
 //
 //   one tap            Shift for the next letter only
 //   double tap / hold  Caps Lock: every letter upper case until Shift is tapped again

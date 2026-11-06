@@ -1,6 +1,6 @@
-# Dictionaries in VARAGH
+# Dictionaries in NeuInk
 
-VARAGH ships no dictionary data: every dictionary has its own licence, so each
+NeuInk ships no dictionary data: every dictionary has its own licence, so each
 reader downloads the ones they want. The reader uses StarDict dictionaries
 (`.ifo`, `.idx`, `.dict`); see [CrossInk's dictionary guide](../dictionary.md)
 for all the details.
@@ -18,7 +18,7 @@ for all the details.
 4. Select NotoVazir as the reader font (Settings → Reader → Font Options →
    Font Family) so pronunciations and symbols display exactly.
 
-In a German book, hold a word to look it up. VARAGH finds the dictionary form of
+In a German book, hold a word to look it up. NeuInk finds the dictionary form of
 inflected words (Häuser → Haus, gemacht → machen) and lets you save the word
 with its meaning to Flashcards with **Add to…**.
 

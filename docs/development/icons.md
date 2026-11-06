@@ -15,7 +15,7 @@ The local manifests in `src/components/icons/` can use either source:
 - **Tabler outline:** `assets/tabler-icons/icons/outline`
 - **Tabler filled:** `assets/tabler-icons/icons/filled`
 
-VARAGH does not include the Tabler icon source (the icons it uses are already
+NeuInk does not include the Tabler icon source (the icons it uses are already
 converted). To generate a new Tabler icon, add it first:
 
 ```sh

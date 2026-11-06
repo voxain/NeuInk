@@ -20,7 +20,7 @@ constexpr int DateCancel = 23;
 constexpr int dateField(const int index) { return DateFieldBase + index; }
 }  // namespace BookStatsTouchTarget
 
-// titleSuffix (VARAGH): a short text at the right end of the title strip of the
+// titleSuffix (NeuInk): a short text at the right end of the title strip of the
 // book's card, the stars of its rating.
 void renderPerBookStatsPage(GfxRenderer& renderer, const MappedInputManager* mappedInput, const std::string& bookTitle,
                             const BookReadingStats& stats, float progressPercent, bool hasEstimatedTimeLeft,

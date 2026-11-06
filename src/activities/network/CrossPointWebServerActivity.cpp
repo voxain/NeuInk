@@ -25,9 +25,9 @@
 
 namespace {
 // AP Mode configuration
-constexpr const char* AP_SSID = "VARAGH-Reader";
+constexpr const char* AP_SSID = "NeuInk-Reader";
 constexpr const char* AP_PASSWORD = nullptr;  // Open network for ease of use
-constexpr const char* AP_HOSTNAME = "varagh";
+constexpr const char* AP_HOSTNAME = "neuink";
 constexpr uint8_t AP_CHANNEL = 1;
 constexpr uint8_t AP_MAX_CONNECTIONS = 4;
 constexpr int QR_CODE_WIDTH = 198;

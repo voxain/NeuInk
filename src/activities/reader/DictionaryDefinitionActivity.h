@@ -57,7 +57,7 @@ class DictionaryDefinitionActivity final : public Activity {
     controller.setLookupToastEnabled(!backgroundRender);
   }
 
-  // VARAGH: the word is filed in this Highlights category as soon as the popup
+  // NeuInk: the word is filed in this Highlights category as soon as the popup
   // opens (a flashcard chosen before the word was looked up: the card needs the
   // meaning this popup has).
   void addToCategoryOnEnter(const uint16_t categoryId) { addToCategoryOnEnter_ = categoryId; }

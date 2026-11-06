@@ -188,7 +188,7 @@ static void logBootHeap(const char* stage) {
 
 // Fonts
 #if !CROSSINK_SCALABLE_FONTS
-// VARAGH: Persian letters the reader fonts lack, borrowed glyph by glyph (regular and bold).
+// NeuInk: Persian letters the reader fonts lack, borrowed glyph by glyph (regular and bold).
 EpdFont persian10Font(&vazirmatn_persian_10_regular);
 EpdFont persian12Font(&vazirmatn_persian_12_regular);
 EpdFont persian14Font(&vazirmatn_persian_14_regular);
@@ -871,7 +871,7 @@ void putTiltSensorToSleepForDeepSleep() {
   LOG_ERR("MAIN", "Tilt sensor did not confirm sleep before deep sleep");
 }
 
-// VARAGH "Home" action. It repeats the Back step until the Home screen shows, so
+// NeuInk "Home" action. It repeats the Back step until the Home screen shows, so
 // every screen on the way closes through its own back route and saves what it
 // must; jumping straight to Home would skip that for the reader option screens.
 constexpr uint8_t X4PRO_GO_HOME_MAX_STEPS = 12;
@@ -1539,7 +1539,7 @@ void setup() {
             (BoardConfig::isX4Pro() || CROSSINK_APP_DEVICE_X4CLASSIC) ? "DOWN" : "UP");
   }
 
-  LOG_DBG("MAIN", "Starting VARAGH version " CROSSINK_VERSION);
+  LOG_DBG("MAIN", "Starting NeuInk version " CROSSINK_VERSION);
   logMemoryStats("Boot");
 
   // Resolve the single boot-presentation decision. Skipping the splash also
@@ -1715,7 +1715,7 @@ void setup() {
     activityManager.goHome(HomeMenuItem::NONE, homeRefreshMode);
   } else if (APP_STATE.lastSleepApp != 0 && !APP_STATE.lastSleepFromReader && gpio.hasTouch() &&
              !mappedInputManager.isPressed(MappedInputManager::Button::Back)) {
-    // VARAGH: sleep began inside an app, so waking returns to it, as it does to
+    // NeuInk: sleep began inside an app, so waking returns to it, as it does to
     // a book. The note is cleared first: an app that cannot be opened leads
     // Home on the next start instead of being tried again.
     const uint8_t app = APP_STATE.lastSleepApp;

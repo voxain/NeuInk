@@ -22,9 +22,9 @@ JSZIP = os.path.join(ROOT, "src", "network", "html", "js", "jszip.min.js")
 
 # slug -> (route, title, active, extra <head> markup)
 PAGES = {
-    "home":     ("/",         "VARAGH",                     "home",     ""),
-    "files":    ("/files",    "Files - VARAGH",             "files",    '  <script src="/js/jszip.min.js"></script>'),
-    "settings": ("/settings", "Settings - VARAGH",          "settings", ""),
+    "home":     ("/",         "NeuInk",                     "home",     ""),
+    "files":    ("/files",    "Files - NeuInk",             "files",    '  <script src="/js/jszip.min.js"></script>'),
+    "settings": ("/settings", "Settings - NeuInk",          "settings", ""),
     "fonts":    ("/fonts",    "Fonts - CrossInk",           "fonts",    ""),
 }
 ROUTE_TO_SLUG = {route: slug for slug, (route, *_rest) in PAGES.items()}

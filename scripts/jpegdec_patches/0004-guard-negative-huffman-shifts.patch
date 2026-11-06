@@ -10,7 +10,7 @@ ordinary baseline JPEGs). A code shorter than N bits can never start with
 N one-bits, so the long-table test is simply false there. On Xtensa the
 shift used the low five bits of the count and also came out false; the
 guard keeps that result without relying on undefined behaviour, which
-matters now that VARAGH builds this library at -O2.
+matters now that NeuInk builds this library at -O2.
 
 ---
  src/jpeg.inl | 8 ++++----

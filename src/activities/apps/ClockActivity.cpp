@@ -81,7 +81,7 @@ void ClockActivity::loop() {
   };
 
   if (!mappedInput.hasTouchHardware()) {
-    // VARAGH, button readers: Left/Right page the months (both side buttons
+    // NeuInk, button readers: Left/Right page the months (both side buttons
     // go back to this month), Confirm shows the next face.
     using B = MappedInputManager::Button;
     if (mappedInput.wasReleased(B::Confirm)) {

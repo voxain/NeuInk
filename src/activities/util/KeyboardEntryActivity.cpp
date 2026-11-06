@@ -1122,7 +1122,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     }
   }
   props.keyAction = ACTION_KEY;  // one action id; loop() dispatches on key value
-  // VARAGH: the Shift key shows it is on (filled), and Caps Lock with a bar under the arrow.
+  // NeuInk: the Shift key shows it is on (filled), and Caps Lock with a bar under the arrow.
   props.shiftOn = shifted && !symbols && !urlPanel;
   props.shiftLocked = props.shiftOn && letterShift.capsLock();
   props.okLabel = tr(STR_OK_BUTTON);

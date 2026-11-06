@@ -1,10 +1,10 @@
 #pragma once
 #include <cstdint>
 
-// Boot logo: the VARAGH open book with a V and a turning page, 192x192px,
+// Boot logo: the NeuInk open book with a V and a turning page, 192x192px,
 // 1 bit per pixel (1 = white). Stored rotated like Logo120 for the portrait
 // draw path. The shadow of the page is a dot screen. Generated from
-// src/images/varagh-logo.png by scripts/generate_logo.py; do not edit.
+// src/images/neuink-logo.png by scripts/generate_logo.py; do not edit.
 static const uint8_t BootLogo192[] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

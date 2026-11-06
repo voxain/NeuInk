@@ -76,5 +76,5 @@ class TicTacToeActivity final : public Activity {
   int bottomStripY = 0;
   int statusY = 0;
   int tallyY = 0;
-  gameui::ButtonPointer pointer;  // VARAGH: apps on button readers
+  gameui::ButtonPointer pointer;  // NeuInk: apps on button readers
 };

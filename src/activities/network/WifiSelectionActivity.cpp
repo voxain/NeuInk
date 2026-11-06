@@ -65,7 +65,7 @@ std::string getDisplayMacAddress() {
 
 #ifndef SIMULATOR
 // Runs on the Wi-Fi event task, whose stack is small: it only notes what
-// happened, and the connection screen logs it from the main task. (VARAGH
+// happened, and the connection screen logs it from the main task. (NeuInk
 // 1.0.0 crashed 0.1 s after a failed connect, when this handler fired and
 // wrote log lines from that task.)
 void logWifiStationEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
@@ -672,10 +672,10 @@ void WifiSelectionActivity::attemptConnection() {
   WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
   WiFi.setSortMethod(WIFI_CONNECT_AP_BY_SIGNAL);
 
-  // Set hostname so routers show "VARAGH-AABBCCDDEEFF" instead of "esp32-XXXXXXXXXXXX"
+  // Set hostname so routers show "NeuInk-AABBCCDDEEFF" instead of "esp32-XXXXXXXXXXXX"
   String mac = WiFi.macAddress();
   mac.replace(":", "");
-  String hostname = "VARAGH-" + mac;
+  String hostname = "NeuInk-" + mac;
   WiFi.setHostname(hostname.c_str());
 
   wl_status_t beginStatus = WL_IDLE_STATUS;

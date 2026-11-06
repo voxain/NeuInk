@@ -21,7 +21,7 @@ bool clearBookCache(const std::string& fullPath);
 bool deleteBookStats(const std::string& fullPath);
 std::unique_ptr<Activity> createReadingStatsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                                      const std::string& fullPath, const std::string& title);
-// VARAGH: the screen on which a book is given its rating.
+// NeuInk: the screen on which a book is given its rating.
 std::unique_ptr<Activity> createRatingActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                                const std::string& fullPath, const std::string& title,
                                                const std::string& author = {});

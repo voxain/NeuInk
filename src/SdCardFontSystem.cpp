@@ -296,7 +296,7 @@ void SdCardFontSystem::attachScriptFallback(GfxRenderer& renderer, const int pri
   }
   if (attachSdScriptFallback(renderer, primaryFontId, pointSize)) return;
 
-  // VARAGH: no installed family can stand in, so borrow the built-in Lexend Deca, whose
+  // NeuInk: no installed family can stand in, so borrow the built-in Lexend Deca, whose
   // Vazirmatn supplement draws Persian (SD-card Bitter on X3/X4, any other SD font).
   if (primaryIt->second.hasCodepoint(0xFE8E)) return;
 #if CROSSINK_SCALABLE_FONTS

@@ -4,7 +4,7 @@
 #include <functional>
 #include <string>
 
-// VARAGH: where a Go to % value lands, shown under the percent in both the
+// NeuInk: where a Go to % value lands, shown under the percent in both the
 // reader drawer's Go to % pane and the full-screen selector (CrossPoint #3739).
 struct PercentLanding {
   std::string chapter;     // chapter title; empty when the book has none

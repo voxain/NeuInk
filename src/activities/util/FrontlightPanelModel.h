@@ -11,7 +11,7 @@ enum class FrontlightPanelAction : uint8_t {
   SyncProgress,
   NearbyPositionSync,
   SendNearbyBook,
-  RotateRight,  // VARAGH Control Center: turn the book 90 degrees right
+  RotateRight,  // NeuInk Control Center: turn the book 90 degrees right
   ToggleGuideDots,     // per-book settings: the reader toggles and saves them
   ToggleFocusReading,
 };
@@ -39,9 +39,9 @@ constexpr bool supportsFrontlightDrawer(const bool hasTouchHardware, const bool 
   return hasTouchHardware && (hasFrontlight || hasReaderDetailsPanel);
 }
 
-// VARAGH Control Center light slider: the left half covers 0-20 % in 1 %
+// NeuInk Control Center light slider: the left half covers 0-20 % in 1 %
 // steps (where night reading happens), the right half 20-100 %.
-// VARAGH: the whole visible slider takes touches, but a knob's centre only
+// NeuInk: the whole visible slider takes touches, but a knob's centre only
 // travels from half a knob in at one end to half a knob in at the other, so a
 // finger on the knob's overhang still reaches exactly 0 or 1000.
 constexpr int travelPermille(const int rectPermille, const int rectWidth, const int knobWidth) {

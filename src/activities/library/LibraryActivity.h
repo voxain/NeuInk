@@ -47,7 +47,7 @@ class LibraryActivity final : public Activity {
   int gridProgressRow = -1;
   float gridProgress = -1.0f;
   bool uiReady = false;
-  // VARAGH: swipe a list row left to reveal Delete (see swipeDelete()).
+  // NeuInk: swipe a list row left to reveal Delete (see swipeDelete()).
   SwipeRowActions swipeActions;
   bool initialScanPending = false;
   bool longPressFired = false;
@@ -72,7 +72,7 @@ class LibraryActivity final : public Activity {
   std::string seriesScratch;
   std::string genreScratch;
   std::string subtitleScratch;
-  // VARAGH: every book's rating, read once when the list is (re)loaded, and the
+  // NeuInk: every book's rating, read once when the list is (re)loaded, and the
   // stars of the row being drawn.
   BookRatings::Index ratings;
   std::string ratingScratch;

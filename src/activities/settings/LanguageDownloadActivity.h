@@ -5,7 +5,7 @@
 #include "activities/Activity.h"
 #include "activities/ScreenTransitionRefresh.h"
 
-// VARAGH: downloads one menu-language pack (util/LanguagePacks) over Wi-Fi.
+// NeuInk: downloads one menu-language pack (util/LanguagePacks) over Wi-Fi.
 // The caller checks LanguagePacks::installed afterwards and switches to it.
 class LanguageDownloadActivity final : public Activity {
  public:

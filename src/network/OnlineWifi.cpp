@@ -53,7 +53,7 @@ bool join() {
   holding = true;
   String mac = WiFi.macAddress();
   mac.replace(":", "");
-  const String hostname = "VARAGH-" + mac;
+  const String hostname = "NeuInk-" + mac;
   WiFi.setHostname(hostname.c_str());
   // The radio dozes between the access point's beacons while nothing is sent.
   WiFi.setSleep(true);

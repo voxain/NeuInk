@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
-// VARAGH: the SD-card language pack written by scripts/gen_i18n.py
+// NeuInk: the SD-card language pack written by scripts/gen_i18n.py
 // (build_language_pack). Little-endian: "VLNG", u8 version, u8 0, u16 string
 // count, u32 layout id, u32 data size, u16 offsets[count], data. An offset with
 // bit 15 set points into the English strings built into the firmware.

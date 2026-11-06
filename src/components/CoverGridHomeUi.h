@@ -19,7 +19,7 @@ class CoverGridHomeUi final : public UiAppHost<16, 1> {
   static constexpr int GRID_ROWS = 2;
   static constexpr int MAX_BOOKS = 1 + GRID_COLUMNS * GRID_ROWS;
   static_assert(MAX_BOOKS <= HomeCoverCache::MAX_COVERS);
-  // VARAGH: the tabs under the covers. OPDS and Apps are only there when they
+  // NeuInk: the tabs under the covers. OPDS and Apps are only there when they
   // can be used, so Home asks which tab sits where instead of counting.
   enum class Tab : uint8_t { Files, Library, Opds, Apps, Transfer, Settings };
   static constexpr int MAX_TABS = 6;

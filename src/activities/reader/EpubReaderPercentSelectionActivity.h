@@ -19,7 +19,7 @@ class EpubReaderPercentSelectionActivity final : public Activity {
   EpubReaderPercentSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, uint32_t initialPage,
                                      uint32_t pageCount);
 
-  // VARAGH: where a percent lands, shown under the readout (CrossPoint #3739).
+  // NeuInk: where a percent lands, shown under the readout (CrossPoint #3739).
   using Landing = PercentLanding;
   using LandingProvider = PercentLandingProvider;
   void setLandingProvider(LandingProvider provider) { landingProvider = std::move(provider); }

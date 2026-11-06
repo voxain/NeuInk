@@ -334,7 +334,7 @@ bool DictionaryDefinitionActivity::shouldApproximateDefinitionCodepoint(const ui
 
   // Built-in fonts: the audited candidate list includes the renderer's
   // synthetic Greek fallbacks, which hasCodepoint() does not report.
-  // VARAGH: the reader families now carry IPA (their shared fallback), so keep it.
+  // NeuInk: the reader families now carry IPA (their shared fallback), so keep it.
   if (shouldSanitizeDefinitionCodepoint(cp)) {
     return !builtinDefinitionFontSupportsCandidate(cp) && (cp == REPLACEMENT_GLYPH || !fontHasGlyph);
   }
@@ -890,7 +890,7 @@ void DictionaryDefinitionActivity::wrapPlain() {
 // Word-select: extract words from the currently visible page
 // ---------------------------------------------------------------------------
 
-// VARAGH: a Persian line ("<b>1.</b> meaning", "<b>مترادف:</b> ...") is laid
+// NeuInk: a Persian line ("<b>1.</b> meaning", "<b>مترادف:</b> ...") is laid
 // out from the right: its pieces were placed left to right, which put the bold
 // number or label at the wrong end. The first piece with a strong letter decides.
 bool DictionaryDefinitionActivity::lineIsRtl(const PooledLine& line) const {

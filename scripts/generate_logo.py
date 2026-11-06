@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build the VARAGH logo files from the master drawing, src/images/varagh-logo.png
+Build the NeuInk logo files from the master drawing, src/images/neuink-logo.png
 (greyscale: white paper, black ink, mid grey where the turning page casts its
 shadow):
 
@@ -20,7 +20,7 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-MASTER = ROOT / "src" / "images" / "varagh-logo.png"
+MASTER = ROOT / "src" / "images" / "neuink-logo.png"
 BOOT_HEADER = ROOT / "src" / "images" / "BootLogo192.h"
 WEB_LOGO = ROOT / "web" / "assets" / "logo.png"
 
@@ -69,10 +69,10 @@ def write_boot_header(rows):
         "#pragma once",
         "#include <cstdint>",
         "",
-        "// Boot logo: the VARAGH open book with a V and a turning page, 192x192px,",
+        "// Boot logo: the NeuInk open book with a V and a turning page, 192x192px,",
         "// 1 bit per pixel (1 = white). Stored rotated like Logo120 for the portrait",
         "// draw path. The shadow of the page is a dot screen. Generated from",
-        "// src/images/varagh-logo.png by scripts/generate_logo.py; do not edit.",
+        "// src/images/neuink-logo.png by scripts/generate_logo.py; do not edit.",
         "static const uint8_t BootLogo192[] = {",
     ]
     for start in range(0, len(data), 19):

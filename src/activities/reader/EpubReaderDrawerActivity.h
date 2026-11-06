@@ -72,7 +72,7 @@ class EpubReaderDrawerActivity final : public Activity {
   // preserving the capacitive Home key's existing drawer-back behavior.
   bool allowGlobalHomeSwipeGesture() const override { return false; }
   bool handleHomeGesture() override;
-  // VARAGH: Go to % shows the chapter and page a percent lands on.
+  // NeuInk: Go to % shows the chapter and page a percent lands on.
   void setLandingProvider(PercentLandingProvider provider) { landingProvider = std::move(provider); }
 
  private:
