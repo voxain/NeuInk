@@ -115,10 +115,10 @@ void HomeLayoutActivity::buildContent(Screen& screen, const int x, int y, const 
       [](const int i) { return kGridLabel[i]; });
   y += panel::kTileHeight + panel::kRowGap;
 
-  panel::switchButton(renderer, frame, x, y, width, tr(STR_SHOW_NAMES), SETTINGS.homeShowNames != 0, ACTION_NAMES,
+  panel::toggleRow(renderer, frame, x, y, width, tr(STR_SHOW_NAMES), SETTINGS.homeShowNames != 0, ACTION_NAMES,
                       UI_10_FONT_ID);
   y += panel::kControlHeight + panel::kRowGap;
-  panel::switchButton(renderer, frame, x, y, width, tr(STR_TRUE_GRAY), SETTINGS.homeTrueGray != 0, ACTION_GRAY,
+  panel::toggleRow(renderer, frame, x, y, width, tr(STR_TRUE_GRAY), SETTINGS.homeTrueGray != 0, ACTION_GRAY,
                       UI_10_FONT_ID);
 }
 

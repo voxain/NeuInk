@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- Vega Home: swipe up from the bottom edge for a layout panel (icon size 24/32/42/48, icon shape squircle,
+  rounded square, circle or hexagon, grid 4x3/4x4/3x4/3x3, names on or off, and an experimental true gray
+  for the plates). Library: Recently Opened lists never-opened books after the recent ones, by title; grid
+  covers and page dots are round. Settings: rows keep a fixed size and scroll, and are ordered General,
+  Display, Reader, Battery, Network, Dictionaries, Controls, Library, Apps, Stats, About.
+- X4 Pro: Settings > Battery shows the charge level and a graph of the last 24 hours with an estimate for the
+  next 24. It takes the levels from the reads the status bar already does and keeps 48 bytes in RTC memory:
+  no extra gauge reads, no SD writes, nothing during deep sleep.
 - Games: fixed the broken Chess, Checkers and Go boards (the board now fits the screen),
   black chess pieces are filled with gray and outlined, "New" in the title bar is a plain tap
   (nothing resets until Start), and the new-game popup has a rule above Start and Cancel.

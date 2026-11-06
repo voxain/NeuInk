@@ -25,7 +25,6 @@ BatteryActivity::BatteryActivity(GfxRenderer& renderer, MappedInputManager& mapp
 
 void BatteryActivity::onEnter() {
   Activity::onEnter();
-  BatteryHistory::sample();  // the graph ends with now
   requestUpdate();
 }
 
@@ -76,30 +75,67 @@ void BatteryActivity::render(RenderLock&&) {
     renderer.drawText(SMALL_FONT_ID, plotX - 8 - renderer.getTextWidth(SMALL_FONT_ID, text),
                       lineY - renderer.getLineHeight(SMALL_FONT_ID) / 2, text, true);
   }
+  // The left half is the last 24 hours, the right half the next 24: an estimate that continues the level's trend.
+  const int half = plotW / 2;
+  const int middle = plotX + half;
+  renderer.drawLine(middle, plotY, middle, plotY + plotH, 2, false);
   const int labelY = plotY + plotH + 8;
   renderer.drawText(SMALL_FONT_ID, plotX, labelY, "-24 h", true);
-  renderer.drawText(SMALL_FONT_ID, plotX + plotW / 2 - renderer.getTextWidth(SMALL_FONT_ID, "-12 h") / 2, labelY, "-12 h",
-                    true);
-  renderer.drawText(SMALL_FONT_ID, plotX + plotW - renderer.getTextWidth(SMALL_FONT_ID, "0"), labelY, "0", true);
+  renderer.drawText(SMALL_FONT_ID, middle - renderer.getTextWidth(SMALL_FONT_ID, "0") / 2, labelY, "0", true);
+  renderer.drawText(SMALL_FONT_ID, plotX + plotW - renderer.getTextWidth(SMALL_FONT_ID, "+24 h"), labelY, "+24 h", true);
 
+  const auto levelY = [&](const float level) { return plotY + static_cast<int>(plotH * (100.0f - level) / 100.0f); };
   uint8_t levels[BatteryHistory::kBuckets];
   if (BatteryHistory::read(levels)) {
     constexpr int last = BatteryHistory::kBuckets - 1;
     int previousX = 0;
     int previousY = 0;
     bool havePrevious = false;
+    int lastIndex = -1;
+    int fitFrom = 0;  // the trend starts after the latest recharge
     for (int i = 0; i <= last; ++i) {
       if (levels[i] == BatteryHistory::kNone) {
         havePrevious = false;
         continue;
       }
-      const int px = plotX + plotW * i / last;
-      const int py = plotY + plotH * (100 - levels[i]) / 100;
+      if (lastIndex >= 0 && levels[i] > levels[lastIndex] + 1) fitFrom = i;
+      const int px = plotX + half * i / last;
+      const int py = levelY(levels[i]);
       if (havePrevious) renderer.drawLine(previousX, previousY, px, py, 3, true);
       renderer.fillRoundedRect(px - 3, py - 3, 7, 7, 3, Color::Black);
       previousX = px;
       previousY = py;
       havePrevious = true;
+      lastIndex = i;
+    }
+
+    // Least-squares line through the points since the last recharge, continued from the current level.
+    float count = 0, sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    for (int i = fitFrom; i <= last; ++i) {
+      if (levels[i] == BatteryHistory::kNone) continue;
+      count += 1;
+      sumX += i;
+      sumY += levels[i];
+      sumXY += static_cast<float>(i) * levels[i];
+      sumXX += static_cast<float>(i) * i;
+    }
+    const float denominator = count * sumXX - sumX * sumX;
+    if (lastIndex >= 0 && count >= 3 && denominator > 0.0f) {
+      const float slope = (count * sumXY - sumX * sumY) / denominator;  // percent per half hour
+      const float from = levels[lastIndex];
+      const int steps = BatteryHistory::kBuckets;
+      int fromX = plotX + half * lastIndex / last;
+      int fromY = levelY(from);
+      for (int k = 1; k <= steps; ++k) {
+        float level = from + slope * static_cast<float>(last + k - lastIndex);
+        level = level < 0.0f ? 0.0f : (level > 100.0f ? 100.0f : level);
+        const int toX = middle + half * k / steps;
+        const int toY = levelY(level);
+        if ((k / 2) % 2 == 0) renderer.drawLine(fromX, fromY, toX, toY, 3, true);  // dashed: an estimate
+        fromX = toX;
+        fromY = toY;
+        if (level <= 0.0f || level >= 100.0f) break;
+      }
     }
   }
   y += kCardHeight + 14;

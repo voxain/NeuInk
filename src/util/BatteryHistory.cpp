@@ -2,8 +2,6 @@
 
 #if NEUINK_BATTERY_HISTORY
 
-#include <HalPowerManager.h>
-
 #include <cstring>
 
 #include "activities/reader/ReadingStatsUtils.h"
@@ -54,11 +52,10 @@ void advance(const uint32_t bucket) {
 
 namespace BatteryHistory {
 
-void sample() {
+void note(const uint16_t percent) {
   uint32_t bucket;
   if (!currentBucket(bucket)) return;
   advance(bucket);
-  const uint16_t percent = powerManager.getBatteryPercentage();
   history.levels[bucket % kBuckets] = static_cast<uint8_t>(percent > 100 ? 100 : percent);
 }
 

@@ -18,7 +18,7 @@ constexpr int kSide = 12;          // gap between the card and the screen's side
 constexpr int kRadius = 32;
 constexpr int kPad = 22;           // inside the card
 constexpr int kGrabberBand = 24;   // the strip a swipe or tap on closes the panel
-constexpr int kControlHeight = 52;  // a switch button
+constexpr int kControlHeight = 52;  // a toggle row
 constexpr int kPreviewHeight = 64;  // the picture on an option tile
 constexpr int kTileHeight = 10 + kPreviewHeight + 6 + 22 + 8;  // padding, picture, name
 constexpr int kLabelHeight = 26;   // the small name above a row of tiles
@@ -66,14 +66,21 @@ void tiles(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, cons
   }
 }
 
-// One full-width pill that is a switch: white when off, black when on.
+// A white row with its name and an on/off toggle (the SDK's own) at the right edge; a tap anywhere on the row flips it.
 template <size_t MaxInteractions>
-void switchButton(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y,
-                  const int width, const char* label, const bool on, const fui::ActionId action, const int fontId) {
-  renderer.fillRoundedRect(x, y, width, kControlHeight, kControlHeight / 2, on ? Color::Black : Color::White);
-  const auto style = on ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
-  renderer.drawText(fontId, x + (width - renderer.getTextWidth(fontId, label, style)) / 2,
-                    y + (kControlHeight - renderer.getLineHeight(fontId)) / 2, label, !on, style);
+void toggleRow(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y,
+               const int width, const char* label, const bool on, const fui::ActionId action, const int fontId) {
+  renderer.fillRoundedRect(x, y, width, kControlHeight, kControlHeight / 2, Color::White);
+  renderer.drawText(fontId, x + 22, y + (kControlHeight - renderer.getLineHeight(fontId)) / 2, label, true);
+  fui::ToggleProps toggle;
+  toggle.checked = on;
+  toggle.width = 56;
+  toggle.height = 32;
+  toggle.knobInset = 4;
+  fui::toggle(frame, fui::Rect{static_cast<int16_t>(x + width - 22 - toggle.width),
+                               static_cast<int16_t>(y + (kControlHeight - toggle.height) / 2), toggle.width,
+                               toggle.height},
+              toggle);
   frame.hit(fui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(width), kControlHeight},
             action, 0, fui::InputTouch);
 }
@@ -98,7 +105,7 @@ class PanelActivity : public Activity {
  protected:
   using UiApp = freeink::ui::FreeInkApp<24, 12>;
   using Screen = UiApp::ScreenType;
-  static constexpr freeink::ui::ActionId ACTION_CHOICE = 1;  // a panel::tiles / switchButton hit: value = index
+  static constexpr freeink::ui::ActionId ACTION_CHOICE = 1;  // a panel::tiles / toggleRow hit: value = index
 
   // The height of what goes inside the card, between its padding.
   virtual int contentHeight() const = 0;

@@ -79,15 +79,15 @@ enum SettingsGroup : int {
   GroupGeneral,
   GroupDisplay,
   GroupReader,
-  GroupDictionaries,  // opens the Dictionaries screen directly
-  GroupControls,
-  GroupLibrary,
-  GroupReadingStats,
-  GroupNetwork,
-  GroupApps,   // opens the Apps options page directly
 #if NEUINK_BATTERY_HISTORY
   GroupBattery,  // opens the Battery page directly (X4 Pro)
 #endif
+  GroupNetwork,
+  GroupDictionaries,  // opens the Dictionaries screen directly
+  GroupControls,
+  GroupLibrary,
+  GroupApps,  // opens the Apps options page directly
+  GroupReadingStats,
   GroupAbout,  // opens the About page directly
   GroupCount
 };
@@ -100,15 +100,15 @@ const SettingsGroupInfo SETTINGS_GROUPS[GroupCount] = {
     {StrId::STR_SETTINGS_GENERAL, StrId::STR_SETTINGS_GENERAL_DESC, &icon_settings_32},
     {StrId::STR_CAT_DISPLAY, StrId::STR_SETTINGS_DISPLAY_DESC, &icon_display_32},
     {StrId::STR_CAT_READER, StrId::STR_SETTINGS_READER_DESC, &icon_reader_32},
-    {StrId::STR_DICTIONARIES, StrId::STR_SETTINGS_DICTIONARIES_DESC, &icon_dictionaries_32},
-    {StrId::STR_CAT_CONTROLS, StrId::STR_SETTINGS_CONTROLS_DESC, &icon_controls_32},
-    {StrId::STR_LIBRARY, StrId::STR_SETTINGS_LIBRARY_DESC, &icon_library_shelf_32},
-    {StrId::STR_READING_STATS, StrId::STR_SETTINGS_STATS_DESC, &icon_stats_32},
-    {StrId::STR_SETTINGS_NETWORK, StrId::STR_SETTINGS_NETWORK_DESC, &icon_wifi_on_32},
-    {StrId::STR_APPS, StrId::STR_SETTINGS_APPS_DESC, &icon_apps_grid_32},
 #if NEUINK_BATTERY_HISTORY
     {StrId::STR_BATTERY, StrId::STR_SETTINGS_BATTERY_DESC, &icon_battery_32},
 #endif
+    {StrId::STR_SETTINGS_NETWORK, StrId::STR_SETTINGS_NETWORK_DESC, &icon_wifi_on_32},
+    {StrId::STR_DICTIONARIES, StrId::STR_SETTINGS_DICTIONARIES_DESC, &icon_dictionaries_32},
+    {StrId::STR_CAT_CONTROLS, StrId::STR_SETTINGS_CONTROLS_DESC, &icon_controls_32},
+    {StrId::STR_LIBRARY, StrId::STR_SETTINGS_LIBRARY_DESC, &icon_library_shelf_32},
+    {StrId::STR_APPS, StrId::STR_SETTINGS_APPS_DESC, &icon_apps_grid_32},
+    {StrId::STR_READING_STATS, StrId::STR_SETTINGS_STATS_DESC, &icon_stats_32},
     {StrId::STR_ABOUT, StrId::STR_SETTINGS_ABOUT_DESC, &icon_about_32},
 };
 }  // namespace
@@ -1671,9 +1671,9 @@ void SettingsActivity::buildGroupList(UiApp::ScreenType& screen) {
   props.textGap = 14;    // a little more air between the icon and the text
   const fui::Rect body = screen.body();
   configureUiList(props, screen.theme(), body, UiListRowType::WithSubtitle);
-  // The groups share the whole screen: bigger rows read and tap more easily.
-  const int fillHeight = (body.height - props.rowGap * (GroupCount - 1)) / GroupCount;
-  if (fillHeight > props.rowHeight) props.rowHeight = static_cast<int16_t>(fillHeight);
+  // Every group keeps the same room however many there are; the list scrolls when they do not all fit.
+  props.rowHeight = std::max<int16_t>(props.rowHeight, 88);
+  props.rowGap = std::max<int16_t>(props.rowGap, 10);
   const auto rows = fui::listVisibleRows(body, props.rowHeight, props.rowGap);
   visibleRows = rows > 0 ? rows : 1;
   topIndex = scrollListBy(topIndex, 0, visibleRows, GroupCount);
