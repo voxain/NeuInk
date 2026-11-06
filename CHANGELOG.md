@@ -1,8 +1,10 @@
 # NeuInk changelog
 
-## [NeuInk unreleased]
+## [NeuInk 0.1.0] - unreleased
 
-Forked from VARAGH 1.3.2 (`main`). The VARAGH history below is kept as it was.
+First NeuInk release. NeuInk numbers its own versions from 0.1.0 and no longer shows
+the version with a codename on the boot and settings screens. Forked from VARAGH 1.3.2
+(`main`). The VARAGH history below is kept as it was.
 
 - Renamed VARAGH to NeuInk in the firmware, the interface, the build, the docs and
   the translations. The logo files still show the VARAGH artwork until NeuInk has its own.
