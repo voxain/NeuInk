@@ -88,19 +88,6 @@ inline void fittedText(const GfxRenderer& renderer, const Box& box, const char* 
   centredText(renderer, fontId, box, text, black, EpdFontFamily::BOLD);
 }
 
-// Black text with a white rim, for labels that sit on a pixel pattern.
-inline void rimmedText(const GfxRenderer& renderer, const int fontId, const Box& box, const char* text,
-                       const EpdFontFamily::Style style = EpdFontFamily::BOLD) {
-  const int x = box.x + (box.w - renderer.getTextWidth(fontId, text, style)) / 2;
-  const int y = centredTextY(renderer, fontId, box);
-  for (int dy = -2; dy <= 2; ++dy) {
-    for (int dx = -2; dx <= 2; ++dx) {
-      if (dx != 0 || dy != 0) renderer.drawText(fontId, x + dx, y + dy, text, false, style);
-    }
-  }
-  renderer.drawText(fontId, x, y, text, true, style);
-}
-
 // A one-bit bitmap (rows padded to whole bytes, 1 = ink) painted in black or white.
 inline void bitsAt(const GfxRenderer& renderer, const uint8_t* data, const int width, const int rows, const int x,
                    const int y, const bool black) {
@@ -152,14 +139,6 @@ inline void centredGlyph(const GfxRenderer& renderer, const gameglyphs::Glyph& g
   glyphAt(renderer, glyph, bits, rows, x, y, ink != Ink::White);
 }
 
-// letter: 'a'..'z' or 'A'..'Z'.
-inline void bigLetter(const GfxRenderer& renderer, const char letter, const Box& box, const Ink ink) {
-  const int index = (letter >= 'a' && letter <= 'z') ? letter - 'a' : letter - 'A';
-  if (index < 0 || index >= 26) return;
-  centredGlyph(renderer, gameglyphs::kLetterGlyphs[index], gameglyphs::kLetterBits, gameglyphs::kLetterRows,
-               gameglyphs::kLetterCap, box, ink);
-}
-
 // digit: 1..9. Bold for printed clues, regular for the player's own digits.
 inline void bigDigit(const GfxRenderer& renderer, const int digit, const bool bold, const Box& box, const Ink ink) {
   if (digit < 1 || digit > 9) return;
@@ -172,14 +151,15 @@ inline void bigDigit(const GfxRenderer& renderer, const int digit, const bool bo
   }
 }
 
+// The look of the shared UI components: a light-gray rounded box, black when chosen, no outline.
+inline void buttonBody(const GfxRenderer& renderer, const Box& box, const bool filled, const int radius = 14) {
+  renderer.fillRoundedRect(box.x, box.y, box.w, box.h, radius, filled ? Color::Black : Color::LightGray);
+}
+
 // A label wider than its button (a long translation) is drawn in the small font.
 inline void button(const GfxRenderer& renderer, const Box& box, const char* label, const bool filled,
                    const int fontId = UI_10_FONT_ID) {
-  if (filled) {
-    renderer.fillRoundedRect(box.x, box.y, box.w, box.h, 8, Color::Black);
-  } else {
-    renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 8, true);
-  }
+  buttonBody(renderer, box, filled);
   const bool fits = renderer.getTextWidth(fontId, label, EpdFontFamily::BOLD) <= box.w - 8;
   centredText(renderer, fits ? fontId : SMALL_FONT_ID, box, label, !filled, EpdFontFamily::BOLD);
 }
@@ -187,11 +167,7 @@ inline void button(const GfxRenderer& renderer, const Box& box, const char* labe
 // A button with a picture above its word.
 inline void iconButton(const GfxRenderer& renderer, const Box& box, const freeink::Icon& icon, const char* label,
                        const bool filled) {
-  if (filled) {
-    renderer.fillRoundedRect(box.x, box.y, box.w, box.h, 10, Color::Black);
-  } else {
-    renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 10, true);
-  }
+  buttonBody(renderer, box, filled, 16);
   constexpr int labelHeight = 30;
   const int iconY = box.y + (box.h - icon.h - labelHeight - 4) / 2;
   drawLucideIcon(renderer, icon, box.x + (box.w - icon.w) / 2, iconY, !filled);

@@ -263,7 +263,7 @@ clipping and its highlight, not an entry already exported to
 CrossInk tracks per-book reading stats automatically and aggregates them into
 global stats for EPUB and XTC files. With tracking enabled for the device and
 book, you can view that book's **Reading Stats** directly from its **Library**
-or **Browse Files** action menu without opening it first.
+or **File Manager** action menu without opening it first.
 
 ### Turn tracking on or off
 

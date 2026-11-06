@@ -3,8 +3,6 @@
 #include <I18n.h>
 
 #include <cstdio>
-#include <cstring>
-#include <initializer_list>
 #include <memory>
 
 #include "CheckersActivity.h"

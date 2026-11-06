@@ -17,7 +17,7 @@ the indicated direction. The following swipe gestures do not need to start at th
 | Gesture         | Opens            |
 | --------------- | ---------------- |
 | Swipe **down**  | **Settings**     |
-| Swipe **right** | **Browse Files** |
+| Swipe **right** | **File Manager** |
 | Swipe **up**    | **Home menu**    |
 | Swipe **left**  | **Next recent book** |
 | Tap book cover  | Book             |

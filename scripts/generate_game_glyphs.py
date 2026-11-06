@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
-Render the large letters and digits of the built-in games and write them as
+Render the large digits of the built-in games and write them as
 src/activities/apps/GameGlyphs.h.
 
-The UI fonts stop at 12 pt, which leaves a Wordle tile or a Sudoku cell mostly
-empty. These glyphs are drawn once here from Lexend Deca (already in the
+The UI fonts stop at 12 pt, which leaves a Sudoku cell mostly empty. These glyphs are drawn once here from Lexend Deca (already in the
 repository, SIL Open Font License) at the size the game screens want:
 
-- capital letters A-Z, bold, for the Wordle tiles;
 - digits 1-9, bold (printed clues) and regular (your own digits), for Sudoku.
 
 Each glyph is a one-bit bitmap, rows padded to whole bytes, most significant
@@ -28,7 +26,6 @@ OUTPUT = REPO / "src" / "activities" / "apps" / "GameGlyphs.h"
 
 SETS = [
     # name, characters, font file, height of a capital letter or digit in pixels
-    ("Letter", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "LexendDeca-Bold.ttf", 34),
     ("DigitBold", "123456789", "LexendDeca-Bold.ttf", 28),
     ("DigitRegular", "123456789", "LexendDeca-Regular.ttf", 28),
 ]
@@ -84,7 +81,7 @@ def main() -> None:
         "//",
         "// One-bit glyphs: rows padded to whole bytes, most significant bit first, 1 = ink.",
         "// Every glyph of a set is k<Set>Rows high; the first k<Set>Cap rows hold a capital",
-        "// letter or digit, the rest is room below the baseline.\n",
+        "// digit, the rest is room below the baseline.\n",
         "namespace gameglyphs {\n",
         "struct Glyph {\n  uint16_t offset;  // into the set's bitmap bytes\n  uint8_t width;\n};\n",
     ]

@@ -1671,8 +1671,6 @@ void SettingsActivity::render(RenderLock&&) {
 
   renderer.clearScreen();
 
-  const auto pageWidth = renderer.getScreenWidth();
-  const auto& metrics = UITheme::getInstance().getMetrics();
   const char* title = isFileBrowserView() ? tr(STR_FILE_BROWSER_SETTINGS)
                       : inGroupList()       ? tr(STR_SETTINGS_TITLE)
                                             : I18N.get(SETTINGS_GROUPS[selectedCategoryIndex].name);

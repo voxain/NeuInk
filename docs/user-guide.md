@@ -17,7 +17,7 @@ This guide covers day-to-day device use. For focused reference material, see [Re
   - [3. Screens](#3-screens)
     - [3.1 Home Screen](#31-home-screen)
     - [3.2 Reading Mode](#32-reading-mode)
-    - [3.3 Browse Files Screen](#33-browse-files-screen)
+    - [3.3 File Manager Screen](#33-file-manager-screen)
     - [3.4 Library Screen](#34-library-screen)
     - [3.5 File Transfer Screen](#35-file-transfer-screen)
     - [3.5.1 Calibre Wireless Transfers](#351-calibre-wireless-transfers)
@@ -110,15 +110,15 @@ Upon turning the device on for the first time, you will be placed on the **[Home
 
 ### 3.1 Home Screen
 
-The Home screen is the main entry point to the firmware. From here you can navigate to **[Reading Mode](#4-reading-mode)** with the most recently read book, the **[File Manager](#33-browse-files-screen)** (which also holds **[File Transfer](#35-file-transfer-screen)**), the **[Library](#34-library-screen)** screen, or **[Settings](#36-settings)**. The Vega theme also lists every app on Home; with more icons than fit, swipe left or right (or use the buttons) to change page.
+The Home screen is the main entry point to the firmware. From here you can navigate to **[Reading Mode](#4-reading-mode)** with the most recently read book, the **[File Manager](#33-file-manager-screen)** (which also holds **[File Transfer](#35-file-transfer-screen)**), the **[Library](#34-library-screen)** screen, or **[Settings](#36-settings)**. The Vega theme also lists every app on Home; with more icons than fit, swipe left or right (or use the buttons) to change page.
 
 ### 3.2 Reading Mode
 
 See [Reading Mode](#4-reading-mode) below for more information.
 
-### 3.3 Browse Files Screen
+### 3.3 File Manager Screen
 
-The File Manager (formerly Browse Files) acts as a file and folder browser. A **File Transfer** button sits under the title bar. The full path to the current directory is shown at the top of the screen. File extensions are displayed alongside each filename, and directories are shown with brackets (e.g. `[folder-name]`). Hidden directories can be shown from settings.
+The File Manager (formerly File Manager) acts as a file and folder browser. A **File Transfer** button sits under the title bar. The full path to the current directory is shown at the top of the screen. File extensions are displayed alongside each filename, and directories are shown with brackets (e.g. `[folder-name]`). Hidden directories can be shown from settings.
 
 - **Navigate List:** Use **Left** (or **Up**), or **Right** (or **Down**) to move the selection cursor up and down through folders and books. You can also long-press these buttons to scroll a full page up or down.
 - **Open Selection:** Press **Confirm** to open a folder or start reading a selected book. Selecting a `.bmp` file will open the image viewer.
@@ -298,7 +298,7 @@ settings.
 
 If a global change does not affect one EPUB, open its Reader Menu **Settings**
 tab and choose **Reset Book Reader Settings**, or use the book action menu in
-**Browse Files** or **Library**. This removes that book's saved reader choices
+**File Manager** or **Library**. This removes that book's saved reader choices
 so it follows the current global defaults again; it keeps reading progress,
 bookmarks, clippings, and stats, and does not reset your other books or global
 settings. Older saved books may need this reset before they can inherit
@@ -399,7 +399,7 @@ which status-bar items are shown.
   - "Sleep" - Put the awake device to sleep without enabling short-press wake
   - "Wake" - When selected as **Short-press Action**, allow a short press to wake the device; does nothing while the device is awake
   - "Next Page" - Turn to the next page while reading
-  - "Toggle Bookmark", "Reading Stats", "Mark Finished", "Refresh", "Change Font", "Guide Dots", "Focus Reading", "Auto Page Turn", "Sync Progress", "File Transfer", "Calibre Wireless", "Join a Network", "Create Hotspot", "Screenshot", "Dark Mode", "Browse Files", "Library", or "Save Clipping" - Run the matching action
+  - "Toggle Bookmark", "Reading Stats", "Mark Finished", "Refresh", "Change Font", "Guide Dots", "Focus Reading", "Auto Page Turn", "Sync Progress", "File Transfer", "Calibre Wireless", "Join a Network", "Create Hotspot", "Screenshot", "Dark Mode", "File Manager", "Library", or "Save Clipping" - Run the matching action
   - "Footnotes" - Select a footnote reference on the current page, with a list
     fallback when needed; see [Footnote Navigation](#footnote-navigation).
 
@@ -680,7 +680,7 @@ In **Page Overlay** mode, white BMP pixels and transparent PNG pixels let the cu
 > - X3: Use a resolution of 528x792 pixels to match the device's screen resolution.
 
 > [!TIP]
-> You can set an image as the sleep screen cover directly from the BMP image viewer in the **[Browse Files](#33-browse-files-screen)** screen.
+> You can set an image as the sleep screen cover directly from the BMP image viewer in the **[File Manager](#33-file-manager-screen)** screen.
 
 ---
 
@@ -694,7 +694,7 @@ sleep screen.
 
 CrossInk supports two ways to choose a custom boot screen:
 
-- **One fixed image:** In **[Browse Files](#33-browse-files-screen)**, open a
+- **One fixed image:** In **[File Manager](#33-file-manager-screen)**, open a
   BMP image from any folder, open its context menu, and choose **Set Boot
   Screen**. This selected image always takes priority over a boot-screen
   folder. To stop using it, open the same image and choose **Clear Boot Screen**.
@@ -875,7 +875,7 @@ If the device goes to sleep or you close the book while viewing a footnote, the 
 ### System Navigation
 
 - **Return to Home:** Press the **Back** button to close the book and return to the **[Home](#31-home-screen)** screen.
-- **Return to Browse Files:** Press and hold the **Back** button to close the book and return to the **[Browse Files](#33-browse-files-screen)** screen.
+- **Return to File Manager:** Press and hold the **Back** button to close the book and return to the **[File Manager](#33-file-manager-screen)** screen.
 - **Reader Menu:** Press **Confirm** to open the **[Reader Menu](#5-reader-menu)**, which includes chapter navigation, reading options, and more.
 
 ### Supported Languages

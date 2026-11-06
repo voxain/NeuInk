@@ -162,47 +162,6 @@ inline int followListSelection(const int selectedIndex, const int topIndex, cons
       static_cast<uint16_t>(visibleRows > 0 ? visibleRows : 1), static_cast<uint16_t>(count)));
 }
 
-template <size_t MaxInteractions>
-inline void drawUiTabBar(freeink::ui::Screen<MaxInteractions>& screen, freeink::ui::TabBarProps props,
-                         const freeink::ui::Rect rect, const ThemeTabBarAppearance appearance) {
-  namespace fui = freeink::ui;
-  if (props.tabs == nullptr || props.count == 0) return;
-  if (fui::textStyleUnset(props.text)) props.text = screen.theme().smallText;
-  props.minTouchSize = screen.theme().minTouchSize;
-
-  switch (appearance) {
-    case ThemeTabBarAppearance::Pill:
-      fui::tabBar(screen.frame(), rect, props);
-      return;
-    case ThemeTabBarAppearance::BorderedText:
-      break;
-  }
-
-  props.tabInset = fui::Insets{};
-  props.contentInset = fui::Insets{};
-  props.tabStyles = fui::plainStyles();
-
-  const int16_t gap = props.gap > 0 ? props.gap : 0;
-  const int16_t slotWidth = static_cast<int16_t>((rect.width - gap * (props.count - 1)) / props.count);
-  const int16_t contentHeight = static_cast<int16_t>(rect.height - (props.divider ? 1 : 0));
-  for (uint8_t i = 0; i < props.count; ++i) {
-    const int16_t slotX = static_cast<int16_t>(rect.x + i * (slotWidth + gap));
-    const int16_t width = static_cast<int16_t>(i == props.count - 1 ? rect.right() - slotX : slotWidth);
-    fui::TabBarProps tab = props;
-    tab.tabs = &props.tabs[i];
-    tab.count = 1;
-    tab.gap = 0;
-    tab.divider = false;
-    tab.text.bold = props.tabs[i].selected;
-    fui::tabBar(screen.frame(), fui::Rect{slotX, rect.y, width, contentHeight}, tab);
-  }
-
-  screen.target().fill(fui::Rect{rect.x, rect.y, rect.width, 1}, props.dividerPaint);
-  if (props.divider) {
-    screen.target().fill(fui::Rect{rect.x, static_cast<int16_t>(rect.bottom() - 1), rect.width, 1}, props.dividerPaint);
-  }
-}
-
 inline freeink::ui::InputSnapshot touchSnapshotFrom(const MappedInputManager& mappedInput) {
   freeink::ui::InputSnapshot snap{};
   int tx = 0;
