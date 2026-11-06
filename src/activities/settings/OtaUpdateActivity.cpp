@@ -63,7 +63,13 @@ void OtaUpdateActivity::onWifiSelectionComplete(const bool success) {
     // No release yet, or a release without firmware for this device.
     {
       RenderLock lock(*this);
-      state = NO_UPDATE;
+      if (updater.isCrossGrade()) {
+        // "No update available" would be wrong here: say the release has no image for this device.
+        failureMessage = StrId::STR_SWITCH_FIRMWARE_UNAVAILABLE;
+        state = FAILED;
+      } else {
+        state = NO_UPDATE;
+      }
     }
     requestUpdate(true);
     return;
@@ -157,22 +163,27 @@ void OtaUpdateActivity::render(RenderLock&&) {
     lastUpdaterPercentage = static_cast<int>(updaterProgress * 100);
   }
 
+  const bool crossGrade = updater.isCrossGrade();
   if (state == CHECKING_FOR_UPDATE) {
     renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_CHECKING_UPDATE));
   } else if (state == WAITING_CONFIRMATION) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_NEW_UPDATE), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, top, crossGrade ? tr(STR_SWITCH_FIRMWARE) : tr(STR_NEW_UPDATE), true,
+                              EpdFontFamily::BOLD);
     renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, top + height + metrics.verticalSpacing,
                       (std::string(tr(STR_CURRENT_VERSION)) + CROSSINK_VERSION).c_str());
     renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, top + height * 2 + metrics.verticalSpacing * 2,
-                      (std::string(tr(STR_NEW_VERSION)) + updater.getLatestVersion()).c_str());
+                      (std::string(tr(STR_NEW_VERSION)) +
+                       (crossGrade ? std::string(firmware_targets::displayName(updater.getTarget())) + " " : "") +
+                       updater.getLatestVersion())
+                          .c_str());
 
     if (mappedInput.hasTouch()) {
       const auto actions = getOtaActionLayout(renderer);
-      const char* labels[] = {tr(STR_UPDATE), tr(STR_CANCEL)};
+      const char* labels[] = {crossGrade ? tr(STR_SWITCH) : tr(STR_UPDATE), tr(STR_CANCEL)};
       TouchActionButtons::draw(renderer, actions, labels, 0, -1, UI_10_FONT_ID);
     }
 
-    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_UPDATE), "", "");
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), crossGrade ? tr(STR_SWITCH) : tr(STR_UPDATE), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == UPDATE_IN_PROGRESS) {
     renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_UPDATING));
@@ -217,6 +228,17 @@ void OtaUpdateActivity::confirmNeuInkUpdate() {
                            installAccepted = !result.isCancelled;
                            requestUpdate(true);
                          });
+}
+
+// A cross-grade was already confirmed (with the backup warning) before the reboot
+// into this screen, and this screen names the target and version, so it installs
+// directly. The NeuInk update still asks its extra "install only NeuInk" question.
+void OtaUpdateActivity::requestInstall() {
+  if (updater.isCrossGrade()) {
+    runUpdateInstall();
+  } else {
+    confirmNeuInkUpdate();
+  }
 }
 
 void OtaUpdateActivity::runUpdateInstall() {
@@ -290,7 +312,7 @@ void OtaUpdateActivity::loop() {
       const auto actions = getOtaActionLayout(renderer);
       const int action = TouchActionButtons::indexAt(actions, x, y);
       if (action == 0) {
-        confirmNeuInkUpdate();
+        requestInstall();
         return;
       }
       if (action == 1) {
@@ -300,7 +322,7 @@ void OtaUpdateActivity::loop() {
     }
 
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-      confirmNeuInkUpdate();
+      requestInstall();
       return;
     }
 
