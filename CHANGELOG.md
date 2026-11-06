@@ -1,5 +1,13 @@
 # NeuInk changelog
 
+## [Unreleased]
+
+- Added **Settings → System → Switch to Another Firmware**. It installs the latest
+  VARAGH, CrossInk or CrossPoint release over WiFi, after a warning that says SD card
+  files and books should stay safe but a backup is sensible. It reuses the OTA updater
+  and the pinned GitHub certificates, matches each project's own release asset name
+  for the device, and refuses a release that has no SHA-256 digest.
+
 ## [NeuInk 0.1.0] - 2026-11-06
 
 First NeuInk release. NeuInk numbers its own versions from 0.1.0 and no longer shows
