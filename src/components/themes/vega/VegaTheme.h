@@ -11,6 +11,7 @@ constexpr ThemeMetrics makeValues() {
   v.homeCoverHeight = 176;
   v.homeCoverTileHeight = 212;  // the card and a gap
   v.homeMenuTopOffset = 8;
+  v.homeTopPadding = 62;  // a taller status bar on Home (Lyra: 56)
   // Title bar: a light-gray band, no black underline, and more room.
   v.headerUnderlineSize = 0;
   v.headerHeight = 96;
@@ -44,6 +45,10 @@ class VegaTheme : public LyraTheme {
   bool headerBand() const override { return true; }
   const freeink::Icon* headerIcon() const override;
   int headerExtraHeight() const override { return 14; }
+  bool selectionOnlyForButtons() const override { return true; }
+  void drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, bool batteryLeft,
+                        bool showPercentage) const override;
+  int statusClockFontId() const override;
 
  private:
   static inline int homePage = 0;

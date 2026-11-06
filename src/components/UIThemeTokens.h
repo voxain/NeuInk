@@ -12,7 +12,10 @@
 
 #include "AppCapabilities.h"
 #include "CrossPointSettings.h"
+#include "MappedInputManager.h"
 #include "UITheme.h"
+
+extern MappedInputManager mappedInputManager;  // main.cpp
 
 namespace UiThemeTokensDetail {
 inline int16_t scaledListMetric(const int metric) {
@@ -62,6 +65,10 @@ inline uint16_t configureUiList(freeink::ui::ListProps& props, const freeink::ui
   // two-line height and avoid overlapping the following item.
   if (props.labelText.maxLines > 1) props.rowHeight = std::max(props.rowHeight, tokens.rowHeight);
   if (props.rowGap < 0) props.rowGap = tokens.listRowGap;
+  // Nothing stays selected on a touch screen: the list shows a selection only for the buttons.
+  if (UITheme::getInstance().getTheme().selectionOnlyForButtons() && !mappedInputManager.buttonsInUse()) {
+    props.selectedIndex = -1;
+  }
   return freeink::ui::listVisibleRows(rect, props.rowHeight, props.rowGap);
 }
 

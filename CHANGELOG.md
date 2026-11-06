@@ -8,7 +8,13 @@
   short names (Files, Stats) and two-line names where needed. On touch readers an icon lights
   only while pressed, and the selection shows only while the buttons are in use. Its title
   bars (File Manager, Library, Settings, apps...) are light gray, taller, without the black
-  underline, and show the app's icon.
+  underline, and show the app's icon. Lists in the other apps (Settings, File Manager,
+  Library...) also show a selected row only while the buttons are in use. The status bar has
+  a bigger clock, a Wi-Fi icon while Wi-Fi is on (Lucide wifi when joined, wifi-zero while
+  joining), and a new battery: no outline, rounded, light-gray empty part, the percentage
+  without its sign inside it. The reader's own status bar is unchanged.
+- App and Home icons are Lucide at 24 and 48 px only: that is 1x and 2x of Lucide's own grid,
+  so strokes and gaps (the Library's pillars, the Stats bars) fall on whole pixels.
 - File Transfer is now part of the File Manager (its settings page) and no longer a Home
   entry in any theme; "Browse Files" is now called "File Manager" (German: Dateimanager).
   A File Transfer button sits under the title bar of the File Manager (touch readers); the

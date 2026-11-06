@@ -531,9 +531,9 @@ void GoActivity::render(RenderLock&&) {
     gameui::button(renderer, tools[Undo], tr(STR_GO_PLAY_ON), false);
     gameui::button(renderer, tools[Hint], tr(STR_GO_COUNT), true);
   } else {
-    gameui::iconButton(renderer, tools[Undo], icon_undo_32, tr(STR_SUDOKU_UNDO), false);
+    gameui::iconButton(renderer, tools[Undo], icon_undo_48, tr(STR_SUDOKU_UNDO), false);
     gameui::button(renderer, tools[Pass], tr(STR_GO_PASS), false);
-    gameui::iconButton(renderer, tools[Hint], icon_hint_32, tr(STR_SUDOKU_HINT), false);
+    gameui::iconButton(renderer, tools[Hint], icon_hint_48, tr(STR_SUDOKU_HINT), false);
   }
 
   if (panel == Panel::NewGame) drawNewGamePanel();

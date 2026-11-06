@@ -291,6 +291,14 @@ class BaseTheme {
   virtual bool headerBand() const { return false; }
   virtual const freeink::Icon* headerIcon() const { return nullptr; }
   virtual int headerExtraHeight() const { return 0; }
+  // Lists and grids show no selected entry until the buttons are used (touch: a press lights its row instead).
+  virtual bool selectionOnlyForButtons() const { return false; }
+  // The battery in the top status row of a title bar, with whatever a theme puts beside it. batteryRect is
+  // where the classic icon goes; its right edge (left edge when batteryLeft) is the edge to align to.
+  virtual void drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, bool batteryLeft,
+                                bool showPercentage) const;
+  // The font of the clock in that row.
+  virtual int statusClockFontId() const;
   virtual int getMenuRowHeight(const GfxRenderer& renderer) const;
   virtual int getListRowStep(bool hasSubtitle, int rowHeightScale = 1) const;
   virtual int getListPageItems(int contentHeight, bool hasSubtitle, int rowHeightScale = 1) const;

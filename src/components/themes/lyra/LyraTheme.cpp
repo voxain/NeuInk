@@ -20,7 +20,6 @@
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/appsIcon.h"
-#include "components/icons/homeIcons.h"
 #include "components/icons/readingStatsIcons.h"
 #include "fontIds.h"
 
@@ -109,19 +108,7 @@ const freeink::Icon* LyraTheme::iconForName(UIIcon icon, uint32_t size) {
       case UIIcon::Apps:
         return &icon_apps_32;
       case UIIcon::BookmarkIcon:
-        return &icon_highlights_32;
-      case UIIcon::Sudoku:
-        return &icon_sudoku_32;
-      case UIIcon::Chess:
-        return &icon_chess_32;
-      case UIIcon::Checkers:
-        return &icon_checkers_32;
-      case UIIcon::Go:
-        return &icon_go_32;
-      case UIIcon::TicTacToe:
-        return &icon_tictactoe_32;
-      case UIIcon::Clock:
-        return &icon_clock_32;
+        return &icon_bookmark_32;
       default:
         return nullptr;
     }

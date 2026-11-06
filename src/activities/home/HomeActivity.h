@@ -37,9 +37,8 @@ class HomeActivity final : public Activity {
   std::unique_ptr<CoverGridHomeUi> coverGridUi;
   bool gridHasContinueReading = false;
   int selectorIndex = 0;
-  // Vega: the selection shows only while buttons are used (always on without a touch screen);
-  // a touch lights the pressed item, which is pressedSelector (-1: none).
-  bool buttonNavActive = true;
+  // Vega: the selection shows only while buttons are used (MappedInputManager::buttonsInUse); a touch
+  // lights the pressed item instead, which is pressedSelector (-1: none).
   int pressedSelector = -1;
   int homePage = 0;  // the page of the Vega theme's app grid
   int lastCarouselBookIndex = 0;  // remembered position when leaving carousel row

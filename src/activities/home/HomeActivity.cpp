@@ -946,7 +946,6 @@ void HomeActivity::onEnter() {
   hasClippings = ClippingStore::hasAnyClippings();
 
   selectorIndex = 0;
-  buttonNavActive = !mappedInput.hasTouchHardware();
   pressedSelector = -1;
   lastCarouselBookIndex = 0;
   carouselDragActive = false;
@@ -2150,7 +2149,6 @@ void HomeActivity::loop() {
     // buttons are in use; the other themes keep the touched item selected.
     auto onTouched = [&](const bool activate, const int previousSelectorIndex) {
       if (homeListsApps()) {
-        buttonNavActive = false;
         pressedSelector = activate ? -1 : selectorIndex;
         if (activate) {
           activateSelectedHomeItem();
@@ -2200,12 +2198,10 @@ void HomeActivity::loop() {
     const int menuCount = getMenuItemCount();
     buttonNavigator.onNext([this, menuCount] {
       selectorIndex = ButtonNavigator::nextIndex(selectorIndex, menuCount);
-      buttonNavActive = true;
       requestUpdate();
     });
     buttonNavigator.onPrevious([this, menuCount] {
       selectorIndex = ButtonNavigator::previousIndex(selectorIndex, menuCount);
-      buttonNavActive = true;
       requestUpdate();
     });
   }
@@ -2505,7 +2501,7 @@ void HomeActivity::render(RenderLock&&) {
   coverRectH = homeCoverTileHeight;
 
   // Vega (touch): nothing is selected unless the buttons are in use; a pressed icon is lit.
-  const int shownSelector = homeListsApps() && !buttonNavActive ? pressedSelector : selectorIndex;
+  const int shownSelector = homeListsApps() && !mappedInput.buttonsInUse() ? pressedSelector : selectorIndex;
   GUI.drawRecentBookCover(renderer, Rect{0, metrics.homeTopPadding, pageWidth, homeCoverTileHeight}, recentBooks,
                           shownSelector, coverRendered, coverBufferStored, bufferRestored,
                           std::bind(&HomeActivity::storeCoverBuffer, this),

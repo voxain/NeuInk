@@ -15,7 +15,7 @@
 #include "SudokuActivity.h"
 #include "TicTacToeActivity.h"
 #include "components/UiAppHelpers.h"
-#include "components/themes/lyra/LyraTheme.h"
+#include "components/icons/homeIconSet.h"
 #include "fontIds.h"
 
 namespace {
@@ -23,12 +23,12 @@ namespace {
 constexpr int kColumns = 3;
 constexpr int kTileMargin = 16;
 constexpr int kTileGap = 12;
-// Small tiles: the 32 px icon, the name and one status line.
-constexpr int kTileHeight = 112;
-constexpr int kIconSize = 32;
+// Small tiles: the 48 px icon, the name and one status line.
+constexpr int kTileHeight = 128;
+constexpr int kIconSize = 48;  // Lucide's grid at 2x: every stroke on whole pixels
 constexpr int kIconTop = 14;
-constexpr int kNameTop = 54;
-constexpr int kStatusTop = 82;
+constexpr int kNameTop = 72;
+constexpr int kStatusTop = 100;
 constexpr int kRowHeight = 72;
 constexpr int kRowGap = 12;
 
@@ -270,7 +270,7 @@ void AppsActivity::drawTiles() const {
     const apps::Info& app = *apps::find(static_cast<AppId>(shown[i]));
     const gameui::Box& tile = tiles[i];
     renderer.drawRoundedRect(tile.x, tile.y, tile.w, tile.h, 2, 12, true);
-    if (const freeink::Icon* icon = LyraTheme::iconForName(app.icon, kIconSize)) {
+    if (const freeink::Icon* icon = homeIcon(app.icon, kIconSize)) {
       drawLucideIcon(renderer, *icon, tile.x + (tile.w - kIconSize) / 2, tile.y + kIconTop);
     }
     gameui::centredText(renderer, UI_10_FONT_ID, {tile.x, tile.y + kNameTop, tile.w, 26},

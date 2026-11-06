@@ -1,9 +1,12 @@
-# Manifest for src/components/icons/homeIcons.h (the apps' icons: Home, Apps, title bars and the games' tool buttons): Lucide 1.70.0 (ISC), 32 px only.
-# The vendored SDK does not carry the Lucide SVGs, so generate with the SVGs of Lucide (npm: lucide-static)
-# next to it:
+# Manifest for src/components/icons/homeIcons.h: Lucide 1.70.0 (ISC), the icons of the apps and Home
+# entries, the title bars, the status bar and the games' tool buttons.
+#
+# Only 24 and 48 px: Lucide is drawn on a 24-unit grid with 2-unit strokes, so at 24 px and at exactly
+# twice that every stroke and gap falls on whole pixels. Other sizes smear them (uneven pillars/bars).
+#
+# The vendored SDK does not carry the Lucide SVGs: generate with the SVGs of Lucide (npm: lucide-static):
 #   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py --svgdir <lucide/icons> \
-#     --manifest src/components/icons/homeIcons.manifest --sizes 32 --out src/components/icons/homeIcons.h
-# (scripts/generate_icons.py --library lucide does the same when freeink-sdk/.../lucide is present.)
+#     --manifest src/components/icons/homeIcons.manifest --sizes 24,48 --out src/components/icons/homeIcons.h
 sudoku = grid-3x3
 chess = chess-knight
 checkers = disc-3
@@ -17,3 +20,11 @@ notes = pencil
 fill = paint-bucket
 hint = lightbulb
 flip = arrow-down-up
+files = folder
+library = landmark
+opds = library-big
+stats = chart-column
+settings = settings
+transfer_arrows = arrow-left-right
+wifi_on = wifi
+wifi_zero = wifi-zero

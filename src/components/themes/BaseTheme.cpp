@@ -510,14 +510,21 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
                                    : static_cast<int16_t>(band.right() - batteryEdgeInset - metrics.batteryWidth -
                                                           (batteryDetached ? 0 : batteryNubWidth));
   const Rect batteryRect{batteryIconX, batteryY, metrics.batteryWidth, metrics.batteryHeight};
-  if (batteryLeft) {
-    drawBatteryLeft(renderer, batteryRect, showBatteryPercentage);
-  } else {
-    drawBatteryRight(renderer, batteryRect, showBatteryPercentage);
-  }
+  drawHeaderStatus(renderer, batteryRect, batteryLeft, showBatteryPercentage);
 
   drawTopStatusBarClock(renderer, rect.y, nullptr, readerContext, clockYOffset);
 }
+
+void BaseTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, const bool batteryLeft,
+                                 const bool showPercentage) const {
+  if (batteryLeft) {
+    drawBatteryLeft(renderer, batteryRect, showPercentage);
+  } else {
+    drawBatteryRight(renderer, batteryRect, showPercentage);
+  }
+}
+
+int BaseTheme::statusClockFontId() const { return SMALL_FONT_ID; }
 
 void BaseTheme::drawSubHeader(const GfxRenderer& renderer, Rect rect, const char* label, const char* rightLabel) const {
   constexpr int underlineHeight = 2;  // Height of selection underline
@@ -1099,14 +1106,15 @@ void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, con
     return;
   }
 
-  const int textWidth = renderer.getTextWidth(SMALL_FONT_ID, timeText);
-  const int lineHeight = renderer.getLineHeight(SMALL_FONT_ID);
+  const int fontId = statusClockFontId();
+  const int textWidth = renderer.getTextWidth(fontId, timeText);
+  const int lineHeight = renderer.getLineHeight(fontId);
   const int textX = (renderer.getScreenWidth() - textWidth) / 2;
   const int effectiveTextYOffset = textYOffset + UITheme::getTopStatusBarInset(renderer) +
                                    (readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
   const int baseTopY = topY >= 0 ? topY : metrics.topPadding;
   const int textY = baseTopY + (statusBarHeight - lineHeight) / 2 + effectiveTextYOffset;
-  renderer.drawText(SMALL_FONT_ID, textX, textY, timeText, !darkMode);
+  renderer.drawText(fontId, textX, textY, timeText, !darkMode);
 }
 
 void BaseTheme::drawHelpText(const GfxRenderer& renderer, Rect rect, const char* label) const {

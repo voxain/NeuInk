@@ -1,6 +1,8 @@
 #include "VegaTheme.h"
 
 #include <GfxRenderer.h>
+#include <HalGPIO.h>
+#include <HalPowerManager.h>
 #include <I18n.h>
 
 #include <algorithm>
@@ -13,7 +15,9 @@
 #include "components/TouchRegistry.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
+#include "components/icons/homeIconSet.h"
 #include "fontIds.h"
+#include "network/OnlineWifi.h"
 
 namespace {
 constexpr int kCardPadding = 12;
@@ -21,9 +25,10 @@ constexpr int kCardRadius = 16;
 constexpr int kCoverRadius = 10;
 constexpr int kCardTextGap = 16;
 constexpr int kBarHeight = 10;
-constexpr int kSquircleSize = 68;
-constexpr int kIconSize = 32;
+constexpr int kSquircleSize = 80;
+constexpr int kIconSize = 48;  // 48 (and 24 in title bars): Lucide's grid at 2x, every stroke on whole pixels
 constexpr int kDotsHeight = 28;
+constexpr int kHeaderIconSize = 24;
 constexpr int kSideMargin = 16;
 int coverWidth = 0;
 
@@ -138,7 +143,7 @@ void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
     const bool selected = selectedIndex == i;
     fillSquircle(renderer, cx, top + kSquircleSize / 2, kSquircleSize, selected ? Color::Black : Color::LightGray);
     if (rowIcon != nullptr) {
-      if (const freeink::Icon* icon = iconForName(rowIcon(i), kIconSize)) {
+      if (const freeink::Icon* icon = homeIcon(rowIcon(i), kIconSize)) {
         drawLucideIcon(renderer, *icon, cx - kIconSize / 2, top + (kSquircleSize - kIconSize) / 2, !selected);
       }
     }
@@ -170,7 +175,7 @@ void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
 
 const freeink::Icon* VegaTheme::headerIcon() const {
   const std::string& name = activityManager.currentActivityName();
-  if (const apps::Info* app = apps::findByActivityName(name)) return iconForName(app->icon, kIconSize);
+  if (const apps::Info* app = apps::findByActivityName(name)) return homeIcon(app->icon, kHeaderIconSize);
   struct Screen {
     const char* name;
     UIIcon icon;
@@ -186,7 +191,60 @@ const freeink::Icon* VegaTheme::headerIcon() const {
       {"SavedItemsHome", UIIcon::BookmarkIcon},
   };
   for (const Screen& screen : kScreens) {
-    if (name == screen.name) return iconForName(screen.icon, kIconSize);
+    if (name == screen.name) return homeIcon(screen.icon, kHeaderIconSize);
   }
   return nullptr;
+}
+
+int VegaTheme::statusClockFontId() const { return UI_10_FONT_ID; }
+
+// A battery without an outline: a rounded light-gray body, filled black to the charge, the percentage
+// (without its sign) inside it, drawn white over the filled part and black over the rest. A bolt beside
+// it while charging, and the Wi-Fi icon when Wi-Fi is on.
+void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const bool batteryLeft,
+                                 const bool showPercentage) const {
+  const uint16_t percentage = std::min<uint16_t>(powerManager.getBatteryPercentage(), 100);
+  const int bodyW = showPercentage ? 38 : 30;
+  const int bodyH = showPercentage ? 20 : 14;
+  constexpr int nubW = 3;
+  constexpr int gap = 8;
+  const int centerY = rect.y + 11;  // where the classic icon centers on the clock's line
+  const int bodyX = batteryLeft ? rect.x : rect.x + rect.width - nubW - bodyW;
+  const int bodyY = centerY - bodyH / 2;
+  const int radius = bodyH / 3;
+
+  renderer.fillRoundedRect(bodyX, bodyY, bodyW, bodyH, radius, Color::LightGray);
+  renderer.fillRoundedRect(bodyX + bodyW, centerY - 4, nubW, 8, nubW / 2, Color::LightGray);
+  const int fillW = (bodyW * percentage + 50) / 100;
+  if (fillW > 0) {
+    // The right end of a part-filled body is flat, so it reads as a level, not as a smaller battery.
+    const bool full = fillW >= bodyW - radius;
+    renderer.fillRoundedRect(bodyX, bodyY, fillW, bodyH, radius, true, full, true, full, Color::Black);
+  }
+  if (showPercentage) {
+    const std::string text = std::to_string(percentage);
+    const int textX = bodyX + (bodyW - renderer.getTextWidth(SMALL_FONT_ID, text.c_str(), EpdFontFamily::BOLD)) / 2;
+    const int textY = bodyY + (bodyH - renderer.getLineHeight(SMALL_FONT_ID)) / 2;
+    if (fillW > 0) {
+      renderer.beginTextClip(bodyX, bodyY, fillW, bodyH);
+      renderer.drawText(SMALL_FONT_ID, textX, textY, text.c_str(), false, EpdFontFamily::BOLD);
+      renderer.endTextClip();
+    }
+    if (fillW < bodyW) {
+      renderer.beginTextClip(bodyX + fillW, bodyY, bodyW - fillW, bodyH);
+      renderer.drawText(SMALL_FONT_ID, textX, textY, text.c_str(), true, EpdFontFamily::BOLD);
+      renderer.endTextClip();
+    }
+  }
+
+  // Beside the body, on the side away from the screen edge.
+  int x = batteryLeft ? bodyX + bodyW + nubW + gap : bodyX - gap;
+  const auto place = [&](const int width) {
+    const int left = batteryLeft ? x : x - width;
+    x = batteryLeft ? x + width + gap : x - width - gap;
+    return left;
+  };
+  if (gpio.isUsbConnected() && percentage < 100) drawBatteryLightningBolt(renderer, place(8), centerY - 6, true);
+  const freeink::Icon* wifi = OnlineWifi::connected() ? &icon_wifi_on_24 : (OnlineWifi::manualOn() ? &icon_wifi_zero_24 : nullptr);
+  if (wifi != nullptr) drawLucideIcon(renderer, *wifi, place(wifi->w), centerY - wifi->h / 2);
 }
