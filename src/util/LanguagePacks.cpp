@@ -64,7 +64,7 @@ std::string path(const Language lang) { return std::string(kDir) + "/" + lowerCo
 std::string downloadUrl(const Language lang) {
   char tag[16];
   snprintf(tag, sizeof(tag), "lang-%08X", static_cast<unsigned>(I18N_LAYOUT_ID));
-  return std::string("https://github.com/PewPewzxc/VARAGH/releases/download/") + tag + "/" + lowerCode(lang) + ".lng";
+  return std::string("https://github.com/voxain/NeuInk/releases/download/") + tag + "/" + lowerCode(lang) + ".lng";
 }
 
 bool installed(const Language lang) { return Storage.exists(path(lang).c_str()); }
