@@ -87,6 +87,9 @@ struct ListProps {
   // keep a selection in view while scrolling.
   uint16_t topIndex = 0;
   int16_t selectedIndex = -1;
+  // Draw no row as selected, whatever selectedIndex or the nav say (a touch screen not in button use). The selection
+  // itself is still tracked, so the view keeps following it.
+  bool hideSelection = false;
   ActionId action = NO_ACTION;
   uint16_t inputMask = InputDefault | InputPrev | InputNext;
   // Optional trailing action exposed for one row after a completed swipe.
@@ -716,7 +719,7 @@ void list(Frame<MaxInteractions> &frame, Rect rect, const ListProps &props) {
     }
     State state = partial ? static_cast<State>(item.state & ~(StateSelected | StateFocused | StateActive))
                           : item.state;
-    if (!partial && props.selectedIndex == static_cast<int16_t>(i))
+    if (!partial && !props.hideSelection && props.selectedIndex == static_cast<int16_t>(i))
       state |= StateSelected;
     if (!item.enabled)
       state |= StateDisabled;
@@ -915,7 +918,7 @@ void list(Frame<MaxInteractions> &frame, Rect rect, const ListProps &props) {
                           labelStyle);
     }
 
-    if (!partial && props.selectedIndex == static_cast<int16_t>(i) &&
+    if (!partial && !props.hideSelection && props.selectedIndex == static_cast<int16_t>(i) &&
         props.selectionMarker != SelectionMarker::None) {
       if (props.selectionMarker == SelectionMarker::Underline) {
         // RTL mirrors which edge carries markerInset's extra gap, matching

@@ -81,6 +81,10 @@ class GfxRenderer {
   // Optional logical-space clip used while a TextBlock is rendered inside a
   // table cell. Glyph bitmaps and background fills both pass through this
   // guard, so an emergency oversized codepoint cannot paint into a neighbour.
+  // Parity of the origin a gray dither is anchored to: 0 (the screen's own origin) for plain fills, the box's corner
+  // while a rounded box is filled, so every box gets the same corners wherever it sits.
+  mutable uint8_t ditherPhaseX_ = 0;
+  mutable uint8_t ditherPhaseY_ = 0;
   mutable bool textClipActive_ = false;
   mutable bool thickenGlyphs_ = false;
   mutable int textClipLeft_ = 0;

@@ -95,6 +95,7 @@ class CheckersActivity final : public Activity {
   gameui::Box cancelBox;
   gameui::Box startBox;
   int topStripY = 0;
+  int square = 0;  // a board square's side, set by layout()
   int bottomStripY = 0;
   int statusY = 0;
   gameui::ButtonPointer pointer;  // NeuInk: apps on button readers

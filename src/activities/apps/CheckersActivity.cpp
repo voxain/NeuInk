@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr int kSquare = 58;
+constexpr int kMaxSquare = 58;  // the board shrinks from this to keep the controls clear of the screen's foot
 constexpr int kStripHeight = 30;
 constexpr int kToolHeight = 100;
 constexpr int kToolGap = 8;
@@ -107,8 +107,11 @@ void CheckersActivity::onExit() {
 
 void CheckersActivity::layout() {
   const int width = renderer.getScreenWidth();
-  const int size = kSquare * 8;
   topStripY = gameui::contentTop(renderer, mappedInput);
+  // As in Go, the board takes what the strips, the status line and the tool row leave of the height.
+  const int fixedHeight = 2 * (kStripHeight + gameui::kHeaderGap) + 4 + 34 + gameui::kSectionGap + kToolHeight;
+  square = std::clamp((gameui::contentBottom(renderer) - topStripY - fixedHeight) / 8, 40, kMaxSquare);
+  const int size = square * 8;
   board = {(width - size) / 2, topStripY + kStripHeight + gameui::kHeaderGap, size, size};
   bottomStripY = board.y + size + gameui::kHeaderGap;
   statusY = bottomStripY + kStripHeight + 4;
@@ -293,13 +296,13 @@ void CheckersActivity::undoMove() {
 gameui::Box CheckersActivity::squareBox(const int square) const {
   const int row = flipped() ? 7 - (square >> 3) : square >> 3;
   const int column = flipped() ? 7 - (square & 7) : square & 7;
-  return {board.x + column * kSquare, board.y + row * kSquare, kSquare, kSquare};
+  return {board.x + column * square, board.y + row * square, square, square};
 }
 
 int CheckersActivity::squareAt(const int x, const int y) const {
   if (!board.contains(x, y)) return -1;
-  const int column = (x - board.x) / kSquare;
-  const int row = (y - board.y) / kSquare;
+  const int column = (x - board.x) / square;
+  const int row = (y - board.y) / square;
   return flipped() ? (7 - row) * 8 + (7 - column) : row * 8 + column;
 }
 

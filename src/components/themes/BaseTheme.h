@@ -175,6 +175,8 @@ enum UIIcon {
   Hotspot,
   Chart,
   Apps,
+  Usb,
+  Download,
   // The built-in apps (activities/apps/AppRegistry.h), drawn from homeIcons.h.
   Sudoku,
   Chess,

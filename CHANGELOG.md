@@ -53,6 +53,14 @@
   gray rounded button; the Library's sorting controls sit on a gray pill instead of between two rules.
   There is one icon lookup now (homeIconSet.h) instead of three, so Lyra's and the Cover Grid's menu
   icons are Lucide too; `appsIcon.h` and its generator are gone.
+- The File Transfer menu has Lucide icons on gray squircles. The quick settings pane is one light-gray
+  surface with white controls (no shadow or outline). The Library has air between its title bar and
+  the sort pill; Chess and Checkers shrink their board to keep the buttons clear of the screen's foot.
+- Black chess pieces are the Lucide icon inverted: a black body with the outline in white.
+- Fixed: a gray rounded box now has the same corners wherever it sits (the 25% dither is anchored to
+  the box's own corner instead of the screen's, so a corner no longer loses pixels by parity). Lists
+  draw no selected row while a touch screen is not in button use, also in the File Manager, the Library
+  and the File Transfer menu (a flag in the list component, not an index the caller must clear).
 - Fixed: the quick-settings panel drew a gray bar at the top; the book card's top rows were
   painted over by the Home header.
 - File Transfer is now part of the File Manager (its settings page) and no longer a Home

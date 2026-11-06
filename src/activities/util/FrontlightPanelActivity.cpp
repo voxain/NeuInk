@@ -824,9 +824,8 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   const int x1 = width - CC_CARD_SIDE;
   const int cardBottom = panelBottom;
 
-  // Card: a white rounded body on a gray shadow, no outline, like the other surfaces of the UI.
-  renderer.fillRoundedRect(x0 + 1, CC_CARD_TOP + 6, x1 - x0, cardBottom - CC_CARD_TOP, CC_CARD_RADIUS, Color::DarkGray);
-  renderer.fillRoundedRect(x0, CC_CARD_TOP, x1 - x0, cardBottom - CC_CARD_TOP, CC_CARD_RADIUS, Color::White);
+  // Card: a light-gray rounded surface with white controls on it, no outline and no shadow.
+  renderer.fillRoundedRect(x0, CC_CARD_TOP, x1 - x0, cardBottom - CC_CARD_TOP, CC_CARD_RADIUS, Color::LightGray);
 
   // Taps outside the card close it; the grabber band closes it too.
   const int screenH = renderer.getScreenHeight();
@@ -836,7 +835,7 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   drawerHandleRect = fui::Rect{static_cast<int16_t>(width / 2 - 60), static_cast<int16_t>(cardBottom - CC_GRABBER_BAND),
                                120, CC_GRABBER_BAND};
   screen.frame().hit(drawerHandleRect, ACTION_DISMISS, 0, fui::InputTouch);
-  renderer.fillRoundedRect(width / 2 - 24, cardBottom - 14, 48, 6, 3, Color::DarkGray);
+  renderer.fillRoundedRect(width / 2 - 24, cardBottom - 14, 48, 6, 3, Color::White);
 
   // Light: a rounded box, light gray, filled dark up to the level with the percent in it. The - and +
   // buttons for exact steps only show while the buttons are being used; a finger drags the box.
@@ -847,7 +846,7 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   const int stepCy = y + CC_LIGHT_H / 2;
   // A round light-gray button with a Lucide icon in it.
   const auto roundButton = [&](const int bx, const int by, const int d, const freeink::Icon& icon) {
-    renderer.fillRoundedRect(bx, by, d, d, d / 2, Color::LightGray);
+    renderer.fillRoundedRect(bx, by, d, d, d / 2, Color::White);
     target.bitmap(fui::Rect{static_cast<int16_t>(bx + (d - CC_ICON) / 2), static_cast<int16_t>(by + (d - CC_ICON) / 2),
                             CC_ICON, CC_ICON},
                   fui::bitmapFromIcon(icon), fui::BitmapMode::Center);
@@ -869,7 +868,7 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   std::snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(shown));
   lightSliderW = sliderR - sliderL;
   levelbox::draw(renderer, sliderL, stepCy - CC_LIGHT_BOX_H / 2, lightSliderW, CC_LIGHT_BOX_H, CC_BOX_RADIUS,
-                 lightSliderW * lightPermilleFromPercent(shown) / 1000, percent, UI_10_FONT_ID);
+                 lightSliderW * lightPermilleFromPercent(shown) / 1000, percent, UI_10_FONT_ID, Color::White);
   screen.frame().hit(fui::Rect{static_cast<int16_t>(sliderL), static_cast<int16_t>(y),
                                static_cast<int16_t>(lightSliderW), CC_LIGHT_H},
                      ACTION_BRIGHTNESS, 0, fui::InputTouch | fui::InputDrag);
@@ -900,7 +899,7 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
     warmthSliderW = trackR - trackL;
     std::snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(warmth));
     levelbox::draw(renderer, trackL, midY - CC_WARMTH_H / 2, warmthSliderW, CC_WARMTH_H, CC_BOX_RADIUS - 6,
-                   warmthSliderW * warmth / 100, percent, SMALL_FONT_ID);
+                   warmthSliderW * warmth / 100, percent, SMALL_FONT_ID, Color::White);
     screen.frame().hit(fui::Rect{static_cast<int16_t>(trackL), static_cast<int16_t>(y - 8),
                                  static_cast<int16_t>(trackR - trackL), static_cast<int16_t>(CC_WARMTH_H + 16)},
                        ACTION_WARMTH, 0, fui::InputTouch | fui::InputDrag);
@@ -924,7 +923,7 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
     if (on) {
       renderer.fillRoundedRect(buttonX, top, CC_BUTTON_D, CC_BUTTON_D, CC_BUTTON_D / 2, Color::Black);
     } else if (enabled) {
-      renderer.fillRoundedRect(buttonX, top, CC_BUTTON_D, CC_BUTTON_D, CC_BUTTON_D / 2, Color::LightGray);
+      renderer.fillRoundedRect(buttonX, top, CC_BUTTON_D, CC_BUTTON_D, CC_BUTTON_D / 2, Color::White);
     } else {
       // Not available here (no book open): just the outline.
       renderer.drawRoundedRect(buttonX, top, CC_BUTTON_D, CC_BUTTON_D, 1, CC_BUTTON_D / 2, true);

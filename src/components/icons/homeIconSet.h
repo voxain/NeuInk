@@ -21,6 +21,8 @@ inline const freeink::Icon* homeIcon(const UIIcon icon, const uint32_t size) {
     HOME_ICON(UIIcon::File, type_file);
     HOME_ICON(UIIcon::Recent, type_recent);
     HOME_ICON(UIIcon::Hotspot, type_hotspot);
+    HOME_ICON(UIIcon::Usb, type_usb);
+    HOME_ICON(UIIcon::Download, type_download);
     HOME_ICON(UIIcon::Apps, apps_grid);
     HOME_ICON(UIIcon::Library, library);
     HOME_ICON(UIIcon::Opds, opds);

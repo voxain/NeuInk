@@ -70,9 +70,7 @@ inline uint16_t configureUiList(freeink::ui::ListProps& props, const freeink::ui
   props.chevron = freeink::ui::bitmapFromIcon(icon_chevron_right_24);
   props.toggleOffDense = mappedInputManager.isReaderMode();  // see ListProps::toggleOffDense
   // Nothing stays selected on a touch screen: the list shows a selection only for the buttons.
-  if (UITheme::getInstance().getTheme().selectionOnlyForButtons() && !mappedInputManager.buttonsInUse()) {
-    props.selectedIndex = -1;
-  }
+  props.hideSelection = UITheme::getInstance().getTheme().selectionOnlyForButtons() && !mappedInputManager.buttonsInUse();
   return freeink::ui::listVisibleRows(rect, props.rowHeight, props.rowGap);
 }
 

@@ -15,8 +15,7 @@
 
 namespace {
 
-constexpr int kSquare = 58;
-constexpr int kPieceInset = 5;  // the piece bitmaps are 48 pixels
+constexpr int kMaxSquare = 58;  // the board shrinks from this to keep the controls clear of the screen's foot
 constexpr int kStripHeight = 30;
 constexpr int kToolHeight = 100;
 constexpr int kToolGap = 8;
@@ -110,8 +109,11 @@ void ChessActivity::onExit() {
 
 void ChessActivity::layout() {
   const int width = renderer.getScreenWidth();
-  const int size = kSquare * 8;
   topStripY = gameui::contentTop(renderer, mappedInput);
+  // As in Go, the board takes what the strips, the status line and the tool row leave of the height.
+  const int fixedHeight = 2 * (kStripHeight + gameui::kHeaderGap) + 4 + 34 + gameui::kSectionGap + kToolHeight;
+  square = std::clamp((gameui::contentBottom(renderer) - topStripY - fixedHeight) / 8, 40, kMaxSquare);
+  const int size = square * 8;
   board = {(width - size) / 2, topStripY + kStripHeight + gameui::kHeaderGap, size, size};
   bottomStripY = board.y + size + gameui::kHeaderGap;
   statusY = bottomStripY + kStripHeight + 4;
@@ -296,13 +298,13 @@ gameui::Box ChessActivity::squareBox(const int square) const {
   const int file = square & 7;
   const int column = settings.flipped ? 7 - file : file;
   const int row = settings.flipped ? rank : 7 - rank;
-  return {board.x + column * kSquare, board.y + row * kSquare, kSquare, kSquare};
+  return {board.x + column * square, board.y + row * square, square, square};
 }
 
 int ChessActivity::squareAt(const int x, const int y) const {
   if (!board.contains(x, y)) return -1;
-  const int column = (x - board.x) / kSquare;
-  const int row = (y - board.y) / kSquare;
+  const int column = (x - board.x) / square;
+  const int row = (y - board.y) / square;
   const int file = settings.flipped ? 7 - column : column;
   const int rank = settings.flipped ? row : 7 - row;
   return rank * 8 + file;
@@ -462,7 +464,8 @@ void ChessActivity::drawBoard() const {
     const gameui::Box box = squareBox(square);
     const int kind = artIndex(chess::pieceOf(content));
     gameui::piece(renderer, *appart::kPieceOutline[kind], *appart::kPieceSilhouette[kind],
-                  chess::colourOf(content) == chess::White, box.x + kPieceInset, box.y + kPieceInset);
+                  chess::colourOf(content) == chess::White, box.x + (box.w - appart::kPieceOutline[kind]->width) / 2,
+                  box.y + (box.h - appart::kPieceOutline[kind]->height) / 2);
   }
 
   if (selected >= 0) {

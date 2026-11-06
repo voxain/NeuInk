@@ -955,6 +955,7 @@ void LibraryActivity::buildListScreen(UiApp::ScreenType& screen) {
                   fui::Rect{static_cast<int16_t>(right - controlSize),
                             controlY, controlSize, controlSize});
   }
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));  // air between the title bar and the sort pill
   buildSortHeader(screen);
   if (scanFailed || index.ranksDegraded() || filterFailed) {
     const auto warning = screen.take(fui::LayoutAnchor::Top, uiTarget.lineHeight(screen.theme().smallText.font) + 8);

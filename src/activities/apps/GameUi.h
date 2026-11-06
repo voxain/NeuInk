@@ -105,8 +105,9 @@ inline void stamp(const GfxRenderer& renderer, const appart::Bitmap& bitmap, con
   bitsAt(renderer, bitmap.bits, bitmap.width, bitmap.height, x, y, black);
 }
 
-// A chess piece: its outline for white, its filled shape for black. The filled shape goes under a white
-// piece in white, and around a black one as a one-pixel rim, so either stays readable on a hatched square.
+// A chess piece: the Lucide outline for white; for black the same icon inverted (a black body with the outline
+// in white, so the inner details show). The filled shape goes under a white piece in white, and around a black
+// one as a one-pixel rim, so either stays readable on a hatched square.
 inline void piece(const GfxRenderer& renderer, const appart::Bitmap& outline, const appart::Bitmap& silhouette,
                   const bool white, const int x, const int y) {
   if (white) {
@@ -120,6 +121,7 @@ inline void piece(const GfxRenderer& renderer, const appart::Bitmap& outline, co
     }
   }
   stamp(renderer, silhouette, x, y, true);
+  stamp(renderer, outline, x, y, false);
 }
 
 // The large game letters and digits (GameGlyphs.h), which the UI fonts are too

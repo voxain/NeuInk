@@ -73,3 +73,5 @@ type_hotspot = radio-tower
 sort_desc = arrow-down-wide-narrow
 sort_asc = arrow-up-narrow-wide
 book_marked = book-marked
+type_usb = usb
+type_download = download
