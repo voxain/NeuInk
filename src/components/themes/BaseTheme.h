@@ -280,6 +280,12 @@ class BaseTheme {
                        bool foregroundBlack = true) const;  // Left aligned (reader mode)
   void drawBatteryRight(const GfxRenderer& renderer, Rect rect, bool showPercentage = true,
                         bool foregroundBlack = true) const;  // Right aligned (UI headers)
+  // The reader status bar's battery: the header's level box, smaller, with the percentage beside it and a bolt
+  // while charging. Left to right: [bolt] box [percentage], or on the right-hand side [percentage] [bolt] box.
+  // readerBatteryWidth() is the room it takes.
+  int readerBatteryWidth(const GfxRenderer& renderer, bool showPercentage) const;
+  void drawReaderBattery(const GfxRenderer& renderer, int x, int y, bool showPercentage, bool percentageFirst,
+                         bool foregroundBlack) const;
   virtual void fillBatteryIcon(const GfxRenderer& renderer, Rect rect, uint16_t percentage,
                                bool foregroundBlack = true) const;
   // Button hint labels use three states: non-empty labels draw an active hint,
