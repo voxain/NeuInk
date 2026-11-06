@@ -946,7 +946,8 @@ void ActivityManager::offerUsbDrive() {
   auto prompt = makeUniqueNoThrow<ConfirmationActivity>(renderer, mappedInput, tr(STR_USB_HOST_FOUND),
                                                         tr(STR_USB_HOST_ASK), false, true, 30000);
   if (!prompt) return;
-  prompt->resultHandler = [this](const ActivityResult& result) {
+  // The answer goes to the screen underneath, as with startActivityForResult().
+  currentActivity->resultHandler = [this](const ActivityResult& result) {
     if (result.isCancelled) {
       UsbPrompt::suppress();
     } else {

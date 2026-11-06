@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
 
 #include "util/BatteryHistory.h"
@@ -28,6 +29,11 @@ constexpr int kDays = 7;
 // What is timed: an app's id, or the reader, which is not one of the apps.
 constexpr uint8_t kReader = apps::kIdCount;
 constexpr uint8_t kSlots = kReader + 1;
+
+// The totals as bytes, for UsageSnapshot's file (see BatteryHistory::saveState).
+size_t stateSize();
+void saveState(uint8_t* out);
+bool restoreState(const uint8_t* in);
 
 // A gauge read of `percent`, now.
 void chargeSample(uint8_t percent);

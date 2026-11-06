@@ -2,6 +2,7 @@
 
 #include <BoardConfig.h>
 
+#include <cstddef>
 #include <cstdint>
 
 // The battery level over the last 24 hours, for the Battery page in Settings. Only the Xteink X4 Pro has the
@@ -20,6 +21,12 @@ namespace BatteryHistory {
 constexpr int kBucketMinutes = 5;
 constexpr int kBuckets = 24 * 60 / kBucketMinutes;    // 24 hours of five-minute buckets
 constexpr uint8_t kNone = 0xFF;                       // a bucket without a sample
+
+// The graph as bytes, for UsageSnapshot's file: RTC memory does not survive everything (a power-off, an update).
+// restoreState() only takes them when RTC memory holds nothing of its own.
+constexpr size_t kStateSize = 8 + kBuckets;
+void saveState(uint8_t (&out)[kStateSize]);
+bool restoreState(const uint8_t (&in)[kStateSize]);
 
 // Stores a level the gauge was just read at, in this bucket. Needs the clock; without one it does nothing.
 void note(uint16_t percent);

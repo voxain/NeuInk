@@ -113,6 +113,7 @@ inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_
 #include "fontIds.h"
 #include "network/OnlineWifi.h"
 #include "network/UsbSerialFileTransfer.h"
+#include "util/UsageSnapshot.h"
 #include "util/UsbPrompt.h"
 #ifdef SIMULATOR
 #include <SimulatorLifecycle.h>
@@ -1237,6 +1238,9 @@ void enterDeepSleep(bool fromTimeout) {
     }
   }
 
+#if NEUINK_BATTERY_HISTORY
+  UsageSnapshot::save();
+#endif
   // Last chance to sample: startDeepSleep() cuts the SD rail on X3, so nothing
   // can be written again until the next wake.
   BatteryDiagnosticLog::record(BatteryDiagnosticLog::Event::Sleep, BoardConfig::ACTIVE.name);
@@ -1486,6 +1490,9 @@ void setup() {
 #endif
   }
   APP_STATE.loadFromFile();
+#if NEUINK_BATTERY_HISTORY
+  UsageSnapshot::restore();  // only takes the file when RTC memory was wiped
+#endif
   mirrorWakeShortPressToNvs();
   // Needs SETTINGS for the clock's UTC offset, so it cannot run any earlier.
   BatteryDiagnosticLog::record(BatteryDiagnosticLog::Event::Wake, BoardConfig::ACTIVE.name,

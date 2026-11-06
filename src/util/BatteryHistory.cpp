@@ -60,6 +60,19 @@ void note(const uint16_t percent) {
   history.levels[bucket % kBuckets] = static_cast<uint8_t>(percent > 100 ? 100 : percent);
 }
 
+static_assert(sizeof(History) == kStateSize, "History is the file's layout");
+
+void saveState(uint8_t (&out)[kStateSize]) { memcpy(out, &history, kStateSize); }
+
+bool restoreState(const uint8_t (&in)[kStateSize]) {
+  if (history.magic == kMagic) return false;
+  History restored;
+  memcpy(&restored, in, kStateSize);
+  if (restored.magic != kMagic) return false;
+  history = restored;  // advance() later empties the buckets the time away covered
+  return true;
+}
+
 bool read(uint8_t (&levels)[kBuckets]) {
   uint32_t bucket;
   if (!currentBucket(bucket)) return false;

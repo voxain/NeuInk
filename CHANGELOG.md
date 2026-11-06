@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Battery graph and the time and charge per app survive a power-off or an update: a 0.6 KB copy goes to
+  /.crosspoint/usage.bin just before the reader sleeps and is read back at boot when RTC memory was wiped.
 - Reader: the pop-up menu is now the same floating gray card as the Home layout panel, with white pill rows,
   tabs as a black pill, a round back button, the toolkit's slider rows with step buttons and black picked
   options. Paragraph alignment and orientation are rows of picture buttons that apply at once (the page above

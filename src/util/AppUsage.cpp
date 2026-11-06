@@ -91,6 +91,19 @@ void exit(const std::string& activityName) {
   baselineValid = false;
 }
 
+size_t stateSize() { return sizeof(totals); }
+
+void saveState(uint8_t* out) { memcpy(out, &totals, sizeof(totals)); }
+
+bool restoreState(const uint8_t* in) {
+  if (totals.magic == kMagic) return false;
+  Totals restored;
+  memcpy(&restored, in, sizeof(restored));
+  if (restored.magic != kMagic) return false;
+  totals = restored;  // rollDay() later empties the days that have passed
+  return true;
+}
+
 void chargeSample(const uint8_t percent) {
   const unsigned long now = millis();
   if (gpio.isUsbConnected()) {
