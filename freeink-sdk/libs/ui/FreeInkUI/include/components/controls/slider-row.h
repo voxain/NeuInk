@@ -71,6 +71,9 @@ struct SliderRowProps {
   uint8_t capsuleRadius = RADIUS_INHERIT;
   int16_t stroke = 2;
   bool enabled = true;
+  // Button menus: StateSelected outlines the row (it has the focus), StateActive shades it (its value is being
+  // changed with the buttons).
+  State state = StateNormal;
 };
 
 // Height the row needs for a control band of the given height (the caption
@@ -84,6 +87,11 @@ inline int16_t sliderRowHeight(const DrawTarget &target, const SliderRowProps &p
 template <size_t MaxInteractions>
 void sliderRow(Frame<MaxInteractions> &frame, Rect rect, const SliderRowProps &props) {
   const int16_t lineH = frame.target().lineHeight(props.labelText.font);
+  if (hasState(props.state, StateActive)) {
+    frame.target().fill(rect.inset(Insets{-6, -10, -6, -10}), Paint::dither(Color::LightGray), 8);
+  } else if (hasState(props.state, StateSelected)) {
+    frame.target().stroke(rect.inset(Insets{-6, -10, -6, -10}), Paint::solid(Color::Black), 1, 8);
+  }
   const Rect caption{rect.x, rect.y, rect.width, lineH};
   if (props.label) frame.target().text(caption, props.label, props.labelText);
   if (props.value) {

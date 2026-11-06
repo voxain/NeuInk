@@ -8,6 +8,7 @@ namespace ui {
 
 struct RadioOption {
   const char* label = nullptr;
+  BitmapRef icon{};  // with no label, the option is a picture button
   int16_t value = 0;
   bool enabled = true;
 };
@@ -36,6 +37,7 @@ void radioGroup(Frame<MaxInteractions>& frame, Rect rect, const RadioGroupProps&
     Rect cell{x, rect.y, i == props.count - 1 ? static_cast<int16_t>(rect.right() - x) : cellW, rect.height};
     ButtonProps buttonProps;
     buttonProps.label = option.label;
+    buttonProps.icon = option.icon;
     buttonProps.action = props.action;
     buttonProps.value = option.value;
     buttonProps.inputMask = props.inputMask;

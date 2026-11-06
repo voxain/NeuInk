@@ -76,3 +76,20 @@ book_marked = book-marked
 type_usb = usb
 type_download = download
 battery = battery-medium
+# The reader's panel: its tabs, back and backspace buttons, and the picture buttons for paragraph alignment and
+# orientation.
+tab_font = case-sensitive
+tab_layout = text-align-start
+tab_more = ellipsis
+tab_bookmark = bookmark
+chevron_left = chevron-left
+backspace = delete
+align_left = align-left
+align_center = align-center
+align_right = align-right
+align_justify = align-justify
+align_book = book-type
+orient_portrait = smartphone
+orient_cw = rotate-cw
+orient_inverted = flip-vertical-2
+orient_ccw = rotate-ccw

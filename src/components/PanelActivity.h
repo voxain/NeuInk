@@ -24,6 +24,21 @@ constexpr int kTileHeight = 10 + kPreviewHeight + 6 + 22 + 8;  // padding, pictu
 constexpr int kLabelHeight = 26;   // the small name above a row of tiles
 constexpr int kRowGap = 18;
 
+// White controls on the card, black (white label) when picked, focused or pressed.
+inline fui::StyleSet whiteStyles(const uint8_t radius) {
+  fui::StyleSet styles;
+  styles.explicitlySet = true;
+  styles.normal.background = fui::Paint::solid(fui::Color::White);
+  styles.normal.radius = radius;
+  styles.selected = styles.normal;
+  styles.selected.background = fui::Paint::solid(fui::Color::Black);
+  styles.selected.foreground = fui::Paint::solid(fui::Color::White);
+  styles.focused = styles.selected;
+  styles.active = styles.selected;
+  styles.disabled = styles.normal;
+  return styles;
+}
+
 // The card's surface and the ways to close it: a tap outside, a tap or swipe on the grabber. `anchor` is the edge
 // the card hangs from. Returns the grabber's hit rectangle (for the swipe).
 template <size_t MaxInteractions>

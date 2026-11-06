@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Reader: the pop-up menu is now the same floating gray card as the Home layout panel, with white pill rows,
+  tabs as a black pill, a round back button, the toolkit's slider rows with step buttons and black picked
+  options. Paragraph alignment and orientation are rows of picture buttons that apply at once (the page above
+  previews alignment); other short choices become a button row when their names fit. The status bars use the
+  header's level-box battery, smaller. Settings > Battery lists the reader's time too. The tabs, back, backspace,
+  alignment and orientation icons are Lucide; the style-B copies of the five tab icons are gone.
 - Vega Home: swipe up from the bottom edge for a layout panel (icon size 24/32/42/48, icon shape squircle,
   rounded square, circle or hexagon, grid 4x3/4x4/3x4/3x3, names on or off, and an experimental true gray
   for the plates). Library: Recently Opened lists never-opened books after the recent ones, by title; grid
