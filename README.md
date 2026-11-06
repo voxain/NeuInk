@@ -1,4 +1,6 @@
-<h1 align="center">NeuInk</h1>
+<p align="center">
+  <img src="docs/neuink/logo/neuink-lockup.svg" width="420" alt="NeuInk">
+</p>
 
 <p align="center">
   <b>E-reader firmware for the Xteink X4 Pro, with the features of CrossInk and VARAGH.</b>
