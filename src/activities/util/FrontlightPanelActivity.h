@@ -69,7 +69,6 @@ class FrontlightPanelActivity final : public Activity {
   void drawReaderDetails(UiApp::ScreenType& screen);
   // NeuInk Control Center (boards with a front light).
   static void onControlButtonEvent(const freeink::ui::ActionEvent& event, void* user);
-  void drawThinSlider(int left, int right, int midY, int knobX, int knobD) const;
   int lightSliderW = 1;    // Control Center slider widths, for the drag maths
   int warmthSliderW = 1;
   bool sliderMoved = false;  // the routed drag changed a value (needs a frame)

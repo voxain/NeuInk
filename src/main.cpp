@@ -2039,6 +2039,16 @@ void loop() {
   mappedInputManager.clearInjectedReleases();
   // Wi-Fi switched on from the Control Center lives outside the reader too.
   if (OnlineWifi::manualOn()) OnlineWifi::tick();
+  {
+    // The status bar's Wi-Fi icon changes with joining or dropping: draw it again then, and only then. The
+    // reader has no status bar. (tick() above already runs once a second while Wi-Fi is on; this only compares.)
+    static int lastWifiState = 0;
+    const int wifiState = OnlineWifi::indicatorState();
+    if (wifiState != lastWifiState) {
+      lastWifiState = wifiState;
+      if (!activityManager.currentIsReader()) activityManager.requestUpdate();
+    }
+  }
   if (SETTINGS.frontlightNightEnabled != 0 || FrontlightNight::isNight()) {
     if (FrontlightNight::tick()) {
       activityManager.persistGlobalSettings();

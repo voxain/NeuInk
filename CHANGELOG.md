@@ -28,6 +28,16 @@
   instead of holding a language chip.
 - Vega's Home does a half refresh when entered from another screen, and after every sixth
   fast refresh within Home, since its gray areas ghost.
+- Settings > Display and Reader are grouped into submenus (Display: Status bar, Screen refresh; Reader:
+  Content, Reading aids, Word lookup); Disable touchscreen moved to Controls > Taps and gestures.
+- The quick settings pane: round light-gray buttons with Lucide icons, the sliders are rounded boxes
+  (light gray, dark up to the level, the percent inside) and the +/- buttons only show while the buttons
+  are being used.
+- The Clock app has no title or status bar (a round exit button on touch screens).
+- Wi-Fi's status bar icon updates when joining or dropping (a comparison in the main loop, no polling).
+- About: the SD card's used space is worked out on request (it reads the whole FAT).
+- Switches in reader menus use the 50% gray, which survives the reader's refresh; the File Browser
+  settings and the reader drawer use the same switch as the lists now.
 - Fixed: the quick-settings panel drew a gray bar at the top; the book card's top rows were
   painted over by the Home header.
 - File Transfer is now part of the File Manager (its settings page) and no longer a Home

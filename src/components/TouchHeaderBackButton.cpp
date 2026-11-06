@@ -20,6 +20,7 @@ namespace {
 constexpr int actionSize = 52;
 constexpr int touchSize = 68;
 constexpr int titleGap = 8;
+constexpr int iconTitleGap = 16;  // between the app's icon and its title
 constexpr int defaultRightReserve = 52;
 
 int effectiveVerticalOffset(const Layout& layout, const Rect& header, const int requestedOffset) {
@@ -99,7 +100,7 @@ void draw(GfxRenderer& renderer, fui::GfxRendererTarget& target, const Rect& hea
   const int reservedRight = rightReserve > 0 ? rightReserve : defaultRightReserve;
   // The open app's icon sits between the back arrow and the title.
   const freeink::Icon* appIcon = title != nullptr && title[0] != '\0' ? GUI.headerIcon() : nullptr;
-  const int titleX = back.titleX + (appIcon ? appIcon->w + titleGap : 0);
+  const int titleX = back.titleX + (appIcon ? appIcon->w + iconTitleGap : 0);
   const int titleWidth = std::max(0, header.x + header.width - reservedRight - titleX);
   if (appIcon) {
     drawLucideIcon(renderer, *appIcon, back.titleX, back.iconRect.y + (back.iconRect.height - appIcon->h) / 2);

@@ -74,6 +74,7 @@ class MappedInputManager {
   // Enable/disable reader-specific front button mapping.
   // Call with true in reader activity onEnter(), false in onExit().
   void setReaderMode(bool enabled) { readerMode = enabled; }
+  bool isReaderMode() const { return readerMode; }
   void setPowerAsConfirmInReaderMode(bool enabled) { powerAsConfirmInReaderMode = enabled; }
 #if CROSSINK_APP_CAP_TOUCH
   void setReaderTouchscreenOverride(bool enabled) { readerTouchscreenOverride = enabled; }

@@ -17,7 +17,7 @@ constexpr int kTouchHeaderHeightIncrease = 10;
 constexpr int kHeaderTopGap = 6;
 constexpr int kHeaderTitleLift = 5;
 constexpr int kHeaderBaselineLift = 2;
-constexpr int kHeaderIconGap = 10;
+constexpr int kHeaderIconGap = 16;
 
 int visibleHeaderHeight(const ThemeMetrics& metrics) { return std::min(metrics.headerHeight, kHeaderHeight); }
 

@@ -22,7 +22,7 @@ struct ToggleRowProps {
   uint8_t knobRadius = 255;
   int16_t knobInset = 3;
   uint8_t borderWidth = 0;
-  Paint track = Paint::solid(Color::White);
+  Paint track = Paint::dither(Color::LightGray);
   Paint checkedTrack = Paint::solid(Color::Black);
   Paint border = Paint::solid(Color::Black);
   Paint knob = Paint::solid(Color::Black);

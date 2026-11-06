@@ -31,7 +31,8 @@
 #include "components/icons/readingStatsIcons.h"
 #include "components/icons/tablerIcons.h"
 #include "components/icons/touchscreenStateIcons.h"
-#include "components/icons/neuinkIcons.h"
+#include "components/LevelBox.h"
+#include "components/icons/homeIcons.h"
 #include "network/OnlineWifi.h"
 #include "network/WifiUtils.h"
 #include "util/FrontlightNight.h"
@@ -56,40 +57,38 @@ constexpr int CC_CARD_SIDE = 12;
 constexpr int CC_CARD_PAD = 22;
 constexpr int CC_CARD_RADIUS = 28;
 constexpr int CC_LIGHT_H = 84;
-constexpr int CC_KNOB_W = 72;  // round knob; "100%" in UI_10 bold is 58 px
+constexpr int CC_LIGHT_BOX_H = 64;  // the brightness box inside its row
+constexpr int CC_BOX_RADIUS = 20;
 constexpr int CC_STEP_D = 52;   // round - / + buttons beside the light slider
 constexpr int CC_STEP_GAP = 8;
 constexpr int CC_SMALL_STEP_D = 40;  // - / + beside the warmth slider
-constexpr int CC_TRACK_H = 12;  // thin track under both knobs
-constexpr int CC_WARM_KNOB_D = 34;
 constexpr int CC_WARMTH_GAP = 18;
 constexpr int CC_WARMTH_H = 40;
 constexpr int CC_ICON = 24;
 constexpr int CC_BUTTONS_GAP = 26;
-constexpr int CC_PILL_W = 92;
-constexpr int CC_PILL_H = 60;
+constexpr int CC_BUTTON_D = 60;  // round quick buttons
 constexpr int CC_ROW_PITCH = 104;  // pill + label + gap
 constexpr int CC_GRABBER_BAND = 24;
 
 const freeink::Icon* controlButtonIcon(const uint8_t button, const bool on) {
   switch (button) {
-    case CrossPointSettings::CC_TAP_TO_LOOK_UP: return &icon_v_dictionary_24;
-    case CrossPointSettings::CC_WIFI: return &icon_v_wifi_24;
-    case CrossPointSettings::CC_DARK: return &icon_v_contrast_24;
-    case CrossPointSettings::CC_TOUCH_LOCK: return &icon_v_lock_24;
-    case CrossPointSettings::CC_LIGHT: return on ? &icon_v_bulb_on_24 : &icon_v_bulb_24;
-    case CrossPointSettings::CC_NIGHT_LIGHT: return &icon_v_moon_24;
-    case CrossPointSettings::CC_GUIDE_DOTS: return &icon_v_more_24;
-    case CrossPointSettings::CC_FOCUS_READING: return &icon_v_text_size_24;
-    case CrossPointSettings::CC_REFRESH: return &icon_v_refresh_24;
-    case CrossPointSettings::CC_SYNC: return &icon_v_sync_24;
-    case CrossPointSettings::CC_SLEEP: return &icon_v_power_24;
-    case CrossPointSettings::CC_SETTINGS: return &icon_v_gear_24;
-    case CrossPointSettings::CC_READING_STATS: return &icon_v_stats_24;
-    case CrossPointSettings::CC_LIBRARY: return &icon_v_library_24;
-    case CrossPointSettings::CC_APPS: return &icon_v_apps_24;
-    case CrossPointSettings::CC_FILE_TRANSFER: return &icon_v_transfer_24;
-    case CrossPointSettings::CC_ROTATE: return &icon_v_rotate_24;
+    case CrossPointSettings::CC_TAP_TO_LOOK_UP: return &icon_dictionaries_24;
+    case CrossPointSettings::CC_WIFI: return &icon_wifi_on_24;
+    case CrossPointSettings::CC_DARK: return &icon_cc_contrast_24;
+    case CrossPointSettings::CC_TOUCH_LOCK: return &icon_cc_lock_24;
+    case CrossPointSettings::CC_LIGHT: return on ? &icon_hint_24 : &icon_cc_bulb_off_24;
+    case CrossPointSettings::CC_NIGHT_LIGHT: return &icon_cc_moon_24;
+    case CrossPointSettings::CC_GUIDE_DOTS: return &icon_cc_more_24;
+    case CrossPointSettings::CC_FOCUS_READING: return &icon_cc_focus_24;
+    case CrossPointSettings::CC_REFRESH: return &icon_cc_refresh_24;
+    case CrossPointSettings::CC_SYNC: return &icon_cc_sync_24;
+    case CrossPointSettings::CC_SLEEP: return &icon_cc_power_24;
+    case CrossPointSettings::CC_SETTINGS: return &icon_settings_24;
+    case CrossPointSettings::CC_READING_STATS: return &icon_stats_24;
+    case CrossPointSettings::CC_LIBRARY: return &icon_library_24;
+    case CrossPointSettings::CC_APPS: return &icon_apps_grid_24;
+    case CrossPointSettings::CC_FILE_TRANSFER: return &icon_transfer_arrows_24;
+    case CrossPointSettings::CC_ROTATE: return &icon_cc_rotate_24;
     default: return nullptr;
   }
 }
@@ -195,7 +194,7 @@ void FrontlightPanelActivity::onBrightnessEvent(const fui::ActionEvent& event, v
   const uint8_t next =
       self->context.showReaderDetails
           ? percentFromPermille(event.dragPermille)
-          : lightPercentFromPermille(travelPermille(event.dragPermille, self->lightSliderW, CC_KNOB_W));
+          : lightPercentFromPermille(event.dragPermille);
   if (next != self->brightness) {
     self->brightness = next;
     Frontlight.setBrightness(next);
@@ -212,9 +211,7 @@ void FrontlightPanelActivity::onBrightnessEvent(const fui::ActionEvent& event, v
 void FrontlightPanelActivity::onWarmthEvent(const fui::ActionEvent& event, void* user) {
   auto* self = static_cast<FrontlightPanelActivity*>(user);
   if (event.dragPermille < 0) return;
-  const uint8_t next = percentFromPermille(self->context.showReaderDetails
-                                               ? event.dragPermille
-                                               : travelPermille(event.dragPermille, self->warmthSliderW, CC_WARM_KNOB_D));
+  const uint8_t next = percentFromPermille(event.dragPermille);
   if (next == self->warmth) return;
   self->warmth = next;
   Frontlight.setWarmth(next);
@@ -589,7 +586,7 @@ void FrontlightPanelActivity::buildPanelScreen(UiApp::ScreenType& screen) {
   // whole bottom toggle row, shrinking the panel.
   const fui::Rect headerRow = screen.takeTop(rowH, theme.spaceSm).inset(sideInset);
   snprintf(line, sizeof(line), "%s  %u%%", tr(STR_BRIGHTNESS), static_cast<unsigned>(brightness));
-  const fui::BitmapRef lightIcon = fui::bitmapFromIcon(lightOn ? icon_lightbulb_28 : icon_lightbulb_off_28);
+  const fui::BitmapRef lightIcon = fui::bitmapFromIcon(lightOn ? icon_hint_24 : icon_cc_bulb_off_24);
   const int16_t iconW = static_cast<int16_t>(lightIcon.width);
   const int16_t iconH = static_cast<int16_t>(lightIcon.height);
   const fui::Rect iconRect{static_cast<int16_t>(headerRow.x + headerRow.width - iconW),
@@ -820,17 +817,6 @@ bool FrontlightPanelActivity::controlButtonEnabled(const uint8_t button) const {
   }
 }
 
-// A thin track, black up to the knob and outlined after it, under a round
-// white knob. Solid black and white only: no grey dots for the e-ink to blur.
-void FrontlightPanelActivity::drawThinSlider(const int left, const int right, const int midY, const int knobX,
-                                             const int knobD) const {
-  const int top = midY - CC_TRACK_H / 2;
-  renderer.drawRoundedRect(left, top, right - left, CC_TRACK_H, 2, CC_TRACK_H / 2, true);
-  if (knobX > left) renderer.fillRoundedRect(left, top, knobX - left, CC_TRACK_H, CC_TRACK_H / 2, Color::Black);
-  renderer.fillRoundedRect(knobX - knobD / 2, midY - knobD / 2, knobD, knobD, knobD / 2, Color::White);
-  renderer.drawRoundedRect(knobX - knobD / 2, midY - knobD / 2, knobD, knobD, 2, knobD / 2, true);
-}
-
 void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   auto& target = screen.target();
   const int width = renderer.getScreenWidth();
@@ -854,80 +840,76 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   screen.frame().hit(drawerHandleRect, ACTION_DISMISS, 0, fui::InputTouch);
   renderer.fillRoundedRect(width / 2 - 24, cardBottom - 14, 48, 5, 2, Color::Black);
 
-  // Light: round - and + buttons for exact steps, between them a big
-  // capsule, dark grey up to the knob, the percent in the knob.
+  // Light: a rounded box, light gray, filled dark up to the level with the percent in it. The - and +
+  // buttons for exact steps only show while the buttons are being used; a finger drags the box.
+  const bool steps = mappedInput.buttonsInUse();
   const int left = x0 + CC_CARD_PAD;
   const int right = x1 - CC_CARD_PAD;
   int y = CC_CARD_TOP + CC_CARD_PAD;
   const int stepCy = y + CC_LIGHT_H / 2;
-  for (const int side : {-1, +1}) {
-    const int bx = side < 0 ? left : right - CC_STEP_D;
-    renderer.fillRoundedRect(bx, stepCy - CC_STEP_D / 2, CC_STEP_D, CC_STEP_D, CC_STEP_D / 2, Color::White);
-    renderer.drawRoundedRect(bx, stepCy - CC_STEP_D / 2, CC_STEP_D, CC_STEP_D, 2, CC_STEP_D / 2, true);
-    target.bitmap(fui::Rect{static_cast<int16_t>(bx + (CC_STEP_D - CC_ICON) / 2),
-                            static_cast<int16_t>(stepCy - CC_ICON / 2), CC_ICON, CC_ICON},
-                  fui::bitmapFromIcon(side < 0 ? icon_v_minus_24 : icon_v_plus_24), fui::BitmapMode::Center);
-    screen.frame().hit(fui::Rect{static_cast<int16_t>(bx - 6), static_cast<int16_t>(y),
-                                 static_cast<int16_t>(CC_STEP_D + 12), CC_LIGHT_H},
-                       ACTION_BRIGHTNESS_STEP, static_cast<int16_t>(side), fui::InputTouch);
+  // A round light-gray button with a Lucide icon in it.
+  const auto roundButton = [&](const int bx, const int by, const int d, const freeink::Icon& icon) {
+    renderer.fillRoundedRect(bx, by, d, d, d / 2, Color::LightGray);
+    target.bitmap(fui::Rect{static_cast<int16_t>(bx + (d - CC_ICON) / 2), static_cast<int16_t>(by + (d - CC_ICON) / 2),
+                            CC_ICON, CC_ICON},
+                  fui::bitmapFromIcon(icon), fui::BitmapMode::Center);
+  };
+  if (steps) {
+    for (const int side : {-1, +1}) {
+      const int bx = side < 0 ? left : right - CC_STEP_D;
+      roundButton(bx, stepCy - CC_STEP_D / 2, CC_STEP_D, side < 0 ? icon_cc_minus_24 : icon_cc_plus_24);
+      screen.frame().hit(fui::Rect{static_cast<int16_t>(bx - 6), static_cast<int16_t>(y),
+                                   static_cast<int16_t>(CC_STEP_D + 12), CC_LIGHT_H},
+                         ACTION_BRIGHTNESS_STEP, static_cast<int16_t>(side), fui::InputTouch);
+    }
   }
-  const int sliderL = left + CC_STEP_D + CC_STEP_GAP;
-  const int sliderR = right - CC_STEP_D - CC_STEP_GAP;
-  const int travelStart = sliderL + CC_KNOB_W / 2;
-  const int travelEnd = sliderR - CC_KNOB_W / 2;
+  const int stepSpace = steps ? CC_STEP_D + CC_STEP_GAP : 0;
+  const int sliderL = left + stepSpace;
+  const int sliderR = right - stepSpace;
   const uint8_t shown = brightness;
-  const int knobX = travelStart + (travelEnd - travelStart) * lightPermilleFromPercent(shown) / 1000;
-  drawThinSlider(sliderL, sliderR, stepCy, knobX, CC_KNOB_W);
   char percent[8];
   std::snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(shown));
-  // UI_10 bold keeps "100%" (58 px) inside the 72 px knob.
-  const int textW = renderer.getTextWidth(UI_10_FONT_ID, percent, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, knobX - textW / 2, y + (CC_LIGHT_H - renderer.getLineHeight(UI_10_FONT_ID)) / 2,
-                    percent, true, EpdFontFamily::BOLD);
-  // The whole slider takes drags, the knob's overhang at either end too.
   lightSliderW = sliderR - sliderL;
+  levelbox::draw(renderer, sliderL, stepCy - CC_LIGHT_BOX_H / 2, lightSliderW, CC_LIGHT_BOX_H, CC_BOX_RADIUS,
+                 lightSliderW * lightPermilleFromPercent(shown) / 1000, percent, UI_10_FONT_ID);
   screen.frame().hit(fui::Rect{static_cast<int16_t>(sliderL), static_cast<int16_t>(y),
                                static_cast<int16_t>(lightSliderW), CC_LIGHT_H},
                      ACTION_BRIGHTNESS, 0, fui::InputTouch | fui::InputDrag);
   y += CC_LIGHT_H;
 
-  // Warmth: - and + at the ends, then cold (snowflake) and warm (flame).
+  // Warmth: cold (snowflake) and warm (flame) at the ends of a box like the light's.
   if (Frontlight.hasColorTemperature()) {
     y += CC_WARMTH_GAP;
     const int midY = y + CC_WARMTH_H / 2;
-    const int stepInset = (CC_STEP_D - CC_SMALL_STEP_D) / 2;  // centred under the light's - / +
-    for (const int side : {-1, +1}) {
-      const int bx = side < 0 ? left + stepInset : right - stepInset - CC_SMALL_STEP_D;
-      renderer.fillRoundedRect(bx, midY - CC_SMALL_STEP_D / 2, CC_SMALL_STEP_D, CC_SMALL_STEP_D, CC_SMALL_STEP_D / 2,
-                               Color::White);
-      renderer.drawRoundedRect(bx, midY - CC_SMALL_STEP_D / 2, CC_SMALL_STEP_D, CC_SMALL_STEP_D, 2,
-                               CC_SMALL_STEP_D / 2, true);
-      target.bitmap(fui::Rect{static_cast<int16_t>(bx + (CC_SMALL_STEP_D - CC_ICON) / 2),
-                              static_cast<int16_t>(midY - CC_ICON / 2), CC_ICON, CC_ICON},
-                    fui::bitmapFromIcon(side < 0 ? icon_v_minus_24 : icon_v_plus_24), fui::BitmapMode::Center);
-      screen.frame().hit(fui::Rect{static_cast<int16_t>(bx - 8), static_cast<int16_t>(y - 10),
-                                   static_cast<int16_t>(CC_SMALL_STEP_D + 16), static_cast<int16_t>(CC_WARMTH_H + 20)},
-                         ACTION_WARMTH_STEP, static_cast<int16_t>(side), fui::InputTouch);
+    if (steps) {
+      const int stepInset = (CC_STEP_D - CC_SMALL_STEP_D) / 2;  // centred under the light's - / +
+      for (const int side : {-1, +1}) {
+        const int bx = side < 0 ? left + stepInset : right - stepInset - CC_SMALL_STEP_D;
+        roundButton(bx, midY - CC_SMALL_STEP_D / 2, CC_SMALL_STEP_D, side < 0 ? icon_cc_minus_24 : icon_cc_plus_24);
+        screen.frame().hit(fui::Rect{static_cast<int16_t>(bx - 8), static_cast<int16_t>(y - 10),
+                                     static_cast<int16_t>(CC_SMALL_STEP_D + 16), static_cast<int16_t>(CC_WARMTH_H + 20)},
+                           ACTION_WARMTH_STEP, static_cast<int16_t>(side), fui::InputTouch);
+      }
     }
-    const int coldX = left + CC_STEP_D + CC_STEP_GAP;
-    const int warmX = right - CC_STEP_D - CC_STEP_GAP - CC_ICON;
+    const int coldX = left + stepSpace;
+    const int warmX = right - stepSpace - CC_ICON;
     target.bitmap(fui::Rect{static_cast<int16_t>(coldX), static_cast<int16_t>(midY - CC_ICON / 2), CC_ICON, CC_ICON},
-                  fui::bitmapFromIcon(icon_v_snowflake_24), fui::BitmapMode::Center);
+                  fui::bitmapFromIcon(icon_cc_cold_24), fui::BitmapMode::Center);
     target.bitmap(fui::Rect{static_cast<int16_t>(warmX), static_cast<int16_t>(midY - CC_ICON / 2), CC_ICON, CC_ICON},
-                  fui::bitmapFromIcon(icon_v_flame_on_24), fui::BitmapMode::Center);
+                  fui::bitmapFromIcon(icon_cc_warm_24), fui::BitmapMode::Center);
     const int trackL = coldX + CC_ICON + 8;
     const int trackR = warmX - 8;
-    // The knob covers each end of the track at 0 % and 100 %.
-    const int wx = trackL + CC_WARM_KNOB_D / 2 + (trackR - trackL - CC_WARM_KNOB_D) * warmth / 100;
-    drawThinSlider(trackL, trackR, midY, wx, CC_WARM_KNOB_D);
     warmthSliderW = trackR - trackL;
+    std::snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(warmth));
+    levelbox::draw(renderer, trackL, midY - CC_WARMTH_H / 2, warmthSliderW, CC_WARMTH_H, CC_BOX_RADIUS - 6,
+                   warmthSliderW * warmth / 100, percent, SMALL_FONT_ID);
     screen.frame().hit(fui::Rect{static_cast<int16_t>(trackL), static_cast<int16_t>(y - 8),
                                  static_cast<int16_t>(trackR - trackL), static_cast<int16_t>(CC_WARMTH_H + 16)},
                        ACTION_WARMTH, 0, fui::InputTouch | fui::InputDrag);
     y += CC_WARMTH_H;
   }
 
-  // Eight buttons in two rows: black when switched on, label underneath.
+  // Eight round buttons in two rows: light gray, black when switched on; the name underneath.
   y += CC_BUTTONS_GAP;
   const int columnW = (x1 - x0 - 24) / 4;
   int shownIndex = 0;
@@ -940,24 +922,24 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
     const int position = shownIndex++;
     const int cx = x0 + 12 + columnW * (position % 4) + columnW / 2;
     const int top = y + CC_ROW_PITCH * (position / 4);
-    const int pillX = cx - CC_PILL_W / 2;
+    const int buttonX = cx - CC_BUTTON_D / 2;
     if (on) {
-      renderer.fillRoundedRect(pillX, top, CC_PILL_W, CC_PILL_H, CC_PILL_H / 2, Color::Black);
+      renderer.fillRoundedRect(buttonX, top, CC_BUTTON_D, CC_BUTTON_D, CC_BUTTON_D / 2, Color::Black);
+    } else if (enabled) {
+      renderer.fillRoundedRect(buttonX, top, CC_BUTTON_D, CC_BUTTON_D, CC_BUTTON_D / 2, Color::LightGray);
     } else {
-      // Not available here (no book open): lightly dotted.
-      renderer.fillRoundedRect(pillX, top, CC_PILL_W, CC_PILL_H, CC_PILL_H / 2,
-                               enabled ? Color::White : Color::LightGray);
-      renderer.drawRoundedRect(pillX, top, CC_PILL_W, CC_PILL_H, 1, CC_PILL_H / 2, true);
+      // Not available here (no book open): just the outline.
+      renderer.drawRoundedRect(buttonX, top, CC_BUTTON_D, CC_BUTTON_D, 1, CC_BUTTON_D / 2, true);
     }
     target.bitmap(fui::Rect{static_cast<int16_t>(cx - CC_ICON / 2),
-                            static_cast<int16_t>(top + (CC_PILL_H - CC_ICON) / 2), CC_ICON, CC_ICON},
+                            static_cast<int16_t>(top + (CC_BUTTON_D - CC_ICON) / 2), CC_ICON, CC_ICON},
                   fui::bitmapFromIcon(*icon), fui::BitmapMode::Center,
                   fui::Paint::solid(on ? fui::Color::White : fui::Color::Black));
     const auto style = on ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
     const std::string label =
         renderer.truncatedText(SMALL_FONT_ID, I18N.get(controlButtonLabel(button)), columnW - 4, style);
     const int lw = renderer.getTextWidth(SMALL_FONT_ID, label.c_str(), style);
-    renderer.drawText(SMALL_FONT_ID, cx - lw / 2, top + CC_PILL_H + 6, label.c_str(), true, style);
+    renderer.drawText(SMALL_FONT_ID, cx - lw / 2, top + CC_BUTTON_D + 6, label.c_str(), true, style);
     if (enabled) {
       screen.frame().hit(fui::Rect{static_cast<int16_t>(cx - columnW / 2), static_cast<int16_t>(top - 4),
                                    static_cast<int16_t>(columnW), static_cast<int16_t>(CC_ROW_PITCH - 8)},

@@ -452,7 +452,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     props.styles.normal.background = fui::Paint::dither(fui::Color::LightGray);
   }
   const freeink::Icon* appIcon = hasVisibleTitle ? headerIcon() : nullptr;
-  constexpr int16_t appIconGap = 10;
+  constexpr int16_t appIconGap = 16;
   if (appIcon != nullptr) props.leftReserve = static_cast<int16_t>(appIcon->w + appIconGap);
   int titleCenterY = rect.y + rect.height / 2;
   props.sidePadding = tokens.headerSidePadding;

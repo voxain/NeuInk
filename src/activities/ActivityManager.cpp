@@ -1082,6 +1082,8 @@ const std::string& ActivityManager::currentActivityName() const {
   return currentActivity ? currentActivity->name : none;
 }
 
+bool ActivityManager::currentIsReader() const { return currentActivity && currentActivity->isReaderActivity(); }
+
 void ActivityManager::goToApps(const uint8_t resumeId) {
   replaceActivity(std::make_unique<AppsActivity>(renderer, mappedInput, resumeId));
 }

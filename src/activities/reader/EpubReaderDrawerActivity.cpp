@@ -1075,6 +1075,8 @@ void EpubReaderDrawerActivity::buildRootRows(UiApp::ScreenType& screen) {
       toggle.checked = rowToggleValue(row);
       toggle.toggleAction = ACTION_ROW;
       toggle.toggleValue = static_cast<int16_t>(top + i);
+      // A reader screen: the 50% gray, which survives the reader's refresh (see ListProps::toggleOffDense).
+      toggle.track = fui::Paint::dither(fui::Color::DarkGray);
       screen.toggleRow(toggle, buttonDevice ? rowHeight : 0);
     } else {
       screen.settingRow(props, buttonDevice ? rowHeight : 0);

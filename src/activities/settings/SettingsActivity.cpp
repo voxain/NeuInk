@@ -290,6 +290,11 @@ void SettingsActivity::rebuildSettingsLists() {
   controlsEdgeGestureSettings.clear();
   generalSettings.clear();
   generalDateTimeSettings.clear();
+  readerContentSettings.clear();
+  readerAidsSettings.clear();
+  readerLookupSettings.clear();
+  displayStatusBarSettings.clear();
+  displayScreenRefreshSettings.clear();
   generalUpdatesSettings.clear();
   networkSettings.clear();
   systemFilesCacheSettings.clear();
@@ -312,32 +317,33 @@ void SettingsActivity::rebuildSettingsLists() {
   dictionaryRegistry.refreshIfDirty();
   const auto allSettings = getSettingsList(needsFonts ? &sdFontSystem.registry() : nullptr, &dictionaryRegistry);
   displaySettings = buildGroupedDisplaySettingsList(allSettings);
+  displayStatusBarSettings = buildDisplayStatusBarSettingsList(allSettings);
+  displayScreenRefreshSettings = buildDisplayScreenRefreshSettingsList(allSettings);
 #ifndef SIMULATOR
   if (BoardConfig::isX4Pro() || CROSSINK_APP_DEVICE_X4CLASSIC) {
-    displaySettings.erase(
-        std::remove_if(displaySettings.begin(), displaySettings.end(),
+    displayScreenRefreshSettings.erase(
+        std::remove_if(displayScreenRefreshSettings.begin(), displayScreenRefreshSettings.end(),
                        [](const SettingInfo& setting) { return setting.valuePtr == &CrossPointSettings::fadingFix; }),
-        displaySettings.end());
+        displayScreenRefreshSettings.end());
   }
   const bool offerFastScreenLink = display.supportsFastLink();
 #else
   const bool offerFastScreenLink = false;
 #endif
   if (!offerFastScreenLink) {
-    displaySettings.erase(std::remove_if(displaySettings.begin(), displaySettings.end(),
+    displayScreenRefreshSettings.erase(std::remove_if(displayScreenRefreshSettings.begin(), displayScreenRefreshSettings.end(),
                                          [](const SettingInfo& setting) {
                                            return setting.valuePtr == &CrossPointSettings::fastScreenLink;
                                          }),
-                          displaySettings.end());
+                          displayScreenRefreshSettings.end());
   }
   displaySleepSettings = buildDisplaySleepSettingsList(allSettings);
   displayFrontlightSettings = buildDisplayFrontlightSettingsList(allSettings);
   controlsControlCenterSettings = buildControlsControlCenterSettingsList(allSettings);
-  readerSettings = buildReaderSettingsParentList(allSettings);
-  // Dictionaries has its own group here; the in-book menu keeps the row.
-  readerSettings.erase(std::remove_if(readerSettings.begin(), readerSettings.end(),
-                                      [](const SettingInfo& s) { return s.action == SettingAction::Dictionaries; }),
-                       readerSettings.end());
+  readerSettings = buildGroupedReaderSettingsList(allSettings);
+  readerContentSettings = buildReaderContentSettingsList(allSettings);
+  readerAidsSettings = buildReaderAidsSettingsList(allSettings);
+  readerLookupSettings = buildReaderLookupSettingsList(allSettings);
   readerFontSettings = buildReaderFontSettingsList(allSettings);
 #if CROSSINK_SCALABLE_FONTS
   if (needsFonts && sdFontSystem.isScalableFamily(SETTINGS.sdFontFamilyName)) {
@@ -425,6 +431,10 @@ void SettingsActivity::setCurrentSettingsForCategory() {
         currentSettings = &displaySleepSettings;
       } else if (activeSubmenu == SettingAction::DisplayFrontlight) {
         currentSettings = &displayFrontlightSettings;
+      } else if (activeSubmenu == SettingAction::DisplayStatusBar) {
+        currentSettings = &displayStatusBarSettings;
+      } else if (activeSubmenu == SettingAction::DisplayScreenRefresh) {
+        currentSettings = &displayScreenRefreshSettings;
       } else {
         currentSettings = &displaySettings;
       }
@@ -439,6 +449,15 @@ void SettingsActivity::setCurrentSettingsForCategory() {
           break;
         case SettingAction::ScreenMargin:
           currentSettings = &readerScreenMarginSettings;
+          break;
+        case SettingAction::ReaderContent:
+          currentSettings = &readerContentSettings;
+          break;
+        case SettingAction::ReaderAids:
+          currentSettings = &readerAidsSettings;
+          break;
+        case SettingAction::ReaderLookup:
+          currentSettings = &readerLookupSettings;
           break;
         default:
           currentSettings = &readerSettings;
@@ -504,6 +523,16 @@ void SettingsActivity::enterCategory(int categoryIndex) {
 
 StrId SettingsActivity::activeSubmenuTitleId() const {
   switch (activeSubmenu) {
+    case SettingAction::ReaderContent:
+      return StrId::STR_READER_CONTENT;
+    case SettingAction::ReaderAids:
+      return StrId::STR_READER_AIDS;
+    case SettingAction::ReaderLookup:
+      return StrId::STR_READER_LOOKUP;
+    case SettingAction::DisplayStatusBar:
+      return StrId::STR_DISPLAY_STATUS_BAR;
+    case SettingAction::DisplayScreenRefresh:
+      return StrId::STR_DISPLAY_SCREEN_REFRESH;
     case SettingAction::GeneralDateTime:
       return StrId::STR_DATE_AND_TIME;
     case SettingAction::GeneralUpdates:
@@ -1335,6 +1364,11 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::DisplayFrontlight:
       case SettingAction::GeneralDateTime:
       case SettingAction::GeneralUpdates:
+      case SettingAction::ReaderContent:
+      case SettingAction::ReaderAids:
+      case SettingAction::ReaderLookup:
+      case SettingAction::DisplayStatusBar:
+      case SettingAction::DisplayScreenRefresh:
       case SettingAction::None:
         // Do nothing
         break;
@@ -1619,7 +1653,7 @@ void SettingsActivity::buildGroupList(UiApp::ScreenType& screen) {
   props.labelText = screen.theme().titleText;
   props.labelText.bold = true;
   props.subtitleText = screen.theme().smallText;
-  props.iconPlate = 52;  // each icon on a light-gray squircle
+  props.iconPlate = 53;  // each icon on a light-gray squircle
   const fui::Rect body = screen.body();
   configureUiList(props, screen.theme(), body, UiListRowType::WithSubtitle);
   // The groups share the whole screen: bigger rows read and tap more easily.

@@ -13,6 +13,7 @@
 #include "activities/Activity.h"
 #include "activities/apps/AppRegistry.h"
 #include "components/TouchRegistry.h"
+#include "components/LevelBox.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/homeIconSet.h"
@@ -25,25 +26,12 @@ constexpr int kCardRadius = 16;
 constexpr int kCoverRadius = 10;
 constexpr int kCardTextGap = 16;
 constexpr int kBarHeight = 10;
-constexpr int kSquircleSize = 68;
+constexpr int kSquircleSize = 69;  // odd: see fillSquircle
 constexpr int kIconSize = 32;
 constexpr int kDotsHeight = 28;
 constexpr int kHeaderIconSize = 24;
 constexpr int kSideMargin = 16;
 int coverWidth = 0;
-
-// A squircle is the superellipse |x|^4 + |y|^4 = 1: rounder than a rounded square at
-// the corners, flatter on the sides. Filled one pixel row at a time; light gray is
-// a dither, so it shows on every panel.
-void fillSquircle(const GfxRenderer& renderer, const int cx, const int cy, const int diameter, const Color color) {
-  const float radius = static_cast<float>(diameter) / 2.0f;
-  for (int dy = -diameter / 2; dy < diameter / 2; ++dy) {
-    const float t = (static_cast<float>(dy) + 0.5f) / radius;
-    const float t2 = t * t;
-    const int half = static_cast<int>(std::lround(radius * std::sqrt(std::sqrt(std::max(0.0f, 1.0f - t2 * t2)))));
-    renderer.fillRectDither(cx - half, cy + dy, 2 * half, 1, color);
-  }
-}
 
 // Rounds the corners of the picture drawn at x, y by painting what lies outside a
 // quarter circle in the colour behind it (the dither pattern is the same everywhere).
@@ -144,7 +132,11 @@ void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
     const int cx = cell.x + cell.width / 2;
     const int top = cell.y + std::max(0, cell.height - contentH) / 2;
     const bool selected = selectedIndex == i;
-    fillSquircle(renderer, cx, top + kSquircleSize / 2, kSquircleSize, selected ? Color::Black : Color::LightGray);
+    freeink::ui::GfxRendererTarget target(renderer);
+    freeink::ui::fillSquircle(target, freeink::ui::Rect{static_cast<int16_t>(cx - kSquircleSize / 2), static_cast<int16_t>(top),
+                                                         kSquircleSize, kSquircleSize},
+                              selected ? freeink::ui::Paint::solid(freeink::ui::Color::Black)
+                                       : freeink::ui::Paint::dither(freeink::ui::Color::LightGray));
     if (rowIcon != nullptr) {
       if (const freeink::Icon* icon = homeIcon(rowIcon(i), kIconSize)) {
         drawLucideIcon(renderer, *icon, cx - kIconSize / 2, top + (kSquircleSize - kIconSize) / 2, !selected);
@@ -218,29 +210,9 @@ void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const b
 
   // The empty part is light gray, or white where the bar itself is that gray.
   const Color empty = onBand ? Color::White : Color::LightGray;
-  renderer.fillRoundedRect(bodyX, bodyY, bodyW, bodyH, radius, empty);
   renderer.fillRoundedRect(bodyX + bodyW, centerY - 4, nubW, 8, nubW / 2, empty);
-  const int fillW = (bodyW * percentage + 50) / 100;
-  if (fillW > 0) {
-    // The right end of a part-filled body is flat, so it reads as a level, not as a smaller battery.
-    const bool full = fillW >= bodyW - radius;
-    renderer.fillRoundedRect(bodyX, bodyY, fillW, bodyH, radius, true, full, true, full, Color::Black);
-  }
-  if (showPercentage) {
-    const std::string text = std::to_string(percentage);
-    const int textX = bodyX + (bodyW - renderer.getTextWidth(SMALL_FONT_ID, text.c_str(), EpdFontFamily::BOLD)) / 2;
-    const int textY = bodyY + (bodyH - renderer.getLineHeight(SMALL_FONT_ID)) / 2;
-    if (fillW > 0) {
-      renderer.beginTextClip(bodyX, bodyY, fillW, bodyH);
-      renderer.drawText(SMALL_FONT_ID, textX, textY, text.c_str(), false, EpdFontFamily::BOLD);
-      renderer.endTextClip();
-    }
-    if (fillW < bodyW) {
-      renderer.beginTextClip(bodyX + fillW, bodyY, bodyW - fillW, bodyH);
-      renderer.drawText(SMALL_FONT_ID, textX, textY, text.c_str(), true, EpdFontFamily::BOLD);
-      renderer.endTextClip();
-    }
-  }
+  levelbox::draw(renderer, bodyX, bodyY, bodyW, bodyH, radius, (bodyW * percentage + 50) / 100,
+                 showPercentage ? std::to_string(percentage).c_str() : nullptr, SMALL_FONT_ID, empty);
 
   // Beside the body, on the side away from the screen edge.
   int x = batteryLeft ? bodyX + bodyW + nubW + gap : bodyX - gap;

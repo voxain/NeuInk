@@ -9,11 +9,13 @@
 
 #include <cstdio>
 #include <cstring>
+#include <memory>
 
 #include "CrossPointSettings.h"
 #include "RowListActivity.h"
 #include "activities/reader/BookReadingStats.h"
 #include "activities/reader/GlobalReadingStats.h"
+#include "components/UITheme.h"
 
 namespace {
 
@@ -22,6 +24,17 @@ using Row = RowListActivity::Row;
 std::string megabytes(const uint64_t bytes) {
   char text[24];
   snprintf(text, sizeof(text), "%.1f MB", static_cast<double>(bytes) / (1024.0 * 1024.0));
+  return text;
+}
+
+// A size in MB, or in GB from 1 GB up.
+std::string size(const uint64_t bytes) {
+  char text[24];
+  if (bytes >= (1ull << 30)) {
+    snprintf(text, sizeof(text), "%.1f GB", static_cast<double>(bytes) / (1024.0 * 1024.0 * 1024.0));
+  } else {
+    snprintf(text, sizeof(text), "%.1f MB", static_cast<double>(bytes) / (1024.0 * 1024.0));
+  }
   return text;
 }
 
@@ -56,8 +69,11 @@ std::string duration(const uint32_t seconds) {
 }  // namespace
 
 std::unique_ptr<Activity> makeAboutPage(GfxRenderer& renderer, MappedInputManager& mappedInput) {
+  // How much of the card is used is the one figure that is slow: FAT32 has no count of its free clusters, so
+  // the card's whole allocation table is read. It is only worked out when asked for (a tap or Confirm).
+  auto sdUsed = std::make_shared<std::string>();
   return std::make_unique<LambdaRowList>(
-      renderer, mappedInput, "About", tr(STR_ABOUT), [](std::vector<Row>& rows, RowListActivity&) {
+      renderer, mappedInput, "About", tr(STR_ABOUT), [&renderer, sdUsed](std::vector<Row>& rows, RowListActivity&) {
         rows.clear();
 
         header(rows, tr(STR_ABOUT_SOFTWARE));
@@ -90,7 +106,22 @@ std::unique_ptr<Activity> makeAboutPage(GfxRenderer& renderer, MappedInputManage
         if (ESP.getPsramSize() > 0) {
           info(rows, tr(STR_ABOUT_PSRAM), usedOf(ESP.getPsramSize() - ESP.getFreePsram(), ESP.getPsramSize()));
         }
-        if (Storage.ready()) info(rows, tr(STR_ABOUT_SD_CARD), usedOf(Storage.usedBytes(), Storage.totalBytes()));
+        if (Storage.ready()) {
+          info(rows, tr(STR_ABOUT_SD_CARD), size(Storage.totalBytes()));
+          Row used;
+          used.label = tr(STR_ABOUT_SD_USED);
+          used.value = sdUsed->empty() ? tr(STR_ABOUT_TAP_TO_CALCULATE) : *sdUsed;
+          if (sdUsed->empty()) {
+            used.onTap = [&renderer, sdUsed] {
+              {
+                RenderLock lock;
+                GUI.drawPopup(renderer, tr(STR_LOADING_POPUP));
+              }
+              *sdUsed = size(Storage.usedBytes());
+            };
+          }
+          rows.push_back(std::move(used));
+        }
 
         const GlobalReadingStats stats = GlobalReadingStats::load();
         header(rows, tr(STR_ABOUT_READING));

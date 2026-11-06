@@ -2,8 +2,8 @@
 # entries, title bars, the status bar and the games' tool buttons.
 #
 # 24 px is Lucide's own grid, pixel-exact. 32 px is what squircles and tiles use; a 24-unit grid does not
-# divide into 32 pixels, so the two icons whose repeated parts must be evenly spaced (landmark pillars, chart
-# bars) come from src/components/icons/lucide-snapped/, with those parts moved onto whole pixels.
+# divide into 32 pixels, so the one icon whose repeated parts must be evenly spaced (the landmark's pillars)
+# comes from src/components/icons/lucide-snapped/, with those parts moved onto whole pixels.
 #
 # The vendored SDK does not carry the Lucide SVGs: generate with the SVGs of Lucide (npm: lucide-static) and
 # the snapped ones in one folder:
@@ -25,7 +25,7 @@ flip = arrow-down-up
 files = folder
 library = landmark-snapped
 opds = library-big
-stats = chart-column-snapped
+stats = chart-column
 settings = settings
 transfer_arrows = arrow-left-right
 wifi_on = wifi
@@ -38,3 +38,22 @@ controls = sliders-horizontal
 library_shelf = library
 apps_grid = layout-grid
 about = info
+
+# The quick settings pane's buttons and sliders.
+cc_minus = minus
+cc_plus = plus
+cc_contrast = contrast
+cc_lock = lock
+cc_bulb_off = lightbulb-off
+cc_moon = moon
+cc_more = ellipsis
+cc_focus = a-large-small
+cc_refresh = refresh-cw
+cc_sync = cloud-sync
+cc_power = power
+cc_rotate = rotate-cw
+cc_cold = snowflake
+cc_warm = flame
+
+# The Clock app's exit button.
+exit_x = x

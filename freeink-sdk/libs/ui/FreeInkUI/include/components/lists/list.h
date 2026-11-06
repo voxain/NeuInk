@@ -110,7 +110,7 @@ struct ListProps {
   int16_t iconSize = 0;
   // > 0: the icon sits on a light-gray squircle of this size, centered in it. The squircle (not the icon)
   // then sets the width of the icon column.
-  int16_t iconPlate = 0;
+  int16_t iconPlate = 0;  // odd, see fillSquircle
   // A row whose value is exactly ">" (a submenu) shows this bitmap in its place, when set.
   BitmapRef chevron{};
   // Extra inset for the right-aligned value slot beyond sidePadding, so a
@@ -132,6 +132,9 @@ struct ListProps {
   uint8_t toggleKnobRadius = 255;
   int16_t toggleKnobInset = 3;
   uint8_t toggleBorderWidth = 0;
+  // The off track in the denser (50%) gray: the light gray (one pixel in four) is too sparse to show up under
+  // some refresh modes, such as the reader's.
+  bool toggleOffDense = false;
   // Horizontal inset of the ROWS within the rect (the Lyra pill band). The
   // scroll indicator stays at the rect's edge, in the inset margin.
   // -1 = inherit: Screen::list() substitutes the theme's listInset.
@@ -843,7 +846,7 @@ void list(Frame<MaxInteractions> &frame, Rect rect, const ListProps &props) {
       frame.target().fill(toggleRect,
                           item.toggleChecked
                               ? fg
-                              : Paint::dither(fgWhite ? Color::DarkGray : Color::LightGray),
+                              : Paint::dither(fgWhite || props.toggleOffDense ? Color::DarkGray : Color::LightGray),
                           trackRadius);
       if (props.toggleBorderWidth > 0) {
         frame.target().stroke(toggleRect, fg, props.toggleBorderWidth,

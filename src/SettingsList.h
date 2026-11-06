@@ -1272,6 +1272,44 @@ inline std::vector<SettingInfo> buildReaderSettingsParentList(const std::vector<
   return readerSettings;
 }
 
+// Settings > Reader: the loose reader settings grouped into submenus. (The in-book menu keeps the flat
+// list above; the Dictionaries group has its own entry in Settings.)
+inline std::vector<SettingInfo> buildGroupedReaderSettingsList(const std::vector<SettingInfo>& allSettings) {
+  std::vector<SettingInfo> settings;
+  settings.reserve(7);
+  settings.push_back(SettingInfo::Submenu(StrId::STR_READER_FONT_OPTIONS, SettingAction::ReaderFontOptions));
+  settings.push_back(SettingInfo::Submenu(StrId::STR_READER_PAGE_LAYOUT, SettingAction::ReaderPageLayout));
+  settings.push_back(SettingInfo::Action(StrId::STR_STATUS_BARS, SettingAction::CustomiseStatusBar));
+  settings.push_back(SettingInfo::Submenu(StrId::STR_READER_CONTENT, SettingAction::ReaderContent));
+  settings.push_back(SettingInfo::Submenu(StrId::STR_READER_AIDS, SettingAction::ReaderAids));
+  settings.push_back(SettingInfo::Submenu(StrId::STR_READER_LOOKUP, SettingAction::ReaderLookup));
+  return settings;
+}
+
+inline std::vector<SettingInfo> buildReaderContentSettingsList(const std::vector<SettingInfo>& allSettings) {
+  std::vector<SettingInfo> settings;
+  addSettingByName(settings, allSettings, StrId::STR_PUBLISHER_PAGE_NUMBERS);
+  addSettingByName(settings, allSettings, StrId::STR_EMBEDDED_STYLE);
+  addSettingByName(settings, allSettings, StrId::STR_IMAGES);
+  addSettingByName(settings, allSettings, StrId::STR_INDEXING_METHOD);
+  return settings;
+}
+
+inline std::vector<SettingInfo> buildReaderAidsSettingsList(const std::vector<SettingInfo>& allSettings) {
+  std::vector<SettingInfo> settings;
+  addSettingByName(settings, allSettings, StrId::STR_FOCUS_READING);
+  addSettingByName(settings, allSettings, StrId::STR_GUIDE_READING);
+  return settings;
+}
+
+inline std::vector<SettingInfo> buildReaderLookupSettingsList(const std::vector<SettingInfo>& allSettings) {
+  std::vector<SettingInfo> settings;
+  addSettingByName(settings, allSettings, StrId::STR_WORD_SELECT_HOLD);
+  addSettingByName(settings, allSettings, StrId::STR_WORD_HOLD_ACTION);
+  addSettingByName(settings, allSettings, StrId::STR_TAP_TO_LOOK_UP);
+  return settings;
+}
+
 inline std::vector<SettingInfo> buildBookReaderSettingsParentList(const std::vector<SettingInfo>& allSettings) {
   auto settings = buildReaderSettingsParentList(allSettings);
   settings.erase(
@@ -1381,6 +1419,7 @@ inline std::vector<SettingInfo> buildControlsTapsGesturesSettingsList(const std:
   const bool hasEdgeGestures = hasSettingByName(allSettings, StrId::STR_LEFT_EDGE_UP);
   settings.reserve(4 + (hasPinch ? 1u : 0u) + (hasRotation ? 1u : 0u) + (hasTwoFingerSwipe ? 1u : 0u) +
                    (hasEdgeGestures ? 1u : 0u));
+  addSettingByName(settings, allSettings, StrId::STR_DISABLE_TOUCHSCREEN);
   addSettingByName(settings, allSettings, StrId::STR_NEXT_PAGE);
   addSettingByName(settings, allSettings, StrId::STR_PREV_PAGE);
   addSettingByName(settings, allSettings, StrId::STR_RTL_MIRROR_PAGE_TURNS);
@@ -1474,7 +1513,7 @@ inline std::vector<SettingInfo> buildControlsSideButtonSettingsList(const std::v
 
 inline std::vector<SettingInfo> buildGroupedDisplaySettingsList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> displaySettings;
-  displaySettings.reserve(10);
+  displaySettings.reserve(7);
 
   auto addDisplaySetting = [&](StrId nameId) {
     const auto it = std::find_if(allSettings.begin(), allSettings.end(),
@@ -1484,22 +1523,35 @@ inline std::vector<SettingInfo> buildGroupedDisplaySettingsList(const std::vecto
     }
   };
 
+  // How it looks first, then the parts of the screen with their own pages.
+  addDisplaySetting(StrId::STR_UI_THEME);
+  addDisplaySetting(StrId::STR_UI_SCALE);
+  addDisplaySetting(StrId::STR_NIGHT_MODE);
   displaySettings.push_back(SettingInfo::Submenu(StrId::STR_DISPLAY_SLEEP_SCREEN, SettingAction::DisplaySleepScreen));
   if (Frontlight.present()) {
     displaySettings.push_back(SettingInfo::Submenu(StrId::STR_FRONTLIGHT, SettingAction::DisplayFrontlight));
   }
-  addDisplaySetting(StrId::STR_HIDE_BATTERY);
-  if (halClock.isAvailable()) {
-    addDisplaySetting(StrId::STR_CLOCK_OUTSIDE_READER);
-  }
-  addDisplaySetting(StrId::STR_REFRESH_FREQ);
-  addDisplaySetting(StrId::STR_NIGHT_MODE);
-  addDisplaySetting(StrId::STR_UI_THEME);
-  addDisplaySetting(StrId::STR_UI_SCALE);
-  addDisplaySetting(StrId::STR_SUNLIGHT_FADING_FIX);
-  addDisplaySetting(StrId::STR_FAST_SCREEN_LINK);
-
+  displaySettings.push_back(SettingInfo::Submenu(StrId::STR_DISPLAY_STATUS_BAR, SettingAction::DisplayStatusBar));
+  displaySettings.push_back(
+      SettingInfo::Submenu(StrId::STR_DISPLAY_SCREEN_REFRESH, SettingAction::DisplayScreenRefresh));
   return displaySettings;
+}
+
+// Display > Status bar: what the bar above the screens shows.
+inline std::vector<SettingInfo> buildDisplayStatusBarSettingsList(const std::vector<SettingInfo>& allSettings) {
+  std::vector<SettingInfo> settings;
+  addSettingByName(settings, allSettings, StrId::STR_HIDE_BATTERY);
+  if (halClock.isAvailable()) addSettingByName(settings, allSettings, StrId::STR_CLOCK_OUTSIDE_READER);
+  return settings;
+}
+
+// Display > Screen refresh: ghosting and refresh behaviour.
+inline std::vector<SettingInfo> buildDisplayScreenRefreshSettingsList(const std::vector<SettingInfo>& allSettings) {
+  std::vector<SettingInfo> settings;
+  addSettingByName(settings, allSettings, StrId::STR_REFRESH_FREQ);
+  addSettingByName(settings, allSettings, StrId::STR_SUNLIGHT_FADING_FIX);
+  addSettingByName(settings, allSettings, StrId::STR_FAST_SCREEN_LINK);
+  return settings;
 }
 
 inline std::vector<SettingInfo> buildDisplayFrontlightSettingsList(const std::vector<SettingInfo>& allSettings) {
