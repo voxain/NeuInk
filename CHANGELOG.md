@@ -1,6 +1,6 @@
 # NeuInk changelog
 
-## [NeuInk 0.1.0] - unreleased
+## [NeuInk 0.1.0] - 2026-11-06
 
 First NeuInk release. NeuInk numbers its own versions from 0.1.0 and no longer shows
 the version with a codename on the boot and settings screens. Forked from VARAGH 1.3.2
