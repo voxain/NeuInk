@@ -46,8 +46,9 @@ void drawSwitch(const GfxRenderer& renderer, const int x, const int y, const boo
 
 }  // namespace
 
-AppsActivity::AppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const uint8_t resumeId)
-    : Activity("Apps", renderer, mappedInput), resumeId(resumeId) {}
+AppsActivity::AppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const uint8_t resumeId,
+                           const bool manageOnly)
+    : Activity("Apps", renderer, mappedInput), resumeId(resumeId), manageOnly(manageOnly) {}
 
 uint8_t AppsActivity::resumeIdFor(const std::string& activityName) {
   if (activityName == "Apps") return kResumeList;
@@ -59,7 +60,7 @@ void AppsActivity::onEnter() {
   Activity::onEnter();
   pointer.begin(mappedInput);
   hiddenMask = apps::hiddenMask();
-  mode = Mode::Tiles;
+  mode = manageOnly ? Mode::Manage : Mode::Tiles;
   clockface::loadOptions(clockOptions);
   SudokuActivity::loadOptions(sudokuOptions);
 
@@ -183,7 +184,7 @@ void AppsActivity::open(const apps::Info& app) {
 void AppsActivity::loop() {
   if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    if (mode != Mode::Tiles) {
+    if (mode != Mode::Tiles && !(manageOnly && mode == Mode::Manage)) {
       // One step back: from an app's settings to the switches, from there to the tiles.
       mode = mode == Mode::Manage ? Mode::Tiles : Mode::Manage;
       requestUpdate();

@@ -26,7 +26,9 @@ class AppsActivity final : public Activity {
   static uint8_t resumeIdFor(const std::string& activityName);
 
   // resumeId: one app's resume number opens that app on top of the list.
-  AppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, uint8_t resumeId = kResumeNone);
+  // manageOnly: opened from Settings, straight on the Manage page, and Back leaves the screen.
+  AppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, uint8_t resumeId = kResumeNone,
+               bool manageOnly = false);
 
   void onEnter() override;
   void loop() override;
@@ -57,6 +59,7 @@ class AppsActivity final : public Activity {
 
   Mode mode = Mode::Tiles;
   uint8_t resumeId;
+  bool manageOnly;
   clockface::Options clockOptions;
   gameui::Box clockSettingsBox;
   gameui::Box clockRows[kClockRowCount];

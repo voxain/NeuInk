@@ -14,6 +14,8 @@
 #include "MappedInputManager.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
+#include "components/UiAppHelpers.h"
+#include "components/icons/homeIcons.h"
 #include "fontIds.h"
 
 // Drawing, touch and storage helpers shared by the built-in apps. The panel is
@@ -183,7 +185,7 @@ inline void button(const GfxRenderer& renderer, const Box& box, const char* labe
 }
 
 // A button with a picture above its word.
-inline void iconButton(const GfxRenderer& renderer, const Box& box, const appart::Bitmap& icon, const char* label,
+inline void iconButton(const GfxRenderer& renderer, const Box& box, const freeink::Icon& icon, const char* label,
                        const bool filled) {
   if (filled) {
     renderer.fillRoundedRect(box.x, box.y, box.w, box.h, 10, Color::Black);
@@ -191,9 +193,9 @@ inline void iconButton(const GfxRenderer& renderer, const Box& box, const appart
     renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 10, true);
   }
   constexpr int labelHeight = 30;
-  const int iconY = box.y + (box.h - icon.height - labelHeight - 4) / 2;
-  stamp(renderer, icon, box.x + (box.w - icon.width) / 2, iconY, !filled);
-  fittedText(renderer, {box.x + 3, iconY + icon.height + 4, box.w - 6, labelHeight}, label, !filled);
+  const int iconY = box.y + (box.h - icon.h - labelHeight - 4) / 2;
+  drawLucideIcon(renderer, icon, box.x + (box.w - icon.w) / 2, iconY, !filled);
+  fittedText(renderer, {box.x + 3, iconY + icon.h + 4, box.w - 6, labelHeight}, label, !filled);
 }
 
 // Diagonal hatching, the dark squares of a printed chess diagram.
@@ -301,7 +303,10 @@ inline void drawHeader(GfxRenderer& renderer, const MappedInputManager& input, c
   } else {
     GUI.drawHeader(renderer, header, centred ? "" : title);
   }
-  renderer.fillRect(0, header.y + header.height - 4, renderer.getScreenWidth(), 5, false);
+  // Games draw their own divider below the bar: wipe the theme's underline, if it has one.
+  if (UITheme::getInstance().getMetrics().headerUnderlineSize > 0) {
+    renderer.fillRect(0, header.y + header.height - 4, renderer.getScreenWidth(), 5, false);
+  }
   if (centred) {
     const int left = TouchHeaderBackButton::layout(header).titleX;
     const int right = rightEdge > 0 ? rightEdge - 8 : renderer.getScreenWidth() - left;

@@ -25,6 +25,7 @@
 #include "components/UIScale.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
+#include "components/UiAppHelpers.h"
 #include "fontIds.h"
 
 // Internal constants
@@ -447,6 +448,13 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   props.titleText.align = showHeaderClock && hasVisibleTitle ? fui::TextAlign::Left : tokens.headerTitleAlign;
   props.subtitleText = tokens.smallText;
   props.styles = tokens.popup;
+  if (headerBand() && title != nullptr) {
+    props.styles.normal.background = fui::Paint::dither(fui::Color::LightGray);
+  }
+  const freeink::Icon* appIcon = hasVisibleTitle ? headerIcon() : nullptr;
+  constexpr int16_t appIconGap = 10;
+  if (appIcon != nullptr) props.leftReserve = static_cast<int16_t>(appIcon->w + appIconGap);
+  int titleCenterY = rect.y + rect.height / 2;
   props.sidePadding = tokens.headerSidePadding;
   const bool batteryLeft = metrics.headerBatterySide == 1;
   const bool batteryDetached = metrics.headerBatteryDetached;
@@ -460,6 +468,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     const int titleLineHeight = ui.target.lineHeight(fui::GfxRendererTarget::FONT_TITLE);
     const int titleTop = static_cast<int>(band.height) - tokens.headerUnderline - tokens.spaceMd - titleLineHeight;
     props.titleOffsetY = static_cast<int16_t>(titleTop - (static_cast<int>(band.height) - titleLineHeight) / 2);
+    titleCenterY = rect.y + titleTop + titleLineHeight / 2;
   } else {
     const int16_t reserve = static_cast<int16_t>(batteryReserve + tokens.spaceMd);
     if (batteryLeft) {
@@ -473,6 +482,9 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     props.styles.normal.borderWidth = tokens.headerUnderline;
   }
   fui::header(ui.frame, band, props);
+  if (appIcon != nullptr) {
+    drawLucideIcon(renderer, *appIcon, rect.x + tokens.headerSidePadding, titleCenterY - appIcon->h / 2);
+  }
 
   if (!showStatus) return;
 

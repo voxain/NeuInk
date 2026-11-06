@@ -495,7 +495,7 @@ void LyraTheme::drawSideButtonHints(const GfxRenderer& renderer, const char* top
 }
 
 int LyraTheme::drawCoverThumb(const GfxRenderer& renderer, const RecentBook& book, const int x, const int y,
-                              const int height, const int defaultWidth) {
+                              const int height, const int defaultWidth, const bool framed) {
   int width = defaultWidth;
   bool hasCover = !book.coverBmpPath.empty();
   if (hasCover) {
@@ -511,7 +511,7 @@ int LyraTheme::drawCoverThumb(const GfxRenderer& renderer, const RecentBook& boo
       file.close();
     }
   }
-  renderer.drawRect(x, y, width, height, true);
+  if (framed) renderer.drawRect(x, y, width, height, true);
   if (!hasCover) {
     renderer.fillRect(x, y + height / 3, width, 2 * height / 3, true);
     drawLucideIcon(renderer, icon_book_open_32, x + 24, y + 24);

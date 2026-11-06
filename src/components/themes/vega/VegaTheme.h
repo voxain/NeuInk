@@ -11,6 +11,9 @@ constexpr ThemeMetrics makeValues() {
   v.homeCoverHeight = 176;
   v.homeCoverTileHeight = 212;  // the card and a gap
   v.homeMenuTopOffset = 8;
+  // Title bar: a light-gray band, no black underline, and more room.
+  v.headerUnderlineSize = 0;
+  v.headerHeight = 96;
   return v;
 }
 
@@ -36,6 +39,11 @@ class VegaTheme : public LyraTheme {
   void drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount, int selectedIndex,
                       const std::function<const char*(int index)>& buttonLabel,
                       const std::function<UIIcon(int index)>& rowIcon) const override;
+
+ // Title bars of the apps: light-gray band, the app's icon before its title, a little taller.
+  bool headerBand() const override { return true; }
+  const freeink::Icon* headerIcon() const override;
+  int headerExtraHeight() const override { return 14; }
 
  private:
   static inline int homePage = 0;

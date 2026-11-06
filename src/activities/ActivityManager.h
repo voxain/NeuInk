@@ -165,6 +165,8 @@ class ActivityManager {
   // NeuInk: the Apps list, or (with one app's resume number) that app on top
   // of the list. Leaving the list leads Home.
   void goToApps(uint8_t resumeId = 0);
+  // The name of the screen being shown ("" before the first one); themes pick a title bar icon by it.
+  const std::string& currentActivityName() const;
   // The resume number of the app that is open (see AppsActivity::resumeIdFor),
   // 0 when none is.
   uint8_t sleepResumeApp() const;

@@ -8,6 +8,8 @@
 #include <cstdio>
 
 #include "RecentBooksStore.h"
+#include "activities/Activity.h"
+#include "activities/apps/AppRegistry.h"
 #include "components/TouchRegistry.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
@@ -15,7 +17,8 @@
 
 namespace {
 constexpr int kCardPadding = 12;
-constexpr int kCardRadius = 14;
+constexpr int kCardRadius = 16;
+constexpr int kCoverRadius = 10;
 constexpr int kCardTextGap = 16;
 constexpr int kBarHeight = 10;
 constexpr int kSquircleSize = 68;
@@ -34,6 +37,21 @@ void fillSquircle(const GfxRenderer& renderer, const int cx, const int cy, const
     const float t2 = t * t;
     const int half = static_cast<int>(std::lround(radius * std::sqrt(std::sqrt(std::max(0.0f, 1.0f - t2 * t2)))));
     renderer.fillRectDither(cx - half, cy + dy, 2 * half, 1, color);
+  }
+}
+
+// Rounds the corners of the picture drawn at x, y by painting what lies outside a
+// quarter circle in the colour behind it (the dither pattern is the same everywhere).
+void roundCorners(const GfxRenderer& renderer, const int x, const int y, const int width, const int height,
+                  const int radius, const Color behind) {
+  for (int row = 0; row < radius; ++row) {
+    const float dy = static_cast<float>(radius - row) - 0.5f;
+    const int inset = radius - static_cast<int>(std::sqrt(static_cast<float>(radius * radius) - dy * dy));
+    if (inset <= 0) continue;
+    for (const int edgeY : {y + row, y + height - 1 - row}) {
+      renderer.fillRectDither(x, edgeY, inset, 1, behind);
+      renderer.fillRectDither(x + width - inset, edgeY, inset, 1, behind);
+    }
   }
 }
 }  // namespace
@@ -59,14 +77,16 @@ void VegaTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
 
   if (coverWidth == 0) coverWidth = metrics.homeCoverHeight * 2 / 3;
   if (!coverRendered) {
-    coverWidth = drawCoverThumb(renderer, book, coverX, coverY, metrics.homeCoverHeight, coverWidth);
+    // The card and the cover are drawn once and kept in the snapshot; the text goes over it.
+    renderer.fillRoundedRect(cardX, rect.y, cardW, cardH, kCardRadius, Color::LightGray);
+    coverWidth = drawCoverThumb(renderer, book, coverX, coverY, metrics.homeCoverHeight, coverWidth, false);
+    roundCorners(renderer, coverX, coverY, coverWidth, metrics.homeCoverHeight, kCoverRadius, Color::LightGray);
     coverBufferStored = storeCoverBuffer();
     coverRendered = coverBufferStored;
   }
 
-  // The selected card is outlined heavier.
-  const bool selected = selectorIndex == 0;
-  renderer.drawRoundedRect(cardX, rect.y, cardW, cardH, selected ? 3 : 1, kCardRadius, true);
+  // Only a card picked with the buttons gets an outline.
+  if (selectorIndex == 0) renderer.drawRoundedRect(cardX, rect.y, cardW, cardH, 3, kCardRadius, true);
 
   const int textX = coverX + coverWidth + kCardTextGap;
   const int textW = cardX + cardW - kCardPadding - textX;
@@ -88,7 +108,7 @@ void VegaTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
     snprintf(label, sizeof(label), "%.0f%%", progressPercent);
     renderer.drawText(UI_10_FONT_ID, textX, barY - renderer.getLineHeight(UI_10_FONT_ID) - 4, label, true,
                       EpdFontFamily::BOLD);
-    renderer.fillRoundedRect(textX, barY, textW, kBarHeight, kBarHeight / 2, Color::LightGray);
+    renderer.fillRoundedRect(textX, barY, textW, kBarHeight, kBarHeight / 2, Color::White);
     const int filled = std::clamp(static_cast<int>(progressPercent / 100.0f * textW), 0, textW);
     if (filled > 0) {
       const int fillWidth = std::max(filled, kBarHeight);
@@ -105,7 +125,7 @@ void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
   const int cellW = (rect.width - 2 * kSideMargin) / kColumns;
   const int cellH = (rect.height - kDotsHeight) / kRows;
   const int labelH = renderer.getLineHeight(UI_10_FONT_ID);
-  const int contentH = kSquircleSize + 6 + labelH;
+  const int contentH = kSquircleSize + 6 + 2 * labelH;  // room for a two-line name
 
   const int first = page * kPageSize;
   for (int i = first; i < buttonCount && i < first + kPageSize; ++i) {
@@ -123,9 +143,13 @@ void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
       }
     }
     const char* label = buttonLabel != nullptr ? buttonLabel(i) : "";
-    const std::string text = renderer.truncatedText(UI_10_FONT_ID, label ? label : "", cell.width - 4);
-    renderer.drawText(UI_10_FONT_ID, cx - renderer.getTextWidth(UI_10_FONT_ID, text.c_str()) / 2,
-                      top + kSquircleSize + 6, text.c_str(), true);
+    // A name that does not fit under its icon wraps to a second line.
+    int lineY = top + kSquircleSize + 6;
+    for (const auto& line : renderer.wrappedText(UI_10_FONT_ID, label ? label : "", cell.width - 4, 2)) {
+      renderer.drawText(UI_10_FONT_ID, cx - renderer.getTextWidth(UI_10_FONT_ID, line.c_str()) / 2, lineY,
+                        line.c_str(), true);
+      lineY += labelH;
+    }
   }
 
   // Page dots: the current page is a pill.
@@ -142,4 +166,27 @@ void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
       x += (current ? pill : dot) + gap;
     }
   }
+}
+
+const freeink::Icon* VegaTheme::headerIcon() const {
+  const std::string& name = activityManager.currentActivityName();
+  if (const apps::Info* app = apps::findByActivityName(name)) return iconForName(app->icon, kIconSize);
+  struct Screen {
+    const char* name;
+    UIIcon icon;
+  };
+  static constexpr Screen kScreens[] = {
+      {"FileBrowser", UIIcon::Folder},           {"FileBrowserSettings", UIIcon::Folder},
+      {"Library", UIIcon::Library},              {"Settings", UIIcon::Settings},
+      {"OpdsBookBrowser", UIIcon::Opds},         {"OpdsServerList", UIIcon::Opds},
+      {"OpdsSettings", UIIcon::Opds},            {"Apps", UIIcon::Apps},
+      {"CrossPointWebServer", UIIcon::Transfer}, {"NetworkModeSelection", UIIcon::Transfer},
+      {"WifiSelection", UIIcon::Wifi},           {"BookStats", UIIcon::Chart},
+      {"HighlightsHub", UIIcon::BookmarkIcon},   {"HighlightCategory", UIIcon::BookmarkIcon},
+      {"SavedItemsHome", UIIcon::BookmarkIcon},
+  };
+  for (const Screen& screen : kScreens) {
+    if (name == screen.name) return iconForName(screen.icon, kIconSize);
+  }
+  return nullptr;
 }

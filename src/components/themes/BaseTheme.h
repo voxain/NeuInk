@@ -8,6 +8,9 @@
 
 #include "util/ReaderStatusBarConfig.h"
 
+namespace freeink {
+struct Icon;
+}
 class GfxRenderer;
 struct RecentBook;
 struct BookReadingStats;
@@ -283,6 +286,11 @@ class BaseTheme {
   virtual void drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
                                const char* btn4, bool allowInvertedText = false) const;
   virtual void drawSideButtonHints(const GfxRenderer& renderer, const char* topBtn, const char* bottomBtn) const;
+  // Title bar looks, for themes that want them: a light-gray band behind it, the icon of the
+  // open app in front of its title (nullptr: none), and height added to the bar.
+  virtual bool headerBand() const { return false; }
+  virtual const freeink::Icon* headerIcon() const { return nullptr; }
+  virtual int headerExtraHeight() const { return 0; }
   virtual int getMenuRowHeight(const GfxRenderer& renderer) const;
   virtual int getListRowStep(bool hasSubtitle, int rowHeightScale = 1) const;
   virtual int getListPageItems(int contentHeight, bool hasSubtitle, int rowHeightScale = 1) const;

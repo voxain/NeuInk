@@ -18,7 +18,7 @@ enum WeekStart : uint8_t { Monday = 0, Saturday = 1, Sunday = 2, kWeekStartCount
 // The Clock settings (Apps > Manage > Clock > Settings), kept on the card.
 struct Options {
   uint8_t face = Digital;
-  bool persianDate = true;
+  bool persianDate = false;
   uint8_t weekStart = Monday;
   bool weekNumber = true;
 

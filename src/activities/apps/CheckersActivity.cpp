@@ -506,8 +506,8 @@ void CheckersActivity::render(RenderLock&&) {
   if (game->started() && game->state() != checkers::Game::State::Playing) {
     gameui::button(renderer, newGameBox, tr(STR_GAME_NEW), true);
   } else {
-    gameui::iconButton(renderer, tools[Undo], appart::kIconUndo, tr(STR_SUDOKU_UNDO), false);
-    gameui::iconButton(renderer, tools[Hint], appart::kIconHint, tr(STR_SUDOKU_HINT), false);
+    gameui::iconButton(renderer, tools[Undo], icon_undo_32, tr(STR_SUDOKU_UNDO), false);
+    gameui::iconButton(renderer, tools[Hint], icon_hint_32, tr(STR_SUDOKU_HINT), false);
   }
 
   if (panel == Panel::NewGame) drawNewGamePanel();

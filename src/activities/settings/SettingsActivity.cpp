@@ -21,6 +21,7 @@
 #include "BleSettingsActivity.h"
 #include "ButtonRemapActivity.h"
 #include "ClearCacheActivity.h"
+#include "components/icons/appsIcon.h"
 #include "activities/apps/AppsActivity.h"
 #include "ClockOffsetActivity.h"
 #include "ClockSyncActivity.h"
@@ -81,6 +82,7 @@ enum SettingsGroup : int {
   GroupLibrary,
   GroupReadingStats,
   GroupNetwork,
+  GroupApps,
   GroupCount
 };
 struct SettingsGroupInfo {
@@ -97,6 +99,7 @@ const SettingsGroupInfo SETTINGS_GROUPS[GroupCount] = {
     {StrId::STR_LIBRARY, StrId::STR_SETTINGS_LIBRARY_DESC, &icon_folder_32},
     {StrId::STR_READING_STATS, StrId::STR_SETTINGS_STATS_DESC, &icon_reading_stats_32},
     {StrId::STR_SETTINGS_NETWORK, StrId::STR_SETTINGS_NETWORK_DESC, &icon_wifi_32},
+    {StrId::STR_APPS, StrId::STR_SETTINGS_APPS_DESC, &icon_apps_32},
 };
 }  // namespace
 
@@ -848,6 +851,12 @@ void SettingsActivity::openGroup(const int group) {
                            });
     return;
   }
+  if (group == GroupApps) {
+    // The apps' own page: which apps show, and the Clock's and Sudoku's settings.
+    startActivityForResult(std::make_unique<AppsActivity>(renderer, mappedInput, AppsActivity::kResumeNone, true),
+                           [this](const ActivityResult&) { requestUpdate(); });
+    return;
+  }
   enterCategory(group);
   topIndex = 0;
   selectedSettingIndex = 1;
@@ -1274,12 +1283,6 @@ void SettingsActivity::toggleCurrentSetting() {
         break;
       case SettingAction::SwitchFirmware:
         openSwitchFirmwarePicker();
-        break;
-      case SettingAction::FileTransfer:
-        activityManager.goToFileTransfer();
-        break;
-      case SettingAction::Apps:
-        startActivityForResult(std::make_unique<AppsActivity>(renderer, mappedInput), resultHandler);
         break;
       case SettingAction::SdFirmwareUpdate:
         startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);

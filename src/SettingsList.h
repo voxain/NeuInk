@@ -1563,7 +1563,6 @@ inline std::vector<SettingInfo> buildGeneralSettingsList(const std::vector<Setti
   addSettingByName(settings, allSettings, StrId::STR_CUSTOM_BOOTSCREEN);
   settings.push_back(SettingInfo::Action(StrId::STR_LANGUAGE, SettingAction::Language));
   settings.push_back(SettingInfo::Action(StrId::STR_KEYBOARD_LAYOUTS, SettingAction::KeyboardLayouts));
-  settings.push_back(SettingInfo::Action(StrId::STR_APPS, SettingAction::Apps));
   if (halClock.isAvailable()) {
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_FORMAT);
     addSettingByName(settings, allSettings, StrId::STR_LIVE_CLOCK);
@@ -1593,12 +1592,10 @@ inline std::vector<SettingInfo> buildSystemFilesCacheSettingsList(const std::vec
 
 inline std::vector<SettingInfo> buildFileBrowserSettingsList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> settings;
-  settings.reserve(4);
+  settings.reserve(3);
   addSettingByName(settings, allSettings, StrId::STR_SHOW_HIDDEN_FILES);
   addSettingByName(settings, allSettings, StrId::STR_HIDE_FILE_EXTENSION);
   addSettingByName(settings, allSettings, StrId::STR_FILE_BROWSER_DISPLAY);
-  // The old File Transfer app, now part of the File Manager.
-  settings.push_back(SettingInfo::Action(StrId::STR_FILE_TRANSFER, SettingAction::FileTransfer));
   return settings;
 }
 

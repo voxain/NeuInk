@@ -279,14 +279,16 @@ uint8_t homeHiddenApps = 0;
 
 void appendHomeMenuItems(HomeMenuEntries& items, bool hasOpdsServers, bool hasReadingStats, bool hasBookmarks,
                          bool hasClippings) {
-  items.push({tr(STR_BROWSE_FILES), Folder, HomeMenuAction::BrowseFiles});
+  // The grid of Vega has little room under an icon: short names there.
+  const bool grid = homeListsApps();
+  items.push({I18N.get(grid ? StrId::STR_HOME_FILES : StrId::STR_BROWSE_FILES), Folder, HomeMenuAction::BrowseFiles});
   items.push({tr(STR_LIBRARY), Library, HomeMenuAction::Library});
 
   if (hasOpdsServers) {
     items.push({tr(STR_OPDS_BROWSER), Opds, HomeMenuAction::OpdsBrowser});
   }
   if (hasReadingStats) {
-    items.push({tr(STR_READING_STATS), Chart, HomeMenuAction::ReadingStats});
+    items.push({I18N.get(grid ? StrId::STR_HOME_STATS : StrId::STR_READING_STATS), Chart, HomeMenuAction::ReadingStats});
   }
   items.push({savedItemsLabel(hasBookmarks, hasClippings), BookmarkIcon, HomeMenuAction::Bookmarks});
   if (homeListsApps()) {
@@ -944,6 +946,8 @@ void HomeActivity::onEnter() {
   hasClippings = ClippingStore::hasAnyClippings();
 
   selectorIndex = 0;
+  buttonNavActive = !mappedInput.hasTouchHardware();
+  pressedSelector = -1;
   lastCarouselBookIndex = 0;
   carouselDragActive = false;
   carouselMenuTouchDownIndex = -1;
@@ -2142,17 +2146,30 @@ void HomeActivity::loop() {
     const auto& metrics = UITheme::getInstance().getMetrics();
     const auto menuItems = buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings,
                                                         metrics.homeContinueReadingInMenu && !recentBooks.empty());
+    // Vega lights an icon only while it is pressed, and the selection only while the
+    // buttons are in use; the other themes keep the touched item selected.
+    auto onTouched = [&](const bool activate, const int previousSelectorIndex) {
+      if (homeListsApps()) {
+        buttonNavActive = false;
+        pressedSelector = activate ? -1 : selectorIndex;
+        if (activate) {
+          activateSelectedHomeItem();
+        } else {
+          requestUpdate();
+        }
+      } else if (activate) {
+        activateSelectedHomeItem();
+      } else if (selectorIndex != previousSelectorIndex) {
+        requestUpdate();
+      }
+    };
     auto handleTouch = [&](const bool activate) {
       int touchedBookIndex = -1;
       if (activate ? mappedInput.wasCoverTapped(touchedBookIndex) : mappedInput.wasCoverTouchedDown(touchedBookIndex)) {
         if (touchedBookIndex < 0 || touchedBookIndex >= visibleBookCount) return false;
         const int previousSelectorIndex = selectorIndex;
         selectorIndex = metrics.homeContinueReadingInMenu ? 0 : touchedBookIndex;
-        if (activate) {
-          activateSelectedHomeItem();
-        } else if (selectorIndex != previousSelectorIndex) {
-          requestUpdate();
-        }
+        onTouched(activate, previousSelectorIndex);
         return true;
       }
 
@@ -2161,11 +2178,7 @@ void HomeActivity::loop() {
         if (touchedMenuIndex < 0 || touchedMenuIndex >= static_cast<int>(menuItems.size())) return false;
         const int previousSelectorIndex = selectorIndex;
         selectorIndex = getHomeMenuSelectionOffset(recentBooks) + touchedMenuIndex;
-        if (activate) {
-          activateSelectedHomeItem();
-        } else if (selectorIndex != previousSelectorIndex) {
-          requestUpdate();
-        }
+        onTouched(activate, previousSelectorIndex);
         return true;
       }
       return false;
@@ -2177,14 +2190,22 @@ void HomeActivity::loop() {
     if (handleTouch(/*activate=*/true)) {
       return;
     }
+    // A press that ended away from its icon is not a tap: put the icon back.
+    if (pressedSelector >= 0 && mappedInput.wasScreenTouchReleased()) {
+      pressedSelector = -1;
+      requestUpdate();
+      return;
+    }
 
     const int menuCount = getMenuItemCount();
     buttonNavigator.onNext([this, menuCount] {
       selectorIndex = ButtonNavigator::nextIndex(selectorIndex, menuCount);
+      buttonNavActive = true;
       requestUpdate();
     });
     buttonNavigator.onPrevious([this, menuCount] {
       selectorIndex = ButtonNavigator::previousIndex(selectorIndex, menuCount);
+      buttonNavActive = true;
       requestUpdate();
     });
   }
@@ -2483,8 +2504,10 @@ void HomeActivity::render(RenderLock&&) {
   coverRectW = pageWidth;
   coverRectH = homeCoverTileHeight;
 
+  // Vega (touch): nothing is selected unless the buttons are in use; a pressed icon is lit.
+  const int shownSelector = homeListsApps() && !buttonNavActive ? pressedSelector : selectorIndex;
   GUI.drawRecentBookCover(renderer, Rect{0, metrics.homeTopPadding, pageWidth, homeCoverTileHeight}, recentBooks,
-                          selectorIndex, coverRendered, coverBufferStored, bufferRestored,
+                          shownSelector, coverRendered, coverBufferStored, bufferRestored,
                           std::bind(&HomeActivity::storeCoverBuffer, this),
                           hasAnyBookStats(currentBookStats) ? &currentBookStats : nullptr, currentBookProgressPercent);
 
@@ -2496,10 +2519,11 @@ void HomeActivity::render(RenderLock&&) {
       static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::LYRA_CAROUSEL;
   const int menuSelectedIndex = isCarouselTheme && mappedInput.hasTouchHardware()
                                     ? carouselMenuTouchDownIndex
-                                    : selectorIndex - getHomeMenuSelectionOffset(recentBooks);
+                                    : shownSelector - getHomeMenuSelectionOffset(recentBooks);
   if (homeListsApps()) {
     // The grid shows the page of the selected app; with the book selected it stays where it is.
-    if (menuSelectedIndex >= 0) homePage = VegaTheme::pageOf(menuSelectedIndex);
+    const int pageIndex = selectorIndex - getHomeMenuSelectionOffset(recentBooks);
+    if (pageIndex >= 0) homePage = VegaTheme::pageOf(pageIndex);
     VegaTheme::setHomePage(homePage);
   }
   GUI.drawButtonMenu(

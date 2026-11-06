@@ -97,8 +97,14 @@ void draw(GfxRenderer& renderer, fui::GfxRendererTarget& target, const Rect& hea
   titleStyle.align = fui::TextAlign::Left;
   titleStyle.maxLines = 1;
   const int reservedRight = rightReserve > 0 ? rightReserve : defaultRightReserve;
-  const int titleWidth = std::max(0, header.x + header.width - reservedRight - back.titleX);
-  target.text(fui::Rect{static_cast<int16_t>(back.titleX), static_cast<int16_t>(back.iconRect.y),
+  // The open app's icon sits between the back arrow and the title.
+  const freeink::Icon* appIcon = title != nullptr && title[0] != '\0' ? GUI.headerIcon() : nullptr;
+  const int titleX = back.titleX + (appIcon ? appIcon->w + titleGap : 0);
+  const int titleWidth = std::max(0, header.x + header.width - reservedRight - titleX);
+  if (appIcon) {
+    drawLucideIcon(renderer, *appIcon, back.titleX, back.iconRect.y + (back.iconRect.height - appIcon->h) / 2);
+  }
+  target.text(fui::Rect{static_cast<int16_t>(titleX), static_cast<int16_t>(back.iconRect.y),
                         static_cast<int16_t>(titleWidth), static_cast<int16_t>(back.iconRect.height)},
               title, titleStyle);
 

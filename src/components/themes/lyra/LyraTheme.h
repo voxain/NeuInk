@@ -125,9 +125,9 @@ class LyraTheme : public BaseTheme {
   static const freeink::Icon* iconForName(UIIcon icon, uint32_t size);
 
  protected:
-  // Draws a book's cover thumbnail (or the empty-cover placeholder) with a frame at x, y and returns its width.
+  // Draws a book's cover thumbnail (or the empty-cover placeholder) with a frame at x, y and returns its width. framed: draw the thin black frame around it.
   static int drawCoverThumb(const GfxRenderer& renderer, const RecentBook& book, int x, int y, int height,
-                            int defaultWidth);
+                            int defaultWidth, bool framed = true);
 
   void drawListWithMetrics(const GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
                            const std::function<std::string(int index)>& rowTitle,

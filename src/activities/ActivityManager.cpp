@@ -1077,6 +1077,11 @@ void ActivityManager::goHome(HomeMenuItem initialMenuItem, const HalDisplay::Ref
   replaceActivity(std::make_unique<HomeActivity>(renderer, mappedInput, initialMenuItem, initialRefreshMode,
                                                  std::move(initialBookPath)));
 }
+const std::string& ActivityManager::currentActivityName() const {
+  static const std::string none;
+  return currentActivity ? currentActivity->name : none;
+}
+
 void ActivityManager::goToApps(const uint8_t resumeId) {
   replaceActivity(std::make_unique<AppsActivity>(renderer, mappedInput, resumeId));
 }

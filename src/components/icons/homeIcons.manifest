@@ -1,4 +1,4 @@
-# Manifest for src/components/icons/homeIcons.h (the Home screen's app and Highlights icons): Lucide 1.70.0 (ISC), 32 px only.
+# Manifest for src/components/icons/homeIcons.h (the apps' icons: Home, Apps, title bars and the games' tool buttons): Lucide 1.70.0 (ISC), 32 px only.
 # The vendored SDK does not carry the Lucide SVGs, so generate with the SVGs of Lucide (npm: lucide-static)
 # next to it:
 #   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py --svgdir <lucide/icons> \
@@ -11,3 +11,9 @@ go = circle-dot
 tictactoe = tic-tac-toe
 clock = clock
 highlights = highlighter
+undo = undo-2
+erase = eraser
+notes = pencil
+fill = paint-bucket
+hint = lightbulb
+flip = arrow-down-up

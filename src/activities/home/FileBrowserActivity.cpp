@@ -49,6 +49,7 @@ constexpr int ROOT_HINT_GAP = 20;
 constexpr size_t NAME_BUFFER_SIZE = 500;
 constexpr fui::ActionId ACTION_ROW = 1;
 constexpr fui::ActionId ACTION_SETTINGS = 2;
+constexpr fui::ActionId ACTION_TRANSFER = 3;
 constexpr size_t INDEX_THRESHOLD = 200;
 constexpr size_t MAX_VIRTUAL_LIST_ENTRIES = static_cast<size_t>(std::numeric_limits<int16_t>::max());
 constexpr uint32_t FILE_BROWSER_APPEND_MIN_FREE_AFTER_ALLOC = 48U * 1024U;
@@ -414,6 +415,7 @@ void FileBrowserActivity::onEnter() {
   applySharedUiTheme(app, uiTarget);
   app.on(ACTION_ROW, &FileBrowserActivity::onRowEvent, this);
   app.on(ACTION_SETTINGS, &FileBrowserActivity::onSettingsEvent, this);
+  app.on(ACTION_TRANSFER, &FileBrowserActivity::onTransferEvent, this);
   app.setScreen(&FileBrowserActivity::listScreen, this);
   requestUpdate();
 }
@@ -1043,6 +1045,13 @@ void FileBrowserActivity::onSettingsEvent(const fui::ActionEvent&, void* user) {
   self->openSettings();
 }
 
+void FileBrowserActivity::onTransferEvent(const fui::ActionEvent&, void* user) {
+  auto* self = static_cast<FileBrowserActivity*>(user);
+  if (self->mode != Mode::Books) return;
+  self->app.clearTapFlash();
+  activityManager.goToFileTransfer();
+}
+
 void FileBrowserActivity::openSettings() {
   const std::string selectedEntry =
       entryCount() > 0 && selectorIndex < entryCount() ? entryNameAt(selectorIndex) : std::string();
@@ -1397,6 +1406,21 @@ void FileBrowserActivity::buildListScreen(UiApp::ScreenType& screen) {
                            fui::Paint::solid(fui::Color::Black));
   }
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+
+  if (mode == Mode::Books && mappedInput.hasTouchHardware()) {
+    // File Transfer (upload from a computer or phone) is a part of the File Manager: a button, not a submenu.
+    constexpr int16_t transferHeight = 52;
+    fui::Rect row = screen.takeTop(transferHeight, static_cast<int16_t>(metrics.verticalSpacing));
+    row.x = static_cast<int16_t>(row.x + metrics.contentSidePadding);
+    row.width = static_cast<int16_t>(row.width - 2 * metrics.contentSidePadding);
+    fui::ButtonProps transfer;
+    transfer.label = tr(STR_FILE_TRANSFER);
+    transfer.icon = fui::bitmapFromIcon(icon_lyra_transfer_32);
+    transfer.action = ACTION_TRANSFER;
+    transfer.text = screen.theme().bodyText;
+    transfer.radius = 12;
+    screen.button(transfer, row);
+  }
 
   // Full path band at the bottom: separator on top, left-truncated so the
   // deepest directory stays visible.
