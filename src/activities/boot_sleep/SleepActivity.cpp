@@ -44,6 +44,7 @@
 #include "components/themes/minimal/MinimalTheme.h"
 #include "fontIds.h"
 #include "images/BootLogo192.h"
+#include "images/SleepWordmark.h"
 #include "images/MoonIcon.h"
 
 namespace {
@@ -670,8 +671,10 @@ void SleepActivity::renderDefaultSleepScreen() const {
   // The logo is line art with no ground of its own, so the dark screen's
   // inversion below turns it with the text: light lines on black.
   renderer.drawImage(BootLogo192, (pageWidth - 192) / 2, (pageHeight - 192) / 2, 192, 192);
-  renderer.drawCenteredText(UI_12_FONT_ID, pageHeight / 2 + 116, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 148, tr(STR_SLEEPING));
+  // The wordmark is 336x104 upright. Its stored bitmap is 104 wide and 336 tall
+  // in panel coordinates; in portrait the logical x is one less than the panel x.
+  renderer.drawImage(SleepWordmark, (pageWidth - 336) / 2 - 1, pageHeight / 2 + 116, 104, 336);
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 250, tr(STR_SLEEPING));
   if (!lightSleepScreen) {
     renderer.invertScreen();
   }
@@ -680,7 +683,7 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const std::string buildInfo = std::string(CROSSINK_BUILD_ENV) + " " + CROSSINK_VERSION;
   const std::string visibleBuildInfo =
       renderer.truncatedText(SMALL_FONT_ID, buildInfo.c_str(), pageWidth - sleepBuildInfoSideMargin * 2);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 118, visibleBuildInfo.c_str(), lightSleepScreen);
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 290, visibleBuildInfo.c_str(), lightSleepScreen);
 #endif
 
   renderer.displayBuffer(HalDisplay::HALF_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
