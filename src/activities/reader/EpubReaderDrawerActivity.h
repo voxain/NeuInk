@@ -79,7 +79,7 @@ class EpubReaderDrawerActivity final : public Activity {
   PercentLandingProvider landingProvider;
   using RowId = ReaderDrawerCatalogItem;
 
-  using UiApp = freeink::ui::FreeInkApp<48, 11>;
+  using UiApp = freeink::ui::FreeInkApp<48, 12>;
   static constexpr freeink::ui::ActionId ACTION_ROW = 1;
   static constexpr freeink::ui::ActionId ACTION_TAB = 2;
   static constexpr freeink::ui::ActionId ACTION_DISMISS = 3;
@@ -91,6 +91,7 @@ class EpubReaderDrawerActivity final : public Activity {
   // ACTION_STEP + 3); the keypad grid's digit/dot/OK keys share one action.
   static constexpr freeink::ui::ActionId ACTION_KEYPAD_KEY = 10;
   static constexpr freeink::ui::ActionId ACTION_KEYPAD_BACKSPACE = 11;
+  static constexpr freeink::ui::ActionId ACTION_CHOICE = 12;
   static constexpr size_t WINDOW_SIZE = 20;
 
   std::shared_ptr<Epub> epub;
@@ -194,6 +195,7 @@ class EpubReaderDrawerActivity final : public Activity {
 
   static void drawerScreen(UiApp::ScreenType& screen, void* user);
   static void onRowEvent(const freeink::ui::ActionEvent& event, void* user);
+  static void onChoiceEvent(const freeink::ui::ActionEvent& event, void* user);
   static void onTabEvent(const freeink::ui::ActionEvent& event, void* user);
   static void onDismissEvent(const freeink::ui::ActionEvent& event, void* user);
   static void onBackEvent(const freeink::ui::ActionEvent& event, void* user);
@@ -214,6 +216,8 @@ class EpubReaderDrawerActivity final : public Activity {
                        int16_t firstPermille, const char* secondLabel, const char* secondValue,
                        int16_t secondPermille);
   void buildChoiceGroup(UiApp::ScreenType& screen);
+  void buildInlineChoice(UiApp::ScreenType& screen, RowId row);
+  void applyChoice(RowId row, uint8_t value);
   void buildPaneHeader(UiApp::ScreenType& screen);
   void buildRootRows(UiApp::ScreenType& screen);
   void buildSimplePane(UiApp::ScreenType& screen);

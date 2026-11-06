@@ -17,6 +17,7 @@ struct ListItem {
   const char *value = nullptr;
   BitmapRef icon{};
   AssetRef iconAsset{};
+  Rotation iconRotation = Rotation::None;  // the icon turned in 90 degree steps
   State state = StateNormal;
   int16_t actionValue = 0;
   bool enabled = true;
@@ -814,7 +815,7 @@ void list(Frame<MaxInteractions> &frame, Rect rect, const ListProps &props) {
                         glyphSize, glyphSize};
       }
       frame.target().bitmap(iconRect, icon, BitmapMode::Contain,
-                            style.foreground);
+                            style.foreground, item.iconRotation);
       if (!props.rtl)
         content.x = static_cast<int16_t>(content.x + iconSize + props.textGap);
       content.width =

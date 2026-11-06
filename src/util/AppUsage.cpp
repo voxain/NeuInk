@@ -3,6 +3,7 @@
 #if NEUINK_BATTERY_HISTORY
 
 #include <Arduino.h>
+#include <HalGPIO.h>
 
 #include <cstring>
 
@@ -15,12 +16,14 @@
 #endif
 
 namespace {
-constexpr uint32_t kMagic = 0x41505533;  // "APU3"
+constexpr uint32_t kMagic = 0x41505534;  // "APU4"
 
 struct Totals {
   uint32_t magic;
   uint32_t day;  // the newest local day in the ring
-  uint32_t seconds[AppUsage::kDays][AppUsage::kSlots];  // by day % kDays
+  uint32_t seconds[AppUsage::kDays][AppUsage::kSlots];   // by day % kDays
+  uint32_t measured[AppUsage::kDays][AppUsage::kSlots];  // seconds a charge loss was measured over
+  uint16_t drain[AppUsage::kDays][AppUsage::kSlots];     // percent lost in them
 };
 RTC_DATA_ATTR Totals totals;
 
@@ -28,8 +31,18 @@ RTC_DATA_ATTR Totals totals;
 uint8_t runningId = 0;
 unsigned long runningSince = 0;
 
+// The gauge read the next one is measured from; dropped whenever the screen changes (not kept over a reset).
+bool baselineValid = false;
+uint8_t baselinePercent = 0;
+unsigned long baselineMs = 0;
+constexpr unsigned long kLongestGapMs = 2UL * 60 * 60 * 1000;
+constexpr uint32_t kMinMeasuredSeconds = 15 * 60;
+
 void clearDay(const uint32_t day) {
-  for (uint32_t& value : totals.seconds[day % AppUsage::kDays]) value = 0;
+  const uint32_t d = day % AppUsage::kDays;
+  for (uint32_t& value : totals.seconds[d]) value = 0;
+  for (uint32_t& value : totals.measured[d]) value = 0;
+  for (uint16_t& value : totals.drain[d]) value = 0;
 }
 
 // Brings the ring up to today: the days since the last visit start empty, and memory that is fresh, a clock that
@@ -67,6 +80,7 @@ void enter(const std::string& activityName) {
   if (id == 0 || runningId == id) return;
   runningId = id;
   runningSince = millis();
+  baselineValid = false;
 }
 
 void exit(const std::string& activityName) {
@@ -74,6 +88,35 @@ void exit(const std::string& activityName) {
   if (id == 0 || runningId != id) return;
   totals.seconds[rollDay() % kDays][id] += (millis() - runningSince) / 1000;
   runningId = 0;
+  baselineValid = false;
+}
+
+void chargeSample(const uint8_t percent) {
+  const unsigned long now = millis();
+  if (gpio.isUsbConnected()) {
+    baselineValid = false;
+    return;
+  }
+  if (baselineValid && now - baselineMs < kLongestGapMs && percent <= baselinePercent) {
+    const uint32_t day = rollDay() % kDays;
+    totals.drain[day][runningId] += baselinePercent - percent;
+    totals.measured[day][runningId] += (now - baselineMs) / 1000;
+  }
+  baselinePercent = percent;
+  baselineMs = now;
+  baselineValid = true;
+}
+
+int drainTenthsPerHour(const uint8_t slot) {
+  rollDay();
+  uint32_t seconds = 0;
+  uint32_t percent = 0;
+  for (int d = 0; d < kDays; ++d) {
+    seconds += totals.measured[d][slot];
+    percent += totals.drain[d][slot];
+  }
+  if (seconds < kMinMeasuredSeconds) return -1;
+  return static_cast<int>(percent * 36000UL / seconds);
 }
 
 uint32_t secondsToday(const uint8_t id) {

@@ -16,6 +16,7 @@
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "components/icons/listIcons.h"
+#include "components/icons/turnedIcons.h"
 
 namespace fui = freeink::ui;
 
@@ -40,27 +41,6 @@ uint8_t enumRawValueForDisplayIndex(const SettingInfo& setting, uint8_t displayI
     return setting.enumRawValues.front();
   }
   return setting.enumRawValues[displayIndex];
-}
-
-fui::BitmapRef swipeActionIcon(const StrId nameId) {
-  switch (nameId) {
-    case StrId::STR_LEFT_EDGE_UP:
-    case StrId::STR_RIGHT_EDGE_UP:
-      return fui::bitmapFromIcon(icon_arrow_up_24);
-    case StrId::STR_LEFT_EDGE_DOWN:
-    case StrId::STR_RIGHT_EDGE_DOWN:
-      return fui::bitmapFromIcon(icon_arrow_down_24);
-    case StrId::STR_TWO_FINGER_SWIPE_UP:
-      return fui::bitmapFromIcon(icon_arrows_up_24);
-    case StrId::STR_TWO_FINGER_SWIPE_DOWN:
-      return fui::bitmapFromIcon(icon_arrows_down_24);
-    case StrId::STR_TWO_FINGER_SWIPE_LEFT:
-      return fui::bitmapFromIcon(icon_arrows_left_24);
-    case StrId::STR_TWO_FINGER_SWIPE_RIGHT:
-      return fui::bitmapFromIcon(icon_arrows_right_24);
-    default:
-      return {};
-  }
 }
 
 bool isTwoFingerSwipeSetting(const uint8_t CrossPointSettings::* const valuePtr) {
@@ -421,7 +401,8 @@ void ControlsOptionsActivity::buildOptionsScreen(UiApp::ScreenType& screen) {
 
     const bool isSectionHeader = setting.type == SettingType::SECTION_HEADER;
     fui::ListItem item;
-    const fui::BitmapRef directionIcon = swipeActionIcon(setting.nameId);
+    const TurnedIcon swipe = turned::swipeAction(setting.nameId);
+    const fui::BitmapRef directionIcon = swipe.icon ? fui::bitmapFromIcon(*swipe.icon) : fui::BitmapRef{};
     const char* sectionLabel =
         activeSubmenu == SettingAction::ControlsSideButtons
             ? (setting.nameId == StrId::STR_DIR_LEFT ? leftUpLabel.c_str() : rightDownLabel.c_str())
@@ -429,6 +410,7 @@ void ControlsOptionsActivity::buildOptionsScreen(UiApp::ScreenType& screen) {
     item.label = isSectionHeader ? uiListSectionHeaderLabel(values[i], sectionLabel)
                                  : (directionIcon ? "" : I18N.get(setting.nameId));
     item.icon = directionIcon;
+    item.iconRotation = swipe.rotation;
     if (!isSectionHeader && !values[i].empty()) item.value = values[i].c_str();
     item.isHeader = isSectionHeader;
     item.toggle = !isSectionHeader && setting.type == SettingType::TOGGLE;

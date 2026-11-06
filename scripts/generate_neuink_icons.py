@@ -267,33 +267,6 @@ def send(p, f):
     p.line((6.5, 12), (13, 12))
 
 
-def chevron_up(p, f):
-    p.line((6, 15), (12, 9), (18, 15))
-
-
-def chevron_down(p, f):
-    p.line((6, 9), (12, 15), (18, 9))
-
-
-def double_chevron(dx, dy):
-    def draw(p, f):
-        for k in (-3, 3):
-            cx, cy = 12 + dx * k, 12 + dy * k
-            ax, ay = -dy * 5, dx * 5  # the arms run across the direction
-            p.line((cx - dx * 3 + ax, cy - dy * 3 + ay), (cx + dx * 2, cy + dy * 2), (cx - dx * 3 - ax, cy - dy * 3 - ay))
-    return draw
-
-
-def arrow_up(p, f):
-    p.line((12, 20), (12, 4.5))
-    p.line((6, 10.5), (12, 4.5), (18, 10.5))
-
-
-def arrow_down(p, f):
-    p.line((12, 4), (12, 19.5))
-    p.line((6, 13.5), (12, 19.5), (18, 13.5))
-
-
 def sort(down_wide):
     def draw(p, f):
         if down_wide:
@@ -361,15 +334,7 @@ SYMBOLS = {
     'chevrons_left_right_ellipsis': code_dots,
     'home': house,
     'search': search,
-    'chevron_up': chevron_up,
-    'chevron_down': chevron_down,
-    'arrow_up': arrow_up,
-    'arrow_down': arrow_down,
     'sliders_horizontal': sliders,
-    'arrows_up': double_chevron(0, -1),
-    'arrows_down': double_chevron(0, 1),
-    'arrows_left': double_chevron(-1, 0),
-    'arrows_right': double_chevron(1, 0),
     'arrow_down_wide_narrow': sort(True),
     'arrow_up_narrow_wide': sort(False),
     'refresh_cw': refresh,

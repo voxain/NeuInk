@@ -156,12 +156,26 @@ void BatteryActivity::render(RenderLock&&) {
   // The reader first, then the apps.
   const auto row = [&](const StrId name, const uint8_t slot) {
     const uint32_t week = AppUsage::secondsWeek(slot);
-    if (week == 0) return;
+    const int rate = AppUsage::drainTenthsPerHour(slot);
+    // Everything that is not an app has no clock, only the rate.
+    const bool other = slot == 0;
+    if (other ? rate < 0 : week == 0) return;
     any = true;
     constexpr int rowHeight = 40;
     renderer.fillRoundedRect(kSide, y, width - 2 * kSide, rowHeight, rowHeight / 2, Color::LightGray);
     const int textY = y + (rowHeight - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
     renderer.drawText(UI_10_FONT_ID, kSide + 20, textY, I18N.get(name), true);
+    // What it costs in charge, from the percent lost while it was in front: "4.2 %/h".
+    if (rate >= 0) {
+      char cost[16];
+      snprintf(cost, sizeof(cost), "%d.%d %%/h", rate / 10, rate % 10);
+      renderer.drawText(SMALL_FONT_ID, kSide + 20 + renderer.getTextWidth(UI_10_FONT_ID, I18N.get(name)) + 14,
+                        y + (rowHeight - renderer.getLineHeight(SMALL_FONT_ID)) / 2, cost, true);
+    }
+    if (other) {
+      y += rowHeight + 6;
+      return;
+    }
     // "today · week"
     char today[16];
     char thisWeek[16];
@@ -175,6 +189,7 @@ void BatteryActivity::render(RenderLock&&) {
   };
   row(StrId::STR_CAT_READER, AppUsage::kReader);
   for (const apps::Info& app : apps::kAll) row(app.name, app.id);
+  row(StrId::STR_APPS_OTHER, 0);
   if (!any) renderer.drawText(SMALL_FONT_ID, kSide, y, tr(STR_NO_APP_TIME), true);
 
   const auto labels = mappedInput.mapLabels(mappedInput.withBackArrow(tr(STR_BACK)), "", "", "");

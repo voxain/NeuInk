@@ -13,6 +13,7 @@
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "platform/UsbSerialJtagHandoff.h"
+#include "util/UsbPrompt.h"
 
 void UsbDriveActivity::onEnter() {
   Activity::onEnter();
@@ -191,6 +192,7 @@ void UsbDriveActivity::renderMessage(const char* message, const char* detail) co
 void UsbDriveActivity::restartToHome() {
   if (restartRequested) return;
   restartRequested = true;
+  UsbPrompt::suppress();  // the cable stays in after the restart: do not ask again
 #ifndef SIMULATOR
   Storage.endUsbDrive();
 #endif

@@ -113,6 +113,7 @@ inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_
 #include "fontIds.h"
 #include "network/OnlineWifi.h"
 #include "network/UsbSerialFileTransfer.h"
+#include "util/UsbPrompt.h"
 #ifdef SIMULATOR
 #include <SimulatorLifecycle.h>
 
@@ -2014,6 +2015,12 @@ void loop() {
   if (gpio.wasUsbStateChanged()) {
     activityManager.requestUpdate();
   }
+#if CROSSINK_APP_CAP_USB_DRIVE
+  // A computer at the other end of the cable (not a charger): offer USB file transfer once per connection.
+  if (UsbPrompt::shouldPrompt(gpio.isUsbHostConnected()) && !buttonShortcutController.isQuickLocked()) {
+    activityManager.offerUsbDrive();
+  }
+#endif
 
   // While on external power the percent climbs with no user interaction to
   // repaint it (gauge boards like the X4 Pro report SoC continuously), so poll

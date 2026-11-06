@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "activities/reader/ReadingStatsUtils.h"
+#include "util/AppUsage.h"
 
 #ifndef SIMULATOR
 #include <esp_attr.h>
@@ -52,6 +53,7 @@ void advance(const uint32_t bucket) {
 namespace BatteryHistory {
 
 void note(const uint16_t percent) {
+  AppUsage::chargeSample(static_cast<uint8_t>(percent > 100 ? 100 : percent));
   uint32_t bucket;
   if (!currentBucket(bucket)) return;
   advance(bucket);

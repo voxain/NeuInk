@@ -2,11 +2,15 @@
 
 #include <FreeInkApp.h>
 #include <FreeInkUIGfxRenderer.h>
+#include <FreeInkUIIcon.h>
+
+#include <Icon.h>
 
 #include <atomic>
 
 #include "activities/Activity.h"
 #include "components/DrawerHandle.h"
+#include "components/LevelBox.h"
 
 namespace panel {
 
@@ -37,6 +41,34 @@ inline fui::StyleSet whiteStyles(const uint8_t radius) {
   styles.active = styles.selected;
   styles.disabled = styles.normal;
   return styles;
+}
+
+// A level slider as the quick settings' brightness: a white box filled black to `permille` with `caption` in it,
+// which a finger drags (the action's event carries the position as dragPermille). `hitPad` makes the touch area
+// taller than the box, above and below.
+template <size_t MaxInteractions>
+void levelSlider(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y,
+                 const int width, const int height, const int radius, const int permille, const char* caption,
+                 const int fontId, const fui::ActionId action, const int hitPad = 0) {
+  levelbox::draw(renderer, x, y, width, height, radius, width * permille / 1000, caption, fontId, Color::White);
+  frame.hit(fui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y - hitPad), static_cast<int16_t>(width),
+                      static_cast<int16_t>(height + 2 * hitPad)},
+            action, 0, fui::InputTouch | fui::InputDrag);
+}
+
+// A round white button with a Lucide icon, for exact steps beside a slider. `padX` and `padY` widen its touch area.
+template <size_t MaxInteractions>
+void stepButton(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y,
+                const int diameter, const freeink::Icon& icon, const fui::ActionId action, const int value,
+                const int padX, const int padY) {
+  renderer.fillRoundedRect(x, y, diameter, diameter, diameter / 2, Color::White);
+  frame.target().bitmap(fui::Rect{static_cast<int16_t>(x + (diameter - icon.w) / 2),
+                                  static_cast<int16_t>(y + (diameter - icon.h) / 2), static_cast<int16_t>(icon.w),
+                                  static_cast<int16_t>(icon.h)},
+                        fui::bitmapFromIcon(icon), fui::BitmapMode::Center);
+  frame.hit(fui::Rect{static_cast<int16_t>(x - padX), static_cast<int16_t>(y - padY),
+                      static_cast<int16_t>(diameter + 2 * padX), static_cast<int16_t>(diameter + 2 * padY)},
+            action, static_cast<int16_t>(value), fui::InputTouch);
 }
 
 // The card's surface and the ways to close it: a tap outside, a tap or swipe on the grabber. `anchor` is the edge
