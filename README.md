@@ -106,8 +106,8 @@ keyboard layout is included.
 
 <table>
   <tr>
-    <td align="center" width="50%"><img src="docs/images/varagh/v1.3.1/flashcards.png" width="280" alt="A flashcard deck with German words and the Practice button"><br><b>Flashcards</b></td>
-    <td align="center" width="50%"><img src="docs/images/varagh/v1.3.1/home.png" width="280" alt="Home with a book cover and the menu"><br><b>Home</b></td>
+    <td align="center" width="50%"><img src="docs/images/neuink/v1.3.1/flashcards.png" width="280" alt="A flashcard deck with German words and the Practice button"><br><b>Flashcards</b></td>
+    <td align="center" width="50%"><img src="docs/images/neuink/v1.3.1/home.png" width="280" alt="Home with a book cover and the menu"><br><b>Home</b></td>
   </tr>
 </table>
 
@@ -121,15 +121,15 @@ To flash a firmware file from an SD card, copy it to the card and use
 **Settings → System → SD Card Firmware Update**. If you are coming from the original
 Xteink firmware, read the [installation guide](docs/installation.md) first.
 
-Optional: a German → English dictionary, see [Dictionaries](docs/varagh/DICTIONARIES.md).
+Optional: a German → English dictionary, see [Dictionaries](docs/neuink/DICTIONARIES.md).
 
 ### Readers without touch
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/images/varagh/v1.3.1/control-center.png" width="230" alt="X4 Pro: the Control Center"><br><b>X4 Pro</b>: Control Center</td>
-    <td align="center" width="33%"><img src="docs/images/varagh/v1.3.1/x4-classic-apps.png" width="230" alt="X4 Classic: Apps with a frame on Tic Tac Toe"><br><b>X4 Classic</b>: apps with buttons</td>
-    <td align="center" width="33%"><img src="docs/images/varagh/v1.3.1/x3-button-selection.png" width="230" alt="X3: three words selected with the buttons and Look Up, Highlight, Add to"><br><b>X3</b>: Look Up / Highlight / Add to</td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v1.3.1/control-center.png" width="230" alt="X4 Pro: the Control Center"><br><b>X4 Pro</b>: Control Center</td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v1.3.1/x4-classic-apps.png" width="230" alt="X4 Classic: Apps with a frame on Tic Tac Toe"><br><b>X4 Classic</b>: apps with buttons</td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v1.3.1/x3-button-selection.png" width="230" alt="X3: three words selected with the buttons and Look Up, Highlight, Add to"><br><b>X3</b>: Look Up / Highlight / Add to</td>
   </tr>
 </table>
 
@@ -160,7 +160,7 @@ If you cloned without submodules, run `git submodule update --init` first.
 The firmware is written to `.pio/build/<env>/` (`firmware-x4-pro.bin`,
 `firmware-x4-classic.bin`, `firmware-x3-x4.bin`). The `default` build also writes the
 menu-language packs to `.pio/lang-packs/default/`. Developer notes are in
-[docs/development](docs/development). The [upstream sync guide](docs/varagh/UPSTREAM-SYNC.md)
+[docs/development](docs/development). The [upstream sync guide](docs/neuink/UPSTREAM-SYNC.md)
 explains how to bring in changes from the projects this one forks.
 
 ## Contributing
@@ -184,4 +184,4 @@ the projects it comes from, and the same licence applies to them: CrossPoint Rea
   [microreader](https://github.com/CidVonHighwind/microreader) (no code copied).
 - Parts of the VARAGH code and this README's changes were written with Claude (Anthropic).
 
-Dictionary data is not included; see [Dictionaries](docs/varagh/DICTIONARIES.md).
+Dictionary data is not included; see [Dictionaries](docs/neuink/DICTIONARIES.md).
