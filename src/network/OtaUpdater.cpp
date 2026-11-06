@@ -7,6 +7,7 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() { return NO_UPDATE; }
 OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate(ProgressCallback, void*, std::atomic<bool>*) { return NO_UPDATE; }
 #else
 #include <Arduino.h>
+#include <HalClock.h>
 #include <HalStorage.h>
 #include <Logging.h>
 #include <Memory.h>
@@ -448,6 +449,15 @@ OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate(ProgressCallback onProgres
   // supplied a digest that pins the firmware bytes. Other releases use the
   // verified esp_http_client path.
   if (hasManifestSha256) downloadOptions.transport = HttpDownloader::Transport::WOLFSSL;
+  if (hasManifestSha256) {
+    // wolfSSL checks the pinned download's certificate dates against the system clock,
+    // which the reader does not set at boot. Unset, the pinned root does not even load
+    // and the handshake ends with "no signer". Same step as KOReader sync; if NTP is
+    // unavailable the download is still attempted.
+    if (!halClock.syncSystemTimeFromNTP()) {
+      LOG_ERR("OTA", "NTP sync failed; certificate dates are checked against an unset clock");
+    }
+  }
   LOG_INF("OTA", "Staging firmware download: url=%s heap=%u maxAlloc=%u", otaUrl.c_str(), ESP.getFreeHeap(),
           ESP.getMaxAllocHeap());
   const auto transferResult = HttpDownloader::downloadToFile(
