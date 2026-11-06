@@ -1168,6 +1168,7 @@ void HomeActivity::updateHighlightedBookContext(const bool allowChapterTitleRead
 
 void HomeActivity::onExit() {
   Activity::onExit();
+  renderer.endGrayMask();
 
   coverGridUi.reset();
   carouselMenuTouchDownIndex = -1;
@@ -2264,6 +2265,7 @@ void HomeActivity::render(RenderLock&&) {
   }
 
   invalidatePolarityMismatchedCaches();
+  if (homeListsApps() && SETTINGS.homeTrueGray) renderer.beginGrayMask();
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   const auto pageWidth = renderer.getScreenWidth();
@@ -2279,7 +2281,12 @@ void HomeActivity::render(RenderLock&&) {
       }
       if (initialRefreshMode != HalDisplay::FAST_REFRESH) fastRefreshesSinceClean = 0;
     }
-    renderer.displayBuffer(initialRefreshMode);
+    // The experimental true gray: the plates' gray as the panel's real half-gray, in a second pass.
+    if (homeListsApps() && SETTINGS.homeTrueGray) {
+      renderer.displayTrueGray();
+    } else {
+      renderer.displayBuffer(initialRefreshMode);
+    }
     initialRefreshMode = HalDisplay::FAST_REFRESH;
     if (!homeFirstFrameLogged) {
       // Speed log: Home entry to the first frame on the panel (b = 1 from a saved Carousel frame).

@@ -12,6 +12,8 @@ namespace {
 constexpr freeink::ui::ActionId ACTION_ICON = PanelActivity::ACTION_FIRST_CONTROL;
 constexpr freeink::ui::ActionId ACTION_GRID = PanelActivity::ACTION_FIRST_CONTROL + 1;
 constexpr freeink::ui::ActionId ACTION_NAMES = PanelActivity::ACTION_FIRST_CONTROL + 2;
+constexpr freeink::ui::ActionId ACTION_SHAPE = PanelActivity::ACTION_FIRST_CONTROL + 3;
+constexpr freeink::ui::ActionId ACTION_GRAY = PanelActivity::ACTION_FIRST_CONTROL + 4;
 
 // The options in the order shown, as the values stored in homeIconSize (0 = 32 px, the default) and homeGrid.
 constexpr int kIconPx[] = {24, 32, 42, 48};
@@ -20,6 +22,10 @@ constexpr const char* kIconLabel[] = {"24", "32", "42", "48"};
 constexpr int kGridColumns[] = {4, 4, 3, 3};
 constexpr int kGridRows[] = {3, 4, 4, 3};
 constexpr const char* kGridLabel[] = {"4x3", "4x4", "3x4", "3x3"};
+
+// The plate shapes in the order shown, as stored in homeIconShape.
+constexpr StrId kShapeLabel[] = {StrId::STR_SHAPE_SQUIRCLE, StrId::STR_SHAPE_ROUNDED, StrId::STR_SHAPE_CIRCLE,
+                                 StrId::STR_SHAPE_HEXAGON};
 
 int iconIndex() {
   for (int i = 0; i < 4; ++i) {
@@ -38,7 +44,7 @@ void HomeLayoutActivity::onExit() {
 }
 
 int HomeLayoutActivity::contentHeight() const {
-  return 2 * (panel::kLabelHeight + panel::kTileHeight + panel::kRowGap) + panel::kControlHeight;
+  return 3 * (panel::kLabelHeight + panel::kTileHeight + panel::kRowGap) + 2 * panel::kControlHeight + panel::kRowGap;
 }
 
 void HomeLayoutActivity::buildContent(Screen& screen, const int x, int y, const int width) {
@@ -68,6 +74,26 @@ void HomeLayoutActivity::buildContent(Screen& screen, const int x, int y, const 
       [](const int i) { return kIconLabel[i]; });
   y += panel::kTileHeight + panel::kRowGap;
 
+  // Shape: the plate outline with an icon on it.
+  heading(tr(STR_ICON_SHAPE));
+  panel::tiles(
+      renderer, frame, x, y, width, 4, SETTINGS.homeIconShape, ACTION_SHAPE, UI_10_FONT_ID,
+      [&](const int cx, const int top, const bool, const int i) {
+        constexpr int plate = 49;
+        freeink::ui::GfxRendererTarget target(renderer);
+        freeink::ui::fillPlate(target,
+                               freeink::ui::Rect{static_cast<int16_t>(cx - plate / 2),
+                                                 static_cast<int16_t>(top + (panel::kPreviewHeight - plate) / 2),
+                                                 static_cast<int16_t>(plate), static_cast<int16_t>(plate)},
+                               static_cast<freeink::ui::PlateShape>(i),
+                               freeink::ui::Paint::dither(freeink::ui::Color::LightGray));
+        if (const freeink::Icon* icon = homeIcon(UIIcon::Apps, 24)) {
+          drawLucideIcon(renderer, *icon, cx - 12, top + (panel::kPreviewHeight - 24) / 2);
+        }
+      },
+      [](const int i) { return I18N.get(kShapeLabel[i]); });
+  y += panel::kTileHeight + panel::kRowGap;
+
   // Grid: columns x rows of small squares.
   heading(tr(STR_HOME_GRID));
   panel::tiles(
@@ -91,6 +117,9 @@ void HomeLayoutActivity::buildContent(Screen& screen, const int x, int y, const 
 
   panel::switchButton(renderer, frame, x, y, width, tr(STR_SHOW_NAMES), SETTINGS.homeShowNames != 0, ACTION_NAMES,
                       UI_10_FONT_ID);
+  y += panel::kControlHeight + panel::kRowGap;
+  panel::switchButton(renderer, frame, x, y, width, tr(STR_TRUE_GRAY), SETTINGS.homeTrueGray != 0, ACTION_GRAY,
+                      UI_10_FONT_ID);
 }
 
 void HomeLayoutActivity::onChoice(const freeink::ui::ActionId action, const int value) {
@@ -98,6 +127,10 @@ void HomeLayoutActivity::onChoice(const freeink::ui::ActionId action, const int 
     SETTINGS.homeIconSize = kIconValue[value];
   } else if (action == ACTION_GRID && value >= 0 && value < 4) {
     SETTINGS.homeGrid = static_cast<uint8_t>(value);
+  } else if (action == ACTION_SHAPE && value >= 0 && value < 4) {
+    SETTINGS.homeIconShape = static_cast<uint8_t>(value);
+  } else if (action == ACTION_GRAY) {
+    SETTINGS.homeTrueGray = SETTINGS.homeTrueGray ? 0 : 1;
   } else if (action == ACTION_NAMES) {
     SETTINGS.homeShowNames = SETTINGS.homeShowNames ? 0 : 1;
   }

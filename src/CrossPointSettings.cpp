@@ -483,6 +483,8 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["homeIconSize"] = homeIconSize;
   doc["homeGrid"] = homeGrid;
   doc["homeShowNames"] = homeShowNames;
+  doc["homeIconShape"] = homeIconShape;
+  doc["homeTrueGray"] = homeTrueGray;
   doc["libraryShowSeries"] = libraryShowSeries;
   doc["libraryShowGenre"] = libraryShowGenre;
   doc["libraryShowEpub"] = libraryShowEpub;
@@ -683,6 +685,8 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc, bool importingCrossPoint
   readLibraryChoice("homeIconSize", homeIconSize, 4);
   readLibraryChoice("homeGrid", homeGrid, 4);
   readLibraryChoice("homeShowNames", homeShowNames, 2);
+  readLibraryChoice("homeIconShape", homeIconShape, 4);
+  readLibraryChoice("homeTrueGray", homeTrueGray, 2);
   readLibraryChoice("libraryShowSeries", libraryShowSeries, 2);
   readLibraryChoice("libraryShowGenre", libraryShowGenre, 2);
   readLibraryChoice("libraryShowEpub", libraryShowEpub, 2);

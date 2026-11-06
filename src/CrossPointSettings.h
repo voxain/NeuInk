@@ -689,6 +689,10 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t homeIconSize = 0;
   uint8_t homeGrid = 0;
   uint8_t homeShowNames = 1;
+  // Shape of the icon plates (0 = squircle, 1 = rounded square, 2 = circle, 3 = hexagon) and whether their gray is true
+  // gray (an extra panel pass, experimental) instead of a dither.
+  uint8_t homeIconShape = 0;
+  uint8_t homeTrueGray = 0;
   // UI scale (list fonts + row heights); touch boards default one step larger
   uint8_t uiScale = defaultUiScale();
   // Sunlight fading compensation

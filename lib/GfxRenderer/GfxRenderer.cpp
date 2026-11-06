@@ -1140,6 +1140,15 @@ void GfxRenderer::drawPixel(const int x, const int y, const bool state) const {
   } else {
     target[byteIndex] |= 1 << bitPosition;  // Set bit
   }
+  if (grayMask_ && !_stripActive) grayMask_[byteIndex] &= static_cast<uint8_t>(~(1 << bitPosition));
+}
+
+void GfxRenderer::grayMaskSet(const int x, const int y) const {
+  int phyX = 0;
+  int phyY = 0;
+  rotateCoordinates(orientation, x, y, &phyX, &phyY, panelWidth, panelHeight);
+  if (phyX < 0 || phyX >= panelWidth || phyY < 0 || phyY >= panelHeight) return;
+  grayMask_[static_cast<uint32_t>(phyY) * panelWidthBytes + (phyX / 8)] |= static_cast<uint8_t>(1 << (7 - (phyX % 8)));
 }
 
 namespace {
@@ -1656,6 +1665,7 @@ void GfxRenderer::drawPixelDither<Color::White>(const int x, const int y) const 
 template <>
 void GfxRenderer::drawPixelDither<Color::LightGray>(const int x, const int y) const {
   drawPixel(x, y, x % 2 == 0 && y % 2 == 0);
+  if (grayMask_ && !_stripActive) grayMaskSet(x, y);
 }
 
 template <>
@@ -1730,6 +1740,23 @@ void GfxRenderer::fillRectImpl(const int x, const int y, const int width, const 
   const uint8_t headMask = static_cast<uint8_t>(0xFFu >> (phyX0 & 7));
   const uint8_t tailMask = static_cast<uint8_t>(0xFFu << (7 - (phyX1 & 7)));
   const int32_t panelStride = static_cast<int32_t>(panelWidthBytes);
+
+  if (grayMask_ && !_stripActive) {
+    // Light gray marks the rectangle as gray; anything else drawn here is not gray any more.
+    for (int py = phyY0; py <= phyY1; ++py) {
+      uint8_t* row = grayMask_ + static_cast<int32_t>(py) * panelStride;
+      for (int b = byteStart; b <= byteEnd; ++b) {
+        uint8_t mask = 0xFFu;
+        if (b == byteStart) mask &= headMask;
+        if (b == byteEnd) mask &= tailMask;
+        if constexpr (C == Color::LightGray) {
+          row[b] |= mask;
+        } else {
+          row[b] &= static_cast<uint8_t>(~mask);
+        }
+      }
+    }
+  }
 
   if constexpr (C == Color::Black || C == Color::White) {
     // Solid fill. Framebuffer: 0 = black, 1 = white.
@@ -3505,4 +3532,50 @@ void GfxRenderer::setRenderMode(RenderMode mode) {
     absoluteGrayPlanes = false;
   }
   renderMode = mode;
+}
+
+void GfxRenderer::beginGrayMask() const {
+  if (grayMask_ == nullptr) grayMask_ = static_cast<uint8_t*>(malloc(frameBufferSize));
+  if (grayMask_ != nullptr) memset(grayMask_, 0, frameBufferSize);
+}
+
+void GfxRenderer::endGrayMask() const {
+  free(grayMask_);
+  grayMask_ = nullptr;
+}
+
+bool GfxRenderer::displayTrueGray() {
+  const auto plain = [this] {
+    endGrayMask();
+    displayBuffer();
+    return false;
+  };
+  if (!grayMask_ || _stripActive || renderMode != BW || display.isInverted() || !supportsAbsoluteGrayscale()) {
+    return plain();
+  }
+  if (!storeBwBuffer()) return plain();
+  const bool based = supportsDirectGrayscale() ? displayDirectGrayscaleBase() : displayAbsoluteGrayscaleBase();
+  if (!based) {
+    restoreBwBuffer();
+    return plain();
+  }
+  // Absolute planes are complete: black is black in both, white white in both, and a gray pixel is black in the
+  // first plane and white in the second.
+  const auto paintGray = [this](const bool black) {
+    for (size_t i = 0; i < frameBufferSize; ++i) {
+      if (black) {
+        frameBuffer[i] &= static_cast<uint8_t>(~grayMask_[i]);
+      } else {
+        frameBuffer[i] |= grayMask_[i];
+      }
+    }
+  };
+  paintGray(true);
+  copyGrayscaleLsbBuffers();
+  paintGray(false);
+  copyGrayscaleMsbBuffers();
+  displayGrayBuffer();
+  restoreBwBuffer();
+  endGrayMask();
+  return true;
 }

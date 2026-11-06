@@ -83,6 +83,10 @@ class GfxRenderer {
   // guard, so an emergency oversized codepoint cannot paint into a neighbour.
   // Parity of the origin a gray dither is anchored to: 0 (the screen's own origin) for plain fills, the box's corner
   // while a rounded box is filled, so every box gets the same corners wherever it sits.
+  // True gray (experimental): while set, every light-gray fill is also recorded here (one bit per framebuffer pixel)
+  // and any other write clears its bit, so displayTrueGray() knows which pixels are really gray.
+  mutable uint8_t* grayMask_ = nullptr;
+  void grayMaskSet(int x, int y) const;
   mutable uint8_t ditherPhaseX_ = 0;
   mutable uint8_t ditherPhaseY_ = 0;
   mutable bool textClipActive_ = false;
@@ -421,6 +425,13 @@ class GfxRenderer {
   void writeGrayscalePlaneStrip(bool lsbPlane, const uint8_t* scratch, int yStart, int numRows) const;
   bool shouldSkipImageBlanking() const;
   bool supportsStripGrayscale() const;
+  // True gray (experimental), for the Home grid. beginGrayMask() starts recording the light-gray fills of the frame
+  // about to be drawn (it needs a framebuffer's worth of memory and does nothing without it); displayTrueGray() then
+  // shows the frame with those areas as the panel's real half-gray, in a second pass, and falls back to the usual
+  // displayBuffer() where the panel cannot. endGrayMask() frees the memory.
+  void beginGrayMask() const;
+  void endGrayMask() const;
+  bool displayTrueGray();
   bool storeBwBuffer();    // Returns true if buffer was stored successfully
   void restoreBwBuffer();  // Restore and free the stored buffer
   void cleanupGrayscaleWithFrameBuffer() const;
