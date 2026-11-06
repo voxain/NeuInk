@@ -147,8 +147,10 @@ HttpDownloader::DownloadError runGetWolfSsl(const std::string& url, const std::s
 
     freeink::SecureHttpClient http;
     http.setTimeout(sink.timeoutMs > 0 ? static_cast<int>(sink.timeoutMs) : HTTP_TIMEOUT_MS);
-    // SecureNet does not yet expose ESP-IDF's CA bundle. This matches the
-    // existing KOSync transport; cross-origin hops omit Basic credentials.
+    // This wolfSSL path is only used for OTA firmware that has a release digest.
+    // The digest, taken from the verified release check, is the integrity
+    // check, so the TLS layer does not verify the peer. Cross-origin hops omit
+    // Basic credentials.
     http.setInsecure();
     if (!http.begin(currentUrl)) {
       LOG_ERR("HTTP", "wolfSSL rejected URL: %s", currentUrl.c_str());
