@@ -1,6 +1,11 @@
 # NeuInk changelog
 
-## [Unreleased]
+## [NeuInk 0.2.0] - 2026-11-06
+
+Adds switching to VARAGH, CrossInk or CrossPoint from the settings, and repairs online
+firmware downloads, which did not work in 0.1.0. A reader on 0.1.0 cannot download this
+release itself: copy `firmware-x4-pro.bin` to the SD card and use **Settings → System →
+SD Card Firmware Update** once. Online updates work from 0.2.0 on.
 
 - Fixed online firmware downloads, including NeuInk's own updates. The reader's
   wolfSSL was built without SHA-384, so it could not verify the certificate chain
