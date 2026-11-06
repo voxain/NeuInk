@@ -53,6 +53,8 @@ enum class SettingAction {
   DownloadFonts,
   TtfRendering,
   ClockSync,
+  FileTransfer,
+  Apps,
 };
 
 struct SettingInfo {

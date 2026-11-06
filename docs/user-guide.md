@@ -110,7 +110,7 @@ Upon turning the device on for the first time, you will be placed on the **[Home
 
 ### 3.1 Home Screen
 
-The Home screen is the main entry point to the firmware. From here you can navigate to **[Reading Mode](#4-reading-mode)** with the most recently read book, the **[Browse Files](#33-browse-files-screen)** screen, the **[Library](#34-library-screen)** screen, the **[File Transfer](#35-file-transfer-screen)** screen, or **[Settings](#36-settings)**.
+The Home screen is the main entry point to the firmware. From here you can navigate to **[Reading Mode](#4-reading-mode)** with the most recently read book, the **[File Manager](#33-browse-files-screen)** (which also holds **[File Transfer](#35-file-transfer-screen)**), the **[Library](#34-library-screen)** screen, or **[Settings](#36-settings)**. The Vega theme also lists every app on Home; with more icons than fit, swipe left or right (or use the buttons) to change page.
 
 ### 3.2 Reading Mode
 
@@ -118,7 +118,7 @@ See [Reading Mode](#4-reading-mode) below for more information.
 
 ### 3.3 Browse Files Screen
 
-The Browse Files screen acts as a file and folder browser. The full path to the current directory is shown at the top of the screen. File extensions are displayed alongside each filename, and directories are shown with brackets (e.g. `[folder-name]`). Hidden directories can be shown from settings.
+The File Manager (formerly Browse Files) acts as a file and folder browser. Its settings page (the sliders icon, top right) holds **File Transfer**. The full path to the current directory is shown at the top of the screen. File extensions are displayed alongside each filename, and directories are shown with brackets (e.g. `[folder-name]`). Hidden directories can be shown from settings.
 
 - **Navigate List:** Use **Left** (or **Up**), or **Right** (or **Down**) to move the selection cursor up and down through folders and books. You can also long-press these buttons to scroll a full page up or down.
 - **Open Selection:** Press **Confirm** to open a folder or start reading a selected book. Selecting a `.bmp` file will open the image viewer.
@@ -243,6 +243,7 @@ device model and build.
 - **Refresh Frequency**: Set how often the screen does a full refresh while reading to reduce ghosting; options are every 1, 5, 10, 15, or 30 pages.
 
 - **UI Theme**: Set which UI theme to use:
+  - "Vega" (default) - The last opened book as a card with cover, title, author and progress bar, over a paged grid of squircle icons for every action and app
   - "Classic" - The original CrossInk theme
   - "Minimal" - A minimal theme with a large book cover
   - "Dashboard" - A dashboard-style home layout

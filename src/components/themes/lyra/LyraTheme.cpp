@@ -20,6 +20,7 @@
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/appsIcon.h"
+#include "components/icons/homeIcons.h"
 #include "components/icons/readingStatsIcons.h"
 #include "fontIds.h"
 
@@ -107,6 +108,20 @@ const freeink::Icon* LyraTheme::iconForName(UIIcon icon, uint32_t size) {
         return &icon_radio_tower_32;
       case UIIcon::Apps:
         return &icon_apps_32;
+      case UIIcon::BookmarkIcon:
+        return &icon_highlights_32;
+      case UIIcon::Sudoku:
+        return &icon_sudoku_32;
+      case UIIcon::Chess:
+        return &icon_chess_32;
+      case UIIcon::Checkers:
+        return &icon_checkers_32;
+      case UIIcon::Go:
+        return &icon_go_32;
+      case UIIcon::TicTacToe:
+        return &icon_tictactoe_32;
+      case UIIcon::Clock:
+        return &icon_clock_32;
       default:
         return nullptr;
     }
@@ -479,6 +494,31 @@ void LyraTheme::drawSideButtonHints(const GfxRenderer& renderer, const char* top
   }
 }
 
+int LyraTheme::drawCoverThumb(const GfxRenderer& renderer, const RecentBook& book, const int x, const int y,
+                              const int height, const int defaultWidth) {
+  int width = defaultWidth;
+  bool hasCover = !book.coverBmpPath.empty();
+  if (hasCover) {
+    HalFile file;
+    if (Storage.openFileForRead("HOME", UITheme::getCoverThumbPath(book.coverBmpPath, height), file)) {
+      Bitmap bitmap(file);
+      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+        width = bitmap.getWidth();
+        renderer.drawBitmap(bitmap, x, y, width, height);
+      } else {
+        hasCover = false;
+      }
+      file.close();
+    }
+  }
+  renderer.drawRect(x, y, width, height, true);
+  if (!hasCover) {
+    renderer.fillRect(x, y + height / 3, width, 2 * height / 3, true);
+    drawLucideIcon(renderer, icon_book_open_32, x + 24, y + 24);
+  }
+  return width;
+}
+
 void LyraTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
                                     int selectorIndex, bool& coverRendered, bool& coverBufferStored,
                                     bool& bufferRestored, const std::function<bool()>& storeCoverBuffer,
@@ -504,40 +544,8 @@ void LyraTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
 
     RecentBook book = recentBooks[0];
     if (!coverRendered) {
-      std::string coverPath = book.coverBmpPath;
-      bool hasCover = true;
-      int tileX = LyraMetrics::values.contentSidePadding;
-      if (coverPath.empty()) {
-        hasCover = false;
-      } else {
-        const std::string coverBmpPath = UITheme::getCoverThumbPath(coverPath, LyraMetrics::values.homeCoverHeight);
-
-        // First time: load cover from SD and render
-        HalFile file;
-        if (Storage.openFileForRead("HOME", coverBmpPath, file)) {
-          Bitmap bitmap(file);
-          if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-            coverWidth = bitmap.getWidth();
-            renderer.drawBitmap(bitmap, tileX + hPaddingInSelection, tileY + hPaddingInSelection, coverWidth,
-                                LyraMetrics::values.homeCoverHeight);
-          } else {
-            hasCover = false;
-          }
-          file.close();
-        }
-      }
-
-      // Draw either way
-      renderer.drawRect(tileX + hPaddingInSelection, tileY + hPaddingInSelection, coverWidth,
-                        LyraMetrics::values.homeCoverHeight, true);
-
-      if (!hasCover) {
-        // Render empty cover
-        renderer.fillRect(tileX + hPaddingInSelection,
-                          tileY + hPaddingInSelection + (LyraMetrics::values.homeCoverHeight / 3), coverWidth,
-                          2 * LyraMetrics::values.homeCoverHeight / 3, true);
-        drawLucideIcon(renderer, icon_book_open_32, tileX + hPaddingInSelection + 24, tileY + hPaddingInSelection + 24);
-      }
+      coverWidth = drawCoverThumb(renderer, book, LyraMetrics::values.contentSidePadding + hPaddingInSelection,
+                                  tileY + hPaddingInSelection, LyraMetrics::values.homeCoverHeight, coverWidth);
 
       coverBufferStored = storeCoverBuffer();
       coverRendered = coverBufferStored;  // Only consider it rendered if we successfully stored the buffer
@@ -675,28 +683,11 @@ void LyraTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
     const int textY = tileRect.y + (menuMetrics.menuRowHeight - lineHeight) / 2;
 
     if (rowIcon != nullptr) {
-      UIIcon icon = rowIcon(i);
-      if (icon == UIIcon::BookmarkIcon) {
-        // Draw a small bookmark ribbon icon to match the status bar ribbon.
-        const int ribbonWidth = 16;
-        const int ribbonHeight = 22;
-        const int notchSize = 6;
-        // Center the ribbon horizontally within the mainMenuIconSize box
-        const int iconX = textX + (mainMenuIconSize - ribbonWidth) / 2;
-        const int iconY = textY + 4;
-        const int centerX = iconX + ribbonWidth / 2;
-
-        const int polyX[5] = {iconX, iconX + ribbonWidth, iconX + ribbonWidth, centerX, iconX};
-        const int polyY[5] = {iconY, iconY, iconY + ribbonHeight, iconY + ribbonHeight - notchSize,
-                              iconY + ribbonHeight};
-        renderer.fillPolygon(polyX, polyY, 5, true);
+      const UIIcon icon = rowIcon(i);
+      const freeink::Icon* iconBitmap = iconForName(icon, mainMenuIconSize);
+      if (iconBitmap != nullptr) {
+        drawLucideIcon(renderer, *iconBitmap, textX, textY + 3 + mainMenuIconYOffset(icon));
         textX += mainMenuIconSize + hPaddingInSelection + 2;
-      } else {
-        const freeink::Icon* iconBitmap = iconForName(icon, mainMenuIconSize);
-        if (iconBitmap != nullptr) {
-          drawLucideIcon(renderer, *iconBitmap, textX, textY + 3 + mainMenuIconYOffset(icon));
-          textX += mainMenuIconSize + hPaddingInSelection + 2;
-        }
       }
     }
 

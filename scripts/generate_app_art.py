@@ -37,8 +37,6 @@ PIECE = 56
 PIECE_FONT = 50
 SMALL_PIECE = 26
 SMALL_PIECE_FONT = 25
-MENU_KNIGHT = 84
-MENU_KNIGHT_FONT = 78
 # White king, queen, rook, bishop, knight, pawn; the black set follows at +6.
 WHITE_PIECES = "♔♕♖♗♘♙"
 PIECE_NAMES = ["King", "Queen", "Rook", "Bishop", "Knight", "Pawn"]
@@ -236,11 +234,6 @@ def main() -> None:
                 + "};"
             )
         parts.append("")
-
-    knight = render_symbol("♞", MENU_KNIGHT, MENU_KNIGHT_FONT)
-    parts.append("// The knight of the Chess tile in the Apps menu.")
-    total += bitmap(parts, "MenuKnight", rows_of(knight))
-    total += bitmap(parts, "MenuKnightUnder", rows_of(underlay_of([knight], MENU_KNIGHT)))
 
     parts.append("// Clock digits: glyphs 0-9, then the colon. Every glyph of a set is k<Set>Rows high.")
     for name, height in CLOCK_SETS:

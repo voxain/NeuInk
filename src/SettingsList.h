@@ -628,12 +628,12 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
     add(SettingInfo::Toggle(StrId::STR_NIGHT_MODE, &CrossPointSettings::screenInverted, "screenInverted",
                             StrId::STR_CAT_DISPLAY));
     add(SettingInfo::Enum(StrId::STR_UI_THEME, &CrossPointSettings::uiTheme,
-                          {StrId::STR_THEME_CLASSIC, StrId::STR_THEME_MINIMAL, StrId::STR_THEME_DASHBOARD,
+                          {StrId::STR_THEME_VEGA, StrId::STR_THEME_CLASSIC, StrId::STR_THEME_MINIMAL, StrId::STR_THEME_DASHBOARD,
                            StrId::STR_THEME_LYRA, StrId::STR_THEME_LYRA_EXTENDED, StrId::STR_THEME_LYRA_CAROUSEL,
                            StrId::STR_THEME_ROUNDEDRAFF, StrId::STR_THEME_COVER_GRID},
                           "uiTheme", StrId::STR_CAT_DISPLAY)
-            .withEnumRawValues({CrossPointSettings::UI_THEME::CLASSIC, CrossPointSettings::UI_THEME::MINIMAL,
-                                CrossPointSettings::UI_THEME::DASHBOARD, CrossPointSettings::UI_THEME::LYRA,
+            .withEnumRawValues({CrossPointSettings::UI_THEME::VEGA, CrossPointSettings::UI_THEME::CLASSIC,
+                                CrossPointSettings::UI_THEME::MINIMAL, CrossPointSettings::UI_THEME::DASHBOARD, CrossPointSettings::UI_THEME::LYRA,
                                 CrossPointSettings::UI_THEME::LYRA_3_COVERS,
                                 CrossPointSettings::UI_THEME::LYRA_CAROUSEL, CrossPointSettings::UI_THEME::ROUNDEDRAFF,
                                 CrossPointSettings::UI_THEME::COVER_GRID}));
@@ -1563,6 +1563,7 @@ inline std::vector<SettingInfo> buildGeneralSettingsList(const std::vector<Setti
   addSettingByName(settings, allSettings, StrId::STR_CUSTOM_BOOTSCREEN);
   settings.push_back(SettingInfo::Action(StrId::STR_LANGUAGE, SettingAction::Language));
   settings.push_back(SettingInfo::Action(StrId::STR_KEYBOARD_LAYOUTS, SettingAction::KeyboardLayouts));
+  settings.push_back(SettingInfo::Action(StrId::STR_APPS, SettingAction::Apps));
   if (halClock.isAvailable()) {
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_FORMAT);
     addSettingByName(settings, allSettings, StrId::STR_LIVE_CLOCK);
@@ -1592,10 +1593,12 @@ inline std::vector<SettingInfo> buildSystemFilesCacheSettingsList(const std::vec
 
 inline std::vector<SettingInfo> buildFileBrowserSettingsList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> settings;
-  settings.reserve(3);
+  settings.reserve(4);
   addSettingByName(settings, allSettings, StrId::STR_SHOW_HIDDEN_FILES);
   addSettingByName(settings, allSettings, StrId::STR_HIDE_FILE_EXTENSION);
   addSettingByName(settings, allSettings, StrId::STR_FILE_BROWSER_DISPLAY);
+  // The old File Transfer app, now part of the File Manager.
+  settings.push_back(SettingInfo::Action(StrId::STR_FILE_TRANSFER, SettingAction::FileTransfer));
   return settings;
 }
 

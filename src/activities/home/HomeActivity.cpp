@@ -40,12 +40,14 @@
 #include "RecentBooksStore.h"
 #include "HighlightsHubActivity.h"
 #include "SavedItemsHomeActivity.h"
+#include "activities/apps/AppRegistry.h"
 #include "activities/apps/AppsActivity.h"
 #include "components/TouchRegistry.h"
 #include "components/UITheme.h"
 #include "components/themes/dashboard/DashboardTheme.h"
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
+#include "components/themes/vega/VegaTheme.h"
 #include "fontIds.h"
 
 namespace {
@@ -70,7 +72,7 @@ enum class HomeMenuAction {
   ReadingStats,
   Bookmarks,
   Apps,
-  FileTransfer,
+  App,  // one built-in app, listed on Home by themes that do not have the Apps entry
   Settings,
 };
 
@@ -78,10 +80,11 @@ struct HomeMenuEntry {
   const char* label;
   UIIcon icon;
   HomeMenuAction action;
+  uint8_t app = 0;  // apps::Id of an App entry
 };
 
 struct HomeMenuEntries {
-  static constexpr int kCapacity = 10;
+  static constexpr int kCapacity = 16;
   std::array<HomeMenuEntry, kCapacity> entries{};
   int count = 0;
 
@@ -265,8 +268,14 @@ bool coverFailedBefore(const RecentBook& book) {
   return false;
 }
 
-// NeuInk: the apps work by touch, and on button readers with a button pointer.
-bool homeShowsApps() { return true; }
+// The Vega theme lists every app on Home itself; the others keep the Apps entry,
+// as their Home screens are small and would become cluttered.
+bool homeListsApps() {
+  return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::VEGA;
+}
+
+// Apps switched off in Apps > Manage; read once when Home opens, not on every pass.
+uint8_t homeHiddenApps = 0;
 
 void appendHomeMenuItems(HomeMenuEntries& items, bool hasOpdsServers, bool hasReadingStats, bool hasBookmarks,
                          bool hasClippings) {
@@ -280,11 +289,15 @@ void appendHomeMenuItems(HomeMenuEntries& items, bool hasOpdsServers, bool hasRe
     items.push({tr(STR_READING_STATS), Chart, HomeMenuAction::ReadingStats});
   }
   items.push({savedItemsLabel(hasBookmarks, hasClippings), BookmarkIcon, HomeMenuAction::Bookmarks});
-  if (homeShowsApps()) {
+  if (homeListsApps()) {
+    for (const apps::Info& app : apps::kAll) {
+      if ((homeHiddenApps & (1u << app.id)) == 0) {
+        items.push({I18N.get(app.name), app.icon, HomeMenuAction::App, static_cast<uint8_t>(app.id)});
+      }
+    }
+  } else {
     items.push({tr(STR_APPS), Apps, HomeMenuAction::Apps});
   }
-
-  items.push({tr(STR_FILE_TRANSFER), Transfer, HomeMenuAction::FileTransfer});
   items.push({tr(STR_SETTINGS_TITLE), Settings, HomeMenuAction::Settings});
 }
 
@@ -294,6 +307,7 @@ HomeMenuEntries buildHomeMenuItems(bool hasOpdsServers, bool hasReadingStats, bo
   return items;
 }
 
+// Minimal's and Dashboard's menu: no File Manager (their Home has a button for it) and no Settings.
 HomeMenuEntries buildMinimalMenuItems(bool hasOpdsServers, bool hasReadingStats, bool hasBookmarks, bool hasClippings) {
   HomeMenuEntries items;
   items.push({tr(STR_LIBRARY), Library, HomeMenuAction::Library});
@@ -305,11 +319,7 @@ HomeMenuEntries buildMinimalMenuItems(bool hasOpdsServers, bool hasReadingStats,
   if (hasReadingStats) {
     items.push({tr(STR_READING_STATS), Chart, HomeMenuAction::ReadingStats});
   }
-  if (homeShowsApps()) {
-    items.push({tr(STR_APPS), Apps, HomeMenuAction::Apps});
-  }
-
-  items.push({tr(STR_FILE_TRANSFER), Transfer, HomeMenuAction::FileTransfer});
+  items.push({tr(STR_APPS), Apps, HomeMenuAction::Apps});
   return items;
 }
 
@@ -331,8 +341,6 @@ HomeMenuAction homeActionForInitialMenuItem(HomeMenuItem item) {
       return HomeMenuAction::Library;
     case HomeMenuItem::OPDS_BROWSER:
       return HomeMenuAction::OpdsBrowser;
-    case HomeMenuItem::FILE_TRANSFER:
-      return HomeMenuAction::FileTransfer;
     case HomeMenuItem::SETTINGS_MENU:
       return HomeMenuAction::Settings;
     case HomeMenuItem::NONE:
@@ -572,21 +580,10 @@ static_assert(HomeActivity::kCarouselFrameCount == 3, "CarouselCache::frameBookI
 int HomeActivity::getMenuItemCount() const {
   if (coverGridUi) return static_cast<int>(recentBooks.size()) + coverGridUi->tabCount();
   const auto& metrics = UITheme::getInstance().getMetrics();
-  int count = 4;  // File Browser, Library, File transfer, Settings
-  if (!metrics.homeContinueReadingInMenu && !recentBooks.empty()) {
-    count += getVisibleRecentBookCount();
-  } else if (metrics.homeContinueReadingInMenu && !recentBooks.empty()) {
-    count++;  // Continue Reading menu item
-  }
-  if (hasOpdsServers) {
-    count++;
-  }
-  if (hasReadingStats) {
-    count++;
-  }
-  count++;  // Highlights hub is always listed
-  if (homeShowsApps()) count++;
-  return count;
+  const bool continueInMenu = metrics.homeContinueReadingInMenu && !recentBooks.empty();
+  return (continueInMenu ? 0 : getVisibleRecentBookCount()) +
+         buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings, continueInMenu)
+             .size();
 }
 
 void HomeActivity::loadRecentBooks(int maxBooks) {
@@ -934,6 +931,7 @@ void HomeActivity::onEnter() {
   homeFirstFrameLogged = false;
 
   hasOpdsServers = OPDS_STORE.hasServers();
+  homeHiddenApps = apps::hiddenMask();
   if (UITheme::hasCoverGridHome()) {
     coverGridUi = makeUniqueNoThrow<CoverGridHomeUi>(renderer);
     if (!coverGridUi) LOG_ERR("HOME", "Cannot allocate cover grid UI; using standard Home");
@@ -1002,7 +1000,7 @@ void HomeActivity::onEnter() {
   updateHighlightedBookContext(false);
 
   if (coverGridUi) {
-    coverGridUi->begin(recentBooks, hasOpdsServers, homeShowsApps(), gridHasContinueReading,
+    coverGridUi->begin(recentBooks, hasOpdsServers, gridHasContinueReading,
                        gridHasContinueReading ? loadRecentBookProgress(recentBooks.front()) : -1.0f);
     // The tab Home was left through is selected again.
     const int base = static_cast<int>(recentBooks.size());
@@ -1019,9 +1017,6 @@ void HomeActivity::onEnter() {
         break;
       case HomeMenuItem::OPDS_BROWSER:
         selectTab(CoverGridHomeUi::Tab::Opds);
-        break;
-      case HomeMenuItem::FILE_TRANSFER:
-        selectTab(CoverGridHomeUi::Tab::Transfer);
         break;
       case HomeMenuItem::SETTINGS_MENU:
         selectTab(CoverGridHomeUi::Tab::Settings);
@@ -1670,8 +1665,8 @@ void HomeActivity::loop() {
           case HomeMenuAction::Apps:
             onAppsOpen();
             break;
-          case HomeMenuAction::FileTransfer:
-            onFileTransferOpen();
+          case HomeMenuAction::App:
+            onAppOpen(menuItems[minimalMenuIndex].app);
             break;
           case HomeMenuAction::ContinueReading:
           case HomeMenuAction::Settings:
@@ -1922,8 +1917,8 @@ void HomeActivity::loop() {
     return;
   }
 
-  auto activateHomeMenuAction = [this](const HomeMenuAction action) {
-    switch (action) {
+  auto activateHomeMenuAction = [this](const HomeMenuEntry& entry) {
+    switch (entry.action) {
       case HomeMenuAction::BrowseFiles:
         onFileBrowserOpen();
         break;
@@ -1945,8 +1940,8 @@ void HomeActivity::loop() {
       case HomeMenuAction::Apps:
         onAppsOpen();
         break;
-      case HomeMenuAction::FileTransfer:
-        onFileTransferOpen();
+      case HomeMenuAction::App:
+        onAppOpen(entry.app);
         break;
       case HomeMenuAction::Settings:
         onSettingsOpen();
@@ -1968,7 +1963,7 @@ void HomeActivity::loop() {
       return;
     }
 
-    activateHomeMenuAction(menuItems[menuSelectedIndex].action);
+    activateHomeMenuAction(menuItems[menuSelectedIndex]);
   };
 
   if (homeBookSwapLongPressHandled) {
@@ -1991,6 +1986,23 @@ void HomeActivity::loop() {
     return;
   }
 
+  if (homeListsApps() && mappedInput.hasTouch()) {
+    // Swipe the grid to the next or previous page, like a phone's home screen.
+    const auto swipe = mappedInput.wasSwipe();
+    if (swipe == MappedInputManager::SwipeDir::Left || swipe == MappedInputManager::SwipeDir::Right) {
+      const int offset = getHomeMenuSelectionOffset(recentBooks);
+      const int pages = VegaTheme::pageCount(getMenuItemCount() - offset);
+      const int page = std::clamp(homePage + (swipe == MappedInputManager::SwipeDir::Left ? 1 : -1), 0, pages - 1);
+      if (page != homePage) {
+        homePage = page;
+        // A selected app moves along, so Confirm never opens one that is off screen.
+        if (selectorIndex >= offset) selectorIndex = offset + page * VegaTheme::kPageSize;
+        requestUpdate();
+      }
+      return;
+    }
+  }
+
   if (isCarousel) {
     const int bookCount = visibleBookCount;
     const int menuItemCount = carouselMenuItemCount;
@@ -2009,7 +2021,7 @@ void HomeActivity::loop() {
         if (touchedMenuIndex < 0 || touchedMenuIndex >= menuItemCount) return false;
         carouselMenuTouchDownIndex = -1;
         const auto menuItems = buildHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings);
-        activateHomeMenuAction(menuItems[touchedMenuIndex].action);
+        activateHomeMenuAction(menuItems[touchedMenuIndex]);
         return true;
       }
 
@@ -2206,9 +2218,6 @@ void HomeActivity::activateCoverGridSelection() {
       break;
     case CoverGridHomeUi::Tab::Apps:
       onAppsOpen();
-      break;
-    case CoverGridHomeUi::Tab::Transfer:
-      onFileTransferOpen();
       break;
     case CoverGridHomeUi::Tab::Settings:
       onSettingsOpen();
@@ -2488,13 +2497,18 @@ void HomeActivity::render(RenderLock&&) {
   const int menuSelectedIndex = isCarouselTheme && mappedInput.hasTouchHardware()
                                     ? carouselMenuTouchDownIndex
                                     : selectorIndex - getHomeMenuSelectionOffset(recentBooks);
+  if (homeListsApps()) {
+    // The grid shows the page of the selected app; with the book selected it stays where it is.
+    if (menuSelectedIndex >= 0) homePage = VegaTheme::pageOf(menuSelectedIndex);
+    VegaTheme::setHomePage(homePage);
+  }
   GUI.drawButtonMenu(
       renderer, Rect{0, menuStartY, pageWidth, menuHeight}, static_cast<int>(menuItems.size()), menuSelectedIndex,
       [&menuItems](int index) { return menuItems[index].label; },
       [&menuItems](int index) { return menuItems[index].icon; });
 
   const char* readLabel = recentBooks.empty() ? "" : tr(STR_READ);
-  const auto labels = isCarouselTheme
+  const auto labels = isCarouselTheme || homeListsApps()
                           ? mappedInput.mapLabels(readLabel, tr(STR_SELECT), tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT))
                           : mappedInput.mapLabels(readLabel, tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -2566,8 +2580,6 @@ void HomeActivity::onLibraryOpen() { activityManager.goToLibrary(); }
 
 void HomeActivity::onSettingsOpen() { activityManager.goToSettings(); }
 
-void HomeActivity::onFileTransferOpen() { activityManager.goToFileTransfer(); }
-
 void HomeActivity::onOpdsBrowserOpen() { activityManager.goToBrowser(); }
 
 void HomeActivity::onReadingStatsOpen() {
@@ -2624,6 +2636,12 @@ void HomeActivity::onReadingStatsOpen() {
 void HomeActivity::onSavedItemsOpen() {
   startActivityForResult(std::make_unique<HighlightsHubActivity>(renderer, mappedInput),
                          [this](const ActivityResult&) { requestUpdate(); });
+}
+
+void HomeActivity::onAppOpen(const uint8_t appId) {
+  const apps::Info* app = apps::find(static_cast<apps::Id>(appId));
+  if (!app) return;
+  startActivityForResult(app->create(renderer, mappedInput), [this](const ActivityResult&) { requestUpdate(); });
 }
 
 void HomeActivity::onAppsOpen() {

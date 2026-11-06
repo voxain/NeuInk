@@ -2,13 +2,15 @@
 
 #include <string>
 
+#include "AppRegistry.h"
 #include "ClockFace.h"
 #include "GameUi.h"
 #include "SudokuActivity.h"
 #include "activities/Activity.h"
 
-// Home > Apps: a tile per built-in app with its icon, its name and a short
-// line about what is going on in it. Manage (top right) lists every app with a
+// The Apps screen (themes whose Home does not list the apps itself): a small tile
+// per built-in app with its icon, its name and a short line about what is going
+// on in it. Manage (top right) lists every app with a
 // switch; an app that is switched off is only hidden from the tiles - it stays
 // in the firmware and costs no memory or battery while it is not open. The
 // Clock's and Sudoku's rows also lead to their settings.
@@ -31,29 +33,13 @@ class AppsActivity final : public Activity {
   void render(RenderLock&&) override;
 
  private:
-  // The numbers are kept in files (resume, hidden apps): a new app gets the next one.
-  // Slot 0 was Wordle, removed from NeuInk to save flash; the number stays reserved.
-  enum AppId {
-    kRemovedWordle = 0,
-    Sudoku = 1,
-    Chess = 2,
-    Checkers = 3,
-    Clock = 4,
-    TicTacToe = 5,
-    Go = 6,
-    kAppCount = 7
-  };
-  // The order of the tiles and of the rows in Manage: the games, then the Clock.
-  static constexpr int kShownCount = kAppCount - 1;
-  static constexpr AppId kOrder[kShownCount] = {Sudoku, Chess, Checkers, Go, TicTacToe, Clock};
-  static constexpr char kSavePath[] = "/.crosspoint/games/apps.bin";
+  using AppId = apps::Id;
 
   void layout();
   void readStatus();
-  void open(AppId app);
+  void open(const apps::Info& app);
   bool hidden(int app) const { return (hiddenMask & (1u << app)) != 0; }
   void saveHidden() const;
-  void drawIcon(int app, int x, int y) const;
   void drawTiles() const;
   void drawManage() const;
   void drawClockSettings() const;
@@ -81,10 +67,10 @@ class AppsActivity final : public Activity {
   gameui::Box pageBoxes[2];  // previous, next
   uint8_t hiddenMask = 0;
   int shownCount = 0;
-  int shown[kAppCount] = {};
-  gameui::Box tiles[kAppCount];
-  gameui::Box rows[kAppCount];
+  int shown[apps::kIdCount] = {};
+  gameui::Box tiles[apps::kIdCount];
+  gameui::Box rows[apps::kIdCount];
   gameui::Box manageBox;
   gameui::ButtonPointer pointer;
-  std::string status[kAppCount];
+  std::string status[apps::kIdCount];
 };

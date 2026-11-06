@@ -22,15 +22,14 @@ constexpr int16_t COVER_CELL_INSET = 6;
 CoverGridHomeUi::CoverGridHomeUi(GfxRenderer& renderer)
     : UiAppHost(renderer), coverCache(renderer), renderer(renderer) {}
 
-void CoverGridHomeUi::begin(const std::vector<RecentBook>& recent, bool opds, bool apps, bool continuing,
+void CoverGridHomeUi::begin(const std::vector<RecentBook>& recent, bool opds, bool continuing,
                             float featuredProgress) {
   books = &recent;
   tabKindCount = 0;
   tabKinds[tabKindCount++] = Tab::Files;
   tabKinds[tabKindCount++] = Tab::Library;
   if (opds) tabKinds[tabKindCount++] = Tab::Opds;
-  if (apps) tabKinds[tabKindCount++] = Tab::Apps;
-  tabKinds[tabKindCount++] = Tab::Transfer;
+  tabKinds[tabKindCount++] = Tab::Apps;
   tabKinds[tabKindCount++] = Tab::Settings;
   if (!recent.empty()) coverCache.begin();
   reset();
@@ -260,7 +259,7 @@ void CoverGridHomeUi::drawTabs(UiScreen& screen, fui::Rect rect) {
     // In the order of the Tab values.
     static constexpr const freeink::Icon* ICONS[MAX_TABS] = {&icon_folder_32,       &icon_landmark_32,
                                                              &icon_lyra_library_32, &icon_apps_32,
-                                                             &icon_lyra_transfer_32, &icon_lyra_settings_32};
+                                                             &icon_lyra_settings_32};
     const int index = tab.value - static_cast<int>(self.books->size());
     if (index < 0 || index >= self.tabKindCount) return true;
     drawLucideIcon(self.renderer, *ICONS[static_cast<int>(self.tabKinds[index])], iconRect.x, iconRect.y);

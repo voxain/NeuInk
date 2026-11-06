@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+- New default UI theme, Vega: the last opened book as a card (cover, title, author, pill
+  progress bar) over a paged grid of light-gray squircles for every Home action and app.
+  Swipe or use the buttons to change page. Only this theme lists the apps on Home.
+- File Transfer is now part of the File Manager (its settings page) and no longer a Home
+  entry in any theme; "Browse Files" is now called "File Manager" (German: Dateimanager).
+  The power-button shortcut and Quick Actions still start File Transfer directly.
+- The apps list is one shared registry (`activities/apps/AppRegistry.h`). The Apps screen
+  has small tiles with 32 px Lucide icons; the large drawn icons and the 84 px chess
+  knight bitmaps are gone. The Clock icon no longer shows today's date. Apps (with
+  Manage) can also be opened from Settings > General.
+- The Highlights icon is now an outline (Lucide highlighter) in every theme.
+
 Makes the firmware smaller. The X4 Pro firmware was at 6.29 MB of its 6.55 MB update
 slot (96%), and online (OTA) updates only work while the image fits that slot, so every
 new feature was closer to making updates impossible. This release removes or trims

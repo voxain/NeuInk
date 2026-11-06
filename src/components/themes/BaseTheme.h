@@ -171,7 +171,14 @@ enum UIIcon {
   Wifi,
   Hotspot,
   Chart,
-  Apps
+  Apps,
+  // The built-in apps (activities/apps/AppRegistry.h), drawn from homeIcons.h.
+  Sudoku,
+  Chess,
+  Checkers,
+  Go,
+  TicTacToe,
+  Clock
 };
 
 // Default theme implementation (Classic Theme)

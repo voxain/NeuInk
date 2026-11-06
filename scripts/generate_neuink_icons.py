@@ -677,7 +677,7 @@ def icon_lines(sym, bm):
 def rewrite_headers(icon_dir):
     """Redraw every freeink::Icon in icon_dir, keeping each header's symbols and sizes."""
     for path in sorted(icon_dir.glob("*.h")):
-        if path.name == "neuinkIcons.h":
+        if path.name in ("neuinkIcons.h", "homeIcons.h"):  # homeIcons.h is plain Lucide
             continue
         text = path.read_text(encoding="utf-8")
         syms = re.findall(r"static const freeink::Icon (icon_\w+?)_(\d+) = ", text)

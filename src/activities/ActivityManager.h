@@ -50,7 +50,7 @@ struct LiveLightSwipeState {
 #endif
 
 enum class RequestUpdateResult { Rendered, Rejected };
-enum class HomeMenuItem { NONE, FILE_BROWSER, LIBRARY, OPDS_BROWSER, FILE_TRANSFER, SETTINGS_MENU };
+enum class HomeMenuItem { NONE, FILE_BROWSER, LIBRARY, OPDS_BROWSER, SETTINGS_MENU };
 
 /**
  * ActivityManager

@@ -21,6 +21,7 @@
 #include "BleSettingsActivity.h"
 #include "ButtonRemapActivity.h"
 #include "ClearCacheActivity.h"
+#include "activities/apps/AppsActivity.h"
 #include "ClockOffsetActivity.h"
 #include "ClockSyncActivity.h"
 #include "LanguageDownloadActivity.h"
@@ -1273,6 +1274,12 @@ void SettingsActivity::toggleCurrentSetting() {
         break;
       case SettingAction::SwitchFirmware:
         openSwitchFirmwarePicker();
+        break;
+      case SettingAction::FileTransfer:
+        activityManager.goToFileTransfer();
+        break;
+      case SettingAction::Apps:
+        startActivityForResult(std::make_unique<AppsActivity>(renderer, mappedInput), resultHandler);
         break;
       case SettingAction::SdFirmwareUpdate:
         startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);

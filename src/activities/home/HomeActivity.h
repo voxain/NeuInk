@@ -37,6 +37,7 @@ class HomeActivity final : public Activity {
   std::unique_ptr<CoverGridHomeUi> coverGridUi;
   bool gridHasContinueReading = false;
   int selectorIndex = 0;
+  int homePage = 0;  // the page of the Vega theme's app grid
   int lastCarouselBookIndex = 0;  // remembered position when leaving carousel row
   // Finger travel on Carousel, so a drag slower than the SDK's flick window
   // still counts as a swipe.
@@ -119,11 +120,11 @@ class HomeActivity final : public Activity {
   void onContinueReading();
   void onLibraryOpen();
   void onSettingsOpen();
-  void onFileTransferOpen();
   void onOpdsBrowserOpen();
   void onReadingStatsOpen();
   void onSavedItemsOpen();
   void onAppsOpen();
+  void onAppOpen(uint8_t appId);
 
   int getMenuItemCount() const;
   bool storeCoverBuffer();    // Store frame buffer for cover image
