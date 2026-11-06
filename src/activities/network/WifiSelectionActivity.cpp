@@ -725,7 +725,7 @@ void WifiSelectionActivity::checkConnectionStatus() {
             WiFi.RSSI());
 #endif
 
-    // Keep the clock (and, when automatic, the time zone) right on every connect, at most hourly.
+    // Keep the clock right on every connect, at most hourly.
     clocksync::onWifiConnected();
 
     // Save this as the last connected network - SD card operations need lock as

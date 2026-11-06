@@ -1006,8 +1006,6 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
                           "xtcStatusBarMode", StrId::STR_STATUS_BARS));
     // Clock detail entries live under System > Device in the device UI.
     // Range 0..104 = quarter-hour steps from UTC-12:00 to UTC+14:00, biased by 48.
-    add(SettingInfo::Toggle(StrId::STR_CLOCK_AUTO_ZONE, &CrossPointSettings::clockAutoZone, "clockAutoZone",
-                            StrId::STR_CAT_SYSTEM));
     add(SettingInfo::Toggle(StrId::STR_LIVE_CLOCK, &CrossPointSettings::liveClock, "liveClock",
                             StrId::STR_CAT_SYSTEM));
     add(SettingInfo::Value(StrId::STR_CLOCK_UTC_OFFSET, &CrossPointSettings::clockUtcOffsetQ, {0, 104, 1},
@@ -1575,7 +1573,6 @@ inline std::vector<SettingInfo> buildGeneralSettingsList(const std::vector<Setti
   if (halClock.isAvailable()) {
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_FORMAT);
     addSettingByName(settings, allSettings, StrId::STR_LIVE_CLOCK);
-    addSettingByName(settings, allSettings, StrId::STR_CLOCK_AUTO_ZONE);
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_UTC_OFFSET);
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_DST);
     addSettingByName(settings, allSettings, StrId::STR_DATE_FORMAT);

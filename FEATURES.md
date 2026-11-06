@@ -570,7 +570,7 @@ something is slow.
 
 <p align="center">
   <img src="docs/images/varagh/v1.3.1/summer-time.png" width="300" alt="Summer Time setting with Off, EU (Germany) and US"><br>
-  <sub>Settings → General → <b>Summer Time</b>, beside Live Clock and Automatic Time Zone.</sub>
+  <sub>Settings → General → <b>Summer Time</b>, beside Live Clock and UTC Offset.</sub>
 </p>
 
 **Settings → General → Summer Time** (up to 1.3.0: Settings → System → Device): Off, EU (Germany) or US. On
@@ -581,8 +581,7 @@ and file dates on the SD card.
 ### A clock that stays right (1.3.1)
 - **Synced on every Wi-Fi connect**, at most once an hour, not only the first
   time.
-- **Automatic Time Zone** (on by default) sets the GMT offset, summer time
-  included, from where the network is. Turn it off to set the offset by hand.
+- **Time zone by hand**: Settings → General → UTC Offset sets the GMT offset in quarter-hour steps.
 - **Live Clock** (off by default): the clock in the reader and on Home updates
   when the minute changes, with a quick update that does not flash and does not
   count toward full refreshes. Pages with pictures wait for the next page turn.

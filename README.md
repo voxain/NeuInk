@@ -118,7 +118,7 @@ the following, release by release since 1.0.0.
 - **Games:** Wordle, Sudoku with five levels, a daily puzzle and explaining hints, Chess, Checkers, Go and
   Tic Tac Toe; apps stay open across sleep; hide the ones you do not use.
 - **Clock & Calendar** with the Persian date, also as a sleep screen.
-- **A clock that stays right:** set on every Wi-Fi connect, Automatic Time Zone,
+- **A clock that stays right:** set on every Wi-Fi connect, a manual time zone,
   Summer Time and an optional Live Clock.
 
 ### Speed and battery
@@ -174,7 +174,7 @@ X4 Classic and X3, and menu-language downloads work on the X4 Pro and X4 Classic
 - **Sudoku:** an answer check, Expert and Master levels, a daily puzzle,
   explaining hints and nine switches in its settings.
 - A **clock that stays right**: it is set on every
-  Wi-Fi connect, with an Automatic Time Zone and an optional Live Clock.
+  Wi-Fi connect, with a manual time zone and an optional Live Clock.
 
 <table>
   <tr>
