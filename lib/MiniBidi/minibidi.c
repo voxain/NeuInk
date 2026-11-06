@@ -432,7 +432,7 @@ int do_shape(bidi_char* line, bidi_char* to, int count) {
         } else if (prevjoiners == (ZWJ | ZWNJ)) {
           to[i].wc = shape_form(line[i].wc, SHAPE_MEDIAL);
         } else if (prevjoiners == ZWJ) {
-          /* VARAGH deviation: backward join forced; still medial when the
+          /* NeuInk deviation: backward join forced; still medial when the
              visually-left (logically next) neighbour joins too (mintty
              always wrote final, which broke "ZWJ + شگاه" apart after ش) */
           tempShape = (pv >= 0) ? stype(line[pv].wc) : SU;

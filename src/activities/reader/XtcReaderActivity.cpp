@@ -245,7 +245,7 @@ void XtcReaderActivity::loop() {
   // through to the regular handlers below; page turns are absorbed by the end-of-book
   // block.
 #if CROSSINK_APP_CAP_TOUCH
-  // VARAGH: a tap on the stars of the End-of-Book screen rates the book.
+  // NeuInk: a tap on the stars of the End-of-Book screen rates the book.
   if (touch.tapped) {
     bool rated = false;
     {

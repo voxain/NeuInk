@@ -162,7 +162,7 @@ class ActivityManager {
   void goHome(HomeMenuItem initialMenuItem = HomeMenuItem::NONE,
               HalDisplay::RefreshMode initialRefreshMode = HalDisplay::FAST_REFRESH);
 
-  // VARAGH: the Apps list, or (with one app's resume number) that app on top
+  // NeuInk: the Apps list, or (with one app's resume number) that app on top
   // of the list. Leaving the list leads Home.
   void goToApps(uint8_t resumeId = 0);
   // The resume number of the app that is open (see AppsActivity::resumeIdFor),

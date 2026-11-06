@@ -4,7 +4,7 @@
 
 #include <string>
 
-// VARAGH: menu languages left out of a small firmware (X3/X4) come from
+// NeuInk: menu languages left out of a small firmware (X3/X4) come from
 // /languages/<code>.lng on the SD card: copied from the release zip by hand or
 // downloaded in Settings > Language (LanguageDownloadActivity).
 namespace LanguagePacks {

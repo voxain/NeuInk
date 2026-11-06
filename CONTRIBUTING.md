@@ -1,18 +1,18 @@
-# Contributing to VARAGH
+# Contributing to NeuInk
 
-Thanks for helping. VARAGH is a small project, so a few simple rules keep it easy to look after.
+Thanks for helping. NeuInk is a small project, so a few simple rules keep it easy to look after.
 
 ## Found a bug?
 
-Open a [bug report](https://github.com/PewPewzxc/VARAGH/issues/new/choose). Please include:
+Open a [bug report](https://github.com/PewPewzxc/NeuInk/issues/new/choose). Please include:
 
-- the VARAGH version (Settings → System),
+- the NeuInk version (Settings → System),
 - what you did, what you expected and what happened,
 - a photo of the screen if you can, and the book if the bug is in one book.
 
 ## Have an idea or a question?
 
-Start a thread in [Discussions](https://github.com/PewPewzxc/VARAGH/discussions).
+Start a thread in [Discussions](https://github.com/PewPewzxc/NeuInk/discussions).
 Issues are kept for bugs only.
 
 ## Sending code
@@ -22,7 +22,7 @@ Issues are kept for bugs only.
    [getting started guide](docs/development/getting-started.md)).
 3. Format C++ with the repository's `.clang-format`.
 4. Keep a pull request to one change, and say how you tested it.
-5. Changes that are not VARAGH-specific are often better sent to
+5. Changes that are not NeuInk-specific are often better sent to
    [CrossInk](https://github.com/uxjulia/crossink), so every fork gets them.
 
 ## Translations

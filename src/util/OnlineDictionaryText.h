@@ -5,11 +5,11 @@
 #include <string>
 
 // Text side of the online dictionary: which site to ask for a word, and how to
-// turn the answer into an entry laid out like the VARAGH dictionaries. Pure
+// turn the answer into an entry laid out like the NeuInk dictionaries. Pure
 // string work, no network and no storage, so it is tested on the host.
 namespace onlinedict {
 
-// The reading languages VARAGH offers (Settings > Reader > Dictionaries).
+// The reading languages NeuInk offers (Settings > Reader > Dictionaries).
 // Values are persisted (bit masks, request file): append only.
 enum class Lang : uint8_t {
   English = 0,

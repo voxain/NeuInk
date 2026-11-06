@@ -52,7 +52,7 @@ Page** controls taps and left swipes; **Previous Page** controls taps and right
 swipes. Right-to-left EPUBs reverse the normal tap zones and horizontal swipe
 directions to follow reading order.
 
-VARAGH adds **Mirror RTL Page Turns** in the same menu (on by default). Turn it
+NeuInk adds **Mirror RTL Page Turns** in the same menu (on by default). Turn it
 off to keep the same tap zones and swipe directions in Persian, Arabic and
 Hebrew books as in every other book.
 

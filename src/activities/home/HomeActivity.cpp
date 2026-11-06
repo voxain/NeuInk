@@ -265,7 +265,7 @@ bool coverFailedBefore(const RecentBook& book) {
   return false;
 }
 
-// VARAGH: the apps work by touch, and on button readers with a button pointer.
+// NeuInk: the apps work by touch, and on button readers with a button pointer.
 bool homeShowsApps() { return true; }
 
 void appendHomeMenuItems(HomeMenuEntries& items, bool hasOpdsServers, bool hasReadingStats, bool hasBookmarks,
@@ -2298,7 +2298,7 @@ void HomeActivity::render(RenderLock&&) {
     coverGridUi->setSelection(selectorIndex);
     coverGridUi->render();
     if (!firstRenderDone) {
-      // VARAGH: the grid only learns the size of its cover slots while it is
+      // NeuInk: the grid only learns the size of its cover slots while it is
       // drawn. Draw it once without showing it, make sure every cover exists
       // in that size, then draw and show the finished Home a single time.
       // Before, Home was painted, painted again unchanged and painted a third

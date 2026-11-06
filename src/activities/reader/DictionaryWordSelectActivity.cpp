@@ -804,7 +804,7 @@ bool DictionaryWordSelectActivity::captureClippingRequest(const bool keepSelecti
   return true;
 }
 
-// --- VARAGH: what a finished touch selection leads to --------------------------------------------
+// --- NeuInk: what a finished touch selection leads to --------------------------------------------
 namespace {
 
 constexpr int kAskHeight = 60;
@@ -975,7 +975,7 @@ void DictionaryWordSelectActivity::handleAskInput() {
     DictUtils::cancelAndFinish(*this);
     return;
   }
-  // VARAGH: while the bubble shows, the selection can still change. Right (or
+  // NeuInk: while the bubble shows, the selection can still change. Right (or
   // Down / page forward) adds the next word, Left (or Up / page back) takes the
   // last one off, and either handle can be dragged. Look Up, Highlight and Add
   // to then use the new selection. A selection that already continues from the
@@ -985,7 +985,7 @@ void DictionaryWordSelectActivity::handleAskInput() {
     return mappedInput.wasReleased(a) || mappedInput.wasReleased(b) || mappedInput.wasReleased(c);
   };
   if (!mappedInput.hasTouchHardware()) {
-    // VARAGH, button readers: Left/Right still add or take off a word, the side
+    // NeuInk, button readers: Left/Right still add or take off a word, the side
     // buttons pick Look Up / Highlight / Add to, Confirm runs it.
     const int step = released(Button::Down, Button::PageForward, Button::PageForward) ? 1
                      : released(Button::Up, Button::PageBack, Button::PageBack)      ? kAskChoices - 1
@@ -1447,7 +1447,7 @@ void DictionaryWordSelectActivity::loop() {
     return;
   }
 
-  // VARAGH: also on button readers, where a button selection opens the choices.
+  // NeuInk: also on button readers, where a button selection opens the choices.
   if (askOpen_) {
     handleAskInput();
     return;
@@ -1508,7 +1508,7 @@ void DictionaryWordSelectActivity::loop() {
   }
 
   if (!mappedInput.hasTouchHardware()) {
-    // VARAGH: several words picked with the buttons get the same choices as a
+    // NeuInk: several words picked with the buttons get the same choices as a
     // touch selection on the X4 Pro (Look Up, Highlight, Add to), not only Look Up.
     std::string phrase;
     const auto action = navigator.handleMultiSelectInput(mappedInput, phrase);

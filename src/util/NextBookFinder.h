@@ -15,7 +15,7 @@ namespace NextBookFinder {
 // bounded regardless of folder size.
 std::vector<std::string> findNextBooks(const std::string& currentBookPath, size_t maxCount);
 
-// VARAGH: the book that follows this one in its series (calibre:series and
+// NeuInk: the book that follows this one in its series (calibre:series and
 // series_index, as the Library reads them), in any folder of the card. Uses the
 // Library's index; false when the book has no series, is the last one, or the
 // index is missing. `position` is the next book's number in the series ("3").

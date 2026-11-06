@@ -2346,7 +2346,7 @@ void EpubReaderActivity::onEnter() {
   touchReaderDrawerState = initialReaderDrawerState(mappedInput.hasTouchHardware());
 
   MemoryBudget::logEpubHeapPools("reader enter");
-  // VARAGH: with "keep Wi-Fi on", start joining now so a lookup finds it ready.
+  // NeuInk: with "keep Wi-Fi on", start joining now so a lookup finds it ready.
   OnlineWifi::readerOpened();
 
   // epub is a required collaborator: ReaderActivity dereferences it before handing it
@@ -3217,7 +3217,7 @@ void EpubReaderActivity::loop() {
   // turning and reader shortcuts. This keeps a hold from placing a bookmark
   // or opening dictionary selection behind the menu.
 #if CROSSINK_APP_CAP_TOUCH
-  // VARAGH: a tap on the stars of the End-of-Book screen rates the book.
+  // NeuInk: a tap on the stars of the End-of-Book screen rates the book.
   if (atEndOfBook && endOfBookOptions && touch.tapped && endOfBookOptions->rateAt(touch.x, touch.y)) {
     requestUpdate();
     return;
@@ -3279,7 +3279,7 @@ void EpubReaderActivity::loop() {
   if (!atEndOfBook && touch.tapped && handleTouchFootnoteLink(touch.x, touch.y)) {
     return;
   }
-  // VARAGH "Tap to Look Up": a tap on the page looks up the word under it and
+  // NeuInk "Tap to Look Up": a tap on the page looks up the word under it and
   // never turns the page (a swipe does). Only with a dictionary to ask; without
   // one a tap keeps turning pages. A tap always looks up, whatever a long
   // press is set to do.

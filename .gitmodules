@@ -1,4 +1,0 @@
-[submodule "freeink-sdk"]
-	path = freeink-sdk
-	url = https://github.com/PewPewzxc/freeink-sdk.git
-	branch = varagh

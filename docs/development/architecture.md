@@ -212,7 +212,7 @@ still use `scripts/build_web.py` to generate the flash-served headers.
 - `lib/hal/`: hardware abstraction wrappers around freeink-sdk
 - `lib/Epub/`: EPUB parser, layout, CSS handling, and hyphenation
 - `lib/`: supporting libraries (fonts, text, filesystem helpers, etc.)
-- `freeink-sdk/`: hardware SDK submodule (display, input, storage, battery). Docs: https://freeink.org/docs
+- `freeink-sdk/`: vendored hardware SDK (see its VENDORED.md) (display, input, storage, battery). Docs: https://freeink.org/docs
 - `docs/`: user and technical documentation
 
 ## Embedded constraints that shape design

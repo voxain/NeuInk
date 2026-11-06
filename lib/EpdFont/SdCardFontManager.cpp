@@ -215,7 +215,7 @@ bool SdCardFontManager::setScalableRenderOptions(GfxRenderer& renderer,
   renderer.clearSdCardFonts();
   for (auto& loaded : loaded_) {
     renderer.removeFont(loaded.fontId);
-    delete loaded.font;  // VARAGH script fallback files; TTF sizes own no SdCardFont
+    delete loaded.font;  // NeuInk script fallback files; TTF sizes own no SdCardFont
   }
   loaded_.clear();
   activeScalableId_ = 0;

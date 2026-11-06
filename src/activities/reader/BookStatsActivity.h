@@ -32,7 +32,7 @@ class BookStatsActivity final : public Activity {
   bool ignoreInitialBackRelease = false;
   bool ignoreInitialConfirmRelease = false;
   bool ignoreInitialPowerRelease = false;
-  // VARAGH: the book's rating, shown as stars in the title strip of its card; a
+  // NeuInk: the book's rating, shown as stars in the title strip of its card; a
   // tap on the strip opens the rating screen. Only when the book's file is known.
   std::string ratedBookPath;
   std::string ratedBookAuthor;
@@ -66,7 +66,7 @@ class BookStatsActivity final : public Activity {
                     bool hasEstimatedTimeLeft, uint32_t estimatedTimeLeftSeconds, const GlobalReadingStats& globalStats,
                     const GlobalReadingStats& allDevicesStats, bool returnToHomeOnExit = false);
 
-  // VARAGH: names the book file, which turns the rating on (see ratedBookPath).
+  // NeuInk: names the book file, which turns the rating on (see ratedBookPath).
   void setRatedBook(std::string bookPath, std::string author) {
     ratedBookPath = std::move(bookPath);
     ratedBookAuthor = std::move(author);

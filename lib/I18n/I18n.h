@@ -25,7 +25,7 @@ class I18n {
   // handed over first with usePack.
   void setLanguage(Language lang);
   static bool isBuiltin(Language lang);
-  // VARAGH: strings of a language left out of the build, read from an SD-card
+  // NeuInk: strings of a language left out of the build, read from an SD-card
   // pack (src/util/LanguagePacks). The memory stays the caller's; pass nullptr
   // to drop it.
   void usePack(Language lang, const char* data, const uint16_t* offsets);

@@ -1,12 +1,12 @@
-# VARAGH features
+# NeuInk features
 
-This page lists everything VARAGH (up to 1.3.1 "Lion") adds to or changes in
+This page lists everything NeuInk (up to 1.3.1 "Lion") adds to or changes in
 [CrossInk](https://github.com/uxjulia/crossink) v1.6.0. Everything CrossInk and
 CrossPoint already do (EPUB/TXT/XTC reading, fonts from the SD card, KOReader
 sync, Calibre, OPDS, reading stats, Quick Actions, and so on) is still there;
 see [CrossInk's README](https://github.com/uxjulia/crossink#readme) for those.
 
-VARAGH runs on the **Xteink X4 Pro**, the **X4 Classic** and the **X3 / X4**. The
+NeuInk runs on the **Xteink X4 Pro**, the **X4 Classic** and the **X3 / X4**. The
 X4 Pro has a touch screen and a front light; the X4 Classic and X3 / X4 do every
 feature with the buttons (see [section 21](#21-readers-without-touch)).
 
@@ -33,7 +33,7 @@ NotoVazir font from the SD-card zip is optional (see [section 1](#notovazir-font
 7. [Speed, pictures and battery](#7-speed-pictures-and-battery)
 8. [Clock: summer time, sync and Live Clock](#8-clock-summer-time-sync-and-live-clock)
 9. [Pronunciations in menus](#9-pronunciations-in-menus)
-10. [VARAGH name and logo](#10-varagh-name-and-logo)
+10. [NeuInk name and logo](#10-neuink-name-and-logo)
 11. [Safe updates](#11-safe-updates)
 12. [Apps](#12-apps)
 13. [Online dictionary](#13-online-dictionary)
@@ -54,9 +54,9 @@ NotoVazir font from the SD-card zip is optional (see [section 1](#notovazir-font
 
 <table>
   <tr>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/persian-book.png" width="250" alt="The first page of the Shahnameh in Persian"><br><sub>The Shahnameh in the built-in font (1.3.1).</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/mixed-languages.png" width="250" alt="One page with English, a Persian line, German words, a table and pronunciations"><br><sub>English, Persian, German and pronunciations on one page (1.3.1).</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/hold-persian.png" width="250" alt="A Persian word held in the Shahnameh, with handles and the Look Up, Highlight, Add to bubble"><br><sub>Holding a Persian word: handles and the Ask bubble.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/persian-book.png" width="250" alt="The first page of the Shahnameh in Persian"><br><sub>The Shahnameh in the built-in font (1.3.1).</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/mixed-languages.png" width="250" alt="One page with English, a Persian line, German words, a table and pronunciations"><br><sub>English, Persian, German and pronunciations on one page (1.3.1).</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/hold-persian.png" width="250" alt="A Persian word held in the Shahnameh, with handles and the Look Up, Highlight, Add to bubble"><br><sub>Holding a Persian word: handles and the Ask bubble.</sub></td>
   </tr>
 </table>
 
@@ -69,7 +69,7 @@ straight after installing, with no font on the SD card. Before 1.3.1 they needed
 NotoVazir and otherwise showed as diamonds.
 
 ### NotoVazir font (optional)
-One reader font that contains every letter VARAGH needs. Install it if you want
+One reader font that contains every letter NeuInk needs. Install it if you want
 Persian in more sizes, or italic English beside it:
 
 | Part | Letters |
@@ -80,19 +80,19 @@ Persian in more sizes, or italic English beside it:
 
 - Sizes 10, 12, 14, 16, 18 and 20.
 - Anti-aliased edges drawn slightly darker so text reads better on the X4 Pro screen.
-- Install: copy `.fonts/NotoVazir` from `varagh-sd-card-*.zip` (in each release)
+- Install: copy `.fonts/NotoVazir` from `neuink-sd-card-*.zip` (in each release)
   to `/.fonts/NotoVazir/` on the SD card.
-- Build it yourself: see [docs/varagh/FONTS.md](docs/varagh/FONTS.md).
+- Build it yourself: see [docs/neuink/FONTS.md](docs/neuink/FONTS.md).
 
 ### Persian books pick a font that can show them
 When you open a book whose language is Persian, Arabic, Urdu, Pashto, Sindhi,
 Uyghur or Kurdish (or whose title is written in Arabic script), and your reader
-font has no Persian letters, VARAGH uses an installed font that does
+font has no Persian letters, NeuInk uses an installed font that does
 (NotoVazir) **for that book only**. Your saved font setting is not changed.
 
 ### Persian and pronunciations with any reader font
 You can choose another reader font, such as Bitter or Literata. When that font
-has no Persian letters or pronunciation symbols, VARAGH draws those words in
+has no Persian letters or pronunciation symbols, NeuInk draws those words in
 NotoVazir (or, from 1.3.1, in the built-in font) at the same size, and the rest
 of the text stays in your font. This works in:
 
@@ -120,7 +120,7 @@ Persian letters, such as Bitter on the X3 / X4, borrows them from the built-in f
 ### Focus Reading in Persian (1.3.1)
 
 <p align="center">
-  <img src="docs/images/varagh/v1.3.1/persian-focus.png" width="250" alt="A Persian page with Focus Reading: the first letters of every word in bold"><br>
+  <img src="docs/images/neuink/v1.3.1/persian-focus.png" width="250" alt="A Persian page with Focus Reading: the first letters of every word in bold"><br>
   <sub>Focus Reading in a Persian book (no extra font).</sub>
 </p>
 
@@ -147,7 +147,7 @@ inflected Persian words find their dictionary form (می‌روم → رفتن, 
 کتاب), and Persian words use the Persian dictionary in any book.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/persian-lookup.png" width="230" alt="The Persian word خرد looked up in a Persian dictionary">
+  <img src="docs/images/neuink/v1.3.1/persian-lookup.png" width="230" alt="The Persian word خرد looked up in a Persian dictionary">
 </p>
 
 ### Font converter
@@ -158,25 +158,25 @@ Arabic text needs, including the joined forms.
 
 ## 2. German → English dictionary
 
-VARAGH ships no dictionary data (each has its own licence). The recommended
+NeuInk ships no dictionary data (each has its own licence). The recommended
 German → English dictionary is FreeDict's `deu-eng`, prepared with Inky's
 dictionary tools; step-by-step instructions are in
-[docs/varagh/DICTIONARIES.md](docs/varagh/DICTIONARIES.md). From 1.3.0 each
+[docs/neuink/DICTIONARIES.md](docs/neuink/DICTIONARIES.md). From 1.3.0 each
 language you read has its own dictionary and online sources: see
 [section 15](#15-dictionaries-for-every-language).
 
 <table>
   <tr>
-    <td align="center" width="50%" valign="top"><img src="docs/images/varagh/v1.3.1/german-lookup-ipa.png" width="300" alt="Dictionary entry for Haus with its pronunciation"><br><sub><b>Häuser</b> opens <b>Haus</b>: the German → English entry with its pronunciation [haʊ̯s], synonyms and related words.</sub></td>
-    <td align="center" width="50%" valign="top"><img src="docs/images/varagh/v1.3.1/german-dictionary.png" width="300" alt="Dictionary entry for nehmen with Highlight and Add to buttons"><br><sub>A tap on <b>nahm</b> opens <b>nehmen</b>; <b>Switch Dictionary</b>, <b>Highlight</b> and <b>Add to…</b> at the bottom.</sub></td>
+    <td align="center" width="50%" valign="top"><img src="docs/images/neuink/v1.3.1/german-lookup-ipa.png" width="300" alt="Dictionary entry for Haus with its pronunciation"><br><sub><b>Häuser</b> opens <b>Haus</b>: the German → English entry with its pronunciation [haʊ̯s], synonyms and related words.</sub></td>
+    <td align="center" width="50%" valign="top"><img src="docs/images/neuink/v1.3.1/german-dictionary.png" width="300" alt="Dictionary entry for nehmen with Highlight and Add to buttons"><br><sub>A tap on <b>nahm</b> opens <b>nehmen</b>; <b>Switch Dictionary</b>, <b>Highlight</b> and <b>Add to…</b> at the bottom.</sub></td>
   </tr>
 </table>
 
 ### Finds the dictionary form of German words
-When a German word is not in the dictionary as written, VARAGH tries its base
+When a German word is not in the dictionary as written, NeuInk tries its base
 forms, most likely first:
 
-| You select | VARAGH finds | Rule |
+| You select | NeuInk finds | Rule |
 |---|---|---|
 | Häuser, Mütter, Äpfel | Haus, Mutter, Apfel | umlaut plurals |
 | Lehrerinnen | Lehrerin | feminine plural |
@@ -219,11 +219,11 @@ IPA (such as [ˈhaʊ̯s]) and symbols in definitions used to show as boxes. From
 1.3.1 the built-in fonts carry the IPA letters, so pronunciations display with
 any font and nothing installed. With NotoVazir they are drawn exactly; other
 fonts borrow them from NotoVazir or the built-in font (see section 1). Only when
-no font has a symbol does VARAGH draw the nearest look-alike (arrows, bullets,
+no font has a symbol does NeuInk draw the nearest look-alike (arrows, bullets,
 ≈, ≠, ≤, ✓ and others) or leave it out. It never draws a box.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/word-forms.png" width="230" alt="Looking up angefangen opens anfangen">
+  <img src="docs/images/neuink/v1.3.1/word-forms.png" width="230" alt="Looking up angefangen opens anfangen">
 </p>
 
 ---
@@ -232,9 +232,9 @@ no font has a symbol does VARAGH draw the nearest look-alike (arrows, bullets,
 
 <table>
   <tr>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/long-press-ask.png" width="250" alt="The word Häuser selected by holding it, with the Ask bubble"><br><sub>Hold a word until it is selected.</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/selection-handles.png" width="250" alt="Several words selected with handles at both ends"><br><sub>Slide (or press the buttons) to select more words; handles mark both ends.</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/hold-to-select-setting.png" width="250" alt="Hold to Select setting with Fast, Normal, Slow and Very slow"><br><sub>Settings → Reader → <b>Hold to Select</b>.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/long-press-ask.png" width="250" alt="The word Häuser selected by holding it, with the Ask bubble"><br><sub>Hold a word until it is selected.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/selection-handles.png" width="250" alt="Several words selected with handles at both ends"><br><sub>Slide (or press the buttons) to select more words; handles mark both ends.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/hold-to-select-setting.png" width="250" alt="Hold to Select setting with Fast, Normal, Slow and Very slow"><br><sub>Settings → Reader → <b>Hold to Select</b>.</sub></td>
   </tr>
 </table>
 
@@ -274,7 +274,7 @@ example, set Long Press on a Word to **Highlight** and Tap to Look Up to
 **On**: a tap gives the meaning, a hold marks the passage.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/reader-settings.png" width="230" alt="Settings, Reader, with Hold to Select, Long Press on a Word and Tap to Look Up one under the other">
+  <img src="docs/images/neuink/v1.3.1/reader-settings.png" width="230" alt="Settings, Reader, with Hold to Select, Long Press on a Word and Tap to Look Up one under the other">
 </p>
 
 All three are shown only on readers with a touchscreen (the X4 Classic and
@@ -320,7 +320,7 @@ your finger, and you can change it:
   back to take one off. One press is always one word as it looks on the page.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/selection-handles.png" width="230" alt="Häuser am Ufer selected after two presses, with handles and the Ask bubble">
+  <img src="docs/images/neuink/v1.3.1/selection-handles.png" width="230" alt="Häuser am Ufer selected after two presses, with handles and the Ask bubble">
 </p>
 
 ### Long Press on a Word (1.2.1)
@@ -339,9 +339,9 @@ selection away. A word sent to **Flashcards** from the bubble (or with Add to…
 is looked up first, so the card gets its meaning.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/long-press-setting.png" width="230" alt="Settings, Reader: the four choices of Long Press on a Word">
-  <img src="docs/images/varagh/v1.3.1/hold-persian.png" width="230" alt="A selected Persian word with the bubble Look Up, Highlight, Add to">
-  <img src="docs/images/varagh/v1.3.1/flashcard-added.png" width="230" alt="The dictionary popup saying Added to Flashcards">
+  <img src="docs/images/neuink/v1.3.1/long-press-setting.png" width="230" alt="Settings, Reader: the four choices of Long Press on a Word">
+  <img src="docs/images/neuink/v1.3.1/hold-persian.png" width="230" alt="A selected Persian word with the bubble Look Up, Highlight, Add to">
+  <img src="docs/images/neuink/v1.3.1/flashcard-added.png" width="230" alt="The dictionary popup saying Added to Flashcards">
 </p>
 
 ### Tap to Look Up (1.2.1)
@@ -366,7 +366,7 @@ It needs a dictionary for the book: without one, taps keep turning pages.
 Switch it off again in the same place to get tap-to-turn back.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/tap-to-look-up.png" width="230" alt="The meaning of a tapped word shown over the page">
+  <img src="docs/images/neuink/v1.3.1/tap-to-look-up.png" width="230" alt="The meaning of a tapped word shown over the page">
 </p>
 
 ---
@@ -394,7 +394,7 @@ Switch it off again in the same place to get tap-to-turn back.
 ### Add to… from the dictionary
 
 <p align="center">
-  <img src="docs/images/varagh/v1.3.1/add-to-category.png" width="300" alt="Add to menu with Favorite Lines, Flashcards and New Category"><br>
+  <img src="docs/images/neuink/v1.3.1/add-to-category.png" width="300" alt="Add to menu with Favorite Lines, Flashcards and New Category"><br>
   <sub><b>Add to…</b>: pick Favorite Lines, Flashcards or one of your categories, or create a new one.</sub>
 </p>
 
@@ -420,9 +420,9 @@ so they survive firmware updates and can be copied off the card.
 
 <table>
   <tr>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/flashcards.png" width="250" alt="Flashcards list with a Practice button"><br><sub>The Flashcards list with the <b>Practice</b> button and how many cards you know.</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/flashcard-front.png" width="250" alt="Front of a flashcard showing a German word"><br><sub>Front of a card: the word. Tap to flip.</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/flashcard-back-ipa.png" width="250" alt="Back of a flashcard with the meaning, the pronunciation, and Again and Know it buttons"><br><sub>Back of the card: the saved meaning with its pronunciation, then <b>Again</b> or <b>Know it</b>.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/flashcards.png" width="250" alt="Flashcards list with a Practice button"><br><sub>The Flashcards list with the <b>Practice</b> button and how many cards you know.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/flashcard-front.png" width="250" alt="Front of a flashcard showing a German word"><br><sub>Front of a card: the word. Tap to flip.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/flashcard-back-ipa.png" width="250" alt="Back of a flashcard with the meaning, the pronunciation, and Again and Know it buttons"><br><sub>Back of the card: the saved meaning with its pronunciation, then <b>Again</b> or <b>Know it</b>.</sub></td>
   </tr>
 </table>
 
@@ -445,7 +445,7 @@ many cards you already know.
 ## 6. Swipe to delete
 
 <p align="center">
-  <img src="docs/images/varagh/v1.3.1/swipe-to-delete.png" width="300" alt="File list with a row swiped left showing a Delete button"><br>
+  <img src="docs/images/neuink/v1.3.1/swipe-to-delete.png" width="300" alt="File list with a row swiped left showing a Delete button"><br>
   <sub>A book swiped left in the File Browser, showing <b>Delete</b>.</sub>
 </p>
 
@@ -483,7 +483,7 @@ skips one extra screen pass.
 | X3 / X4 | 3–5.5 s | about 2.5–3 s |
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/picture.png" width="230" alt="A lake at dawn drawn in smooth greys">
+  <img src="docs/images/neuink/v1.3.1/picture.png" width="230" alt="A lake at dawn drawn in smooth greys">
 </p>
 
 ### Smoother, sharper pictures in books (1.1.0)
@@ -500,12 +500,12 @@ skips one extra screen pass.
 
 The close-ups below show the same part of the same picture at the same size,
 enlarged 2×. Each shows exactly the 4 greys the X4 Pro screen receives,
-computed on a computer by VARAGH's own picture code from test pictures.
+computed on a computer by NeuInk's own picture code from test pictures.
 
-<p align="center"><img src="docs/images/varagh/tiger/shading-landscape.png" alt="Landscape picture: crosshatch pattern in 1.0.1, smooth greys in 1.1.0"></p>
-<p align="center"><img src="docs/images/varagh/tiger/shading-portrait.png" alt="Portrait picture: crosshatch pattern in 1.0.1, smooth greys in 1.1.0"></p>
-<p align="center"><img src="docs/images/varagh/tiger/shading-line-art.png" alt="Line drawing: jagged lines in 1.0.1, cleaner lines in 1.1.0"></p>
-<p align="center"><img src="docs/images/varagh/tiger/shading-dark-scene.png" alt="Dark picture: more visible detail in 1.1.0"></p>
+<p align="center"><img src="docs/images/neuink/tiger/shading-landscape.png" alt="Landscape picture: crosshatch pattern in 1.0.1, smooth greys in 1.1.0"></p>
+<p align="center"><img src="docs/images/neuink/tiger/shading-portrait.png" alt="Portrait picture: crosshatch pattern in 1.0.1, smooth greys in 1.1.0"></p>
+<p align="center"><img src="docs/images/neuink/tiger/shading-line-art.png" alt="Line drawing: jagged lines in 1.0.1, cleaner lines in 1.1.0"></p>
+<p align="center"><img src="docs/images/neuink/tiger/shading-dark-scene.png" alt="Dark picture: more visible detail in 1.1.0"></p>
 
 ### Chapters open faster (1.1.0)
 
@@ -533,7 +533,7 @@ computed on a computer by VARAGH's own picture code from test pictures.
 
 - **Display power-off when idle (1.0.0).** After a quick page turn the display
   controller used to keep its power stage running until the next refresh.
-  VARAGH turns it off 5 seconds after the screen stops changing, and the next
+  NeuInk turns it off 5 seconds after the screen stops changing, and the next
   refresh turns it back on. Checked against all three X4 Pro panel controllers
   (SSD1677, UC8179, UC8279). Nothing changes on screen.
 - **The processor slows down sooner (1.1.0):** 1 second after the last button
@@ -569,8 +569,8 @@ something is slow.
 ## 8. Clock: summer time, sync and Live Clock
 
 <p align="center">
-  <img src="docs/images/varagh/v1.3.1/summer-time.png" width="300" alt="Summer Time setting with Off, EU (Germany) and US"><br>
-  <sub>Settings → General → <b>Summer Time</b>, beside Live Clock and Automatic Time Zone.</sub>
+  <img src="docs/images/neuink/v1.3.1/summer-time.png" width="300" alt="Summer Time setting with Off, EU (Germany) and US"><br>
+  <sub>Settings → General → <b>Summer Time</b>, beside Live Clock and UTC Offset.</sub>
 </p>
 
 **Settings → General → Summer Time** (up to 1.3.0: Settings → System → Device): Off, EU (Germany) or US. On
@@ -581,8 +581,7 @@ and file dates on the SD card.
 ### A clock that stays right (1.3.1)
 - **Synced on every Wi-Fi connect**, at most once an hour, not only the first
   time.
-- **Automatic Time Zone** (on by default) sets the GMT offset, summer time
-  included, from where the network is. Turn it off to set the offset by hand.
+- **Time zone by hand**: Settings → General → UTC Offset sets the GMT offset in quarter-hour steps.
 - **Live Clock** (off by default): the clock in the reader and on Home updates
   when the minute changes, with a quick update that does not flash and does not
   count toward full refreshes. Pages with pictures wait for the next page turn.
@@ -600,25 +599,25 @@ them too (see [section 1](#built-in-on-every-reader-131)).
 
 ---
 
-## 10. VARAGH name and logo
+## 10. NeuInk name and logo
 
 - **Logo** (new in 1.2.1): an open book with a V and a turning page.
-- **Boot screen**: the VARAGH logo with "VARAGH" and "Booting", and at the bottom
+- **Boot screen**: the NeuInk logo with "NeuInk" and "Booting", and at the bottom
   the version with its animal: a tiger up to 1.2.1 (**1.2.1 Tiger**), a lion from
   1.3.0 (**1.3.1 Lion**). The bottom of Settings shows **VARAGH 1.3.1 Lion** in
   the same way.
-- **Default sleep screen** (when no custom sleep image is set): the VARAGH logo
-  with "VARAGH" and "Sleeping"; light lines on black in dark mode.
+- **Default sleep screen** (when no custom sleep image is set): the NeuInk logo
+  with "NeuInk" and "Sleeping"; light lines on black in dark mode.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/sleep-logo.png" width="230" alt="Dark sleep screen with the logo in light lines, VARAGH and Sleeping">
-  <img src="docs/images/varagh/v1.3.1/settings-groups.png" width="230" alt="Settings with VARAGH 1.3.1 Lion and the lion at the bottom">
+  <img src="docs/images/neuink/v1.3.1/sleep-logo.png" width="230" alt="Dark sleep screen with the logo in light lines, NeuInk and Sleeping">
+  <img src="docs/images/neuink/v1.3.1/settings-groups.png" width="230" alt="Settings with VARAGH 1.3.1 Lion and the lion at the bottom">
 </p>
 
-- "VARAGH" in every place the menus said "CrossInk", in every UI language.
-- Web file manager: VARAGH logo, name and page titles.
-- Network names: Wi-Fi hotspot **VARAGH-Reader**, network name **VARAGH-xxxx**,
-  web address **http://varagh.local**, device name **VARAGH X4 Pro**.
+- "NeuInk" in every place the menus said "CrossInk", in every UI language.
+- Web file manager: NeuInk logo, name and page titles.
+- Network names: Wi-Fi hotspot **NeuInk-Reader**, network name **NeuInk-xxxx**,
+  web address **http://neuink.local**, device name **NeuInk X4 Pro**.
 - Version numbers start at 1.0.0.
 - New menus and messages are in English and German, and from 1.3.0 in Persian;
   other languages show them in English.
@@ -627,16 +626,16 @@ them too (see [section 1](#built-in-on-every-reader-131)).
 
 ## 11. Safe updates
 
-- **Online updates** (Settings → System → Check for Updates) come from VARAGH's
+- **Online updates** (Settings → System → Check for Updates) come from NeuInk's
   own GitHub releases, never from CrossInk.
 - **Warning before every firmware install**, online or from the SD card:
-  installing a CrossInk (or CrossPoint) release replaces VARAGH, and you lose its
+  installing a CrossInk (or CrossPoint) release replaces NeuInk, and you lose its
   features (highlights, flashcards, German dictionary tools, Persian fonts,
   battery savings).
 - When there is no release yet, the reader says **"No update available"**
   instead of showing an error.
 - **Menu languages come from the same release** (1.3.0): a language marked
-  "(download)" in the language list is fetched over Wi-Fi from the VARAGH
+  "(download)" in the language list is fetched over Wi-Fi from the NeuInk
   release that matches your firmware, or copied to the card from the
   `languages` folder of the release zip.
 
@@ -656,8 +655,8 @@ that has to be held (New game, Give up) shows "Hold to …" for two seconds when
 you only tap it.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/apps.png" width="230" alt="Apps with Go and Tic Tac Toe">
-  <img src="docs/images/varagh/v1.3.1/apps-manage.png" width="230" alt="Manage apps with a switch per app and Settings for Sudoku and Clock">
+  <img src="docs/images/neuink/v1.3.1/apps.png" width="230" alt="Apps with Go and Tic Tac Toe">
+  <img src="docs/images/neuink/v1.3.1/apps-manage.png" width="230" alt="Manage apps with a switch per app and Settings for Sudoku and Clock">
 </p>
 
 ### Wordle
@@ -706,9 +705,9 @@ you only tap it.
   | More statistics | averages and daily runs | off |
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/sudoku.png" width="230" alt="A Medium Sudoku with the number keys and Undo, Erase, Notes, Fill and Hint">
-  <img src="docs/images/varagh/v1.3.1/sudoku-hint.png" width="230" alt="An explaining hint: Only number that fits, with Show answer and Got it">
-  <img src="docs/images/varagh/v1.3.1/sudoku-settings.png" width="230" alt="Sudoku settings with a switch for each extra">
+  <img src="docs/images/neuink/v1.3.1/sudoku.png" width="230" alt="A Medium Sudoku with the number keys and Undo, Erase, Notes, Fill and Hint">
+  <img src="docs/images/neuink/v1.3.1/sudoku-hint.png" width="230" alt="An explaining hint: Only number that fits, with Show answer and Got it">
+  <img src="docs/images/neuink/v1.3.1/sudoku-settings.png" width="230" alt="Sudoku settings with a switch for each extra">
 </p>
 
 ### Chess
@@ -737,7 +736,7 @@ you only tap it.
 - Undo, Pass, Hint and a score at the end.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/go.png" width="230" alt="A game of Go on the 9 by 9 board">
+  <img src="docs/images/neuink/v1.3.1/go.png" width="230" alt="A game of Go on the 9 by 9 board">
 </p>
 
 ### Tic Tac Toe (1.3.0)
@@ -769,7 +768,7 @@ New in 1.2.0. In a word lookup, **Switch Dictionary** ends with **Online
 
 - It asks Wiktionary in the language of the word (English, German or Persian)
   and, when Wiktionary has no entry, Wikipedia for a short summary.
-- The answer is laid out like the VARAGH dictionaries and saved on the card, so
+- The answer is laid out like the NeuInk dictionaries and saved on the card, so
   the same word is answered offline from then on.
 - Normally Wi-Fi is only on for the lookup: the reader restarts into its Wi-Fi
   mode and back into the book, about 10 to 15 seconds for a new word.
@@ -812,11 +811,11 @@ you finish it), its rating goes with it. The rating is not written into the
 book file itself.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/rating-screen.png" width="180" alt="The rating screen with four and a half stars and Clear rating">
-  <img src="docs/images/varagh/v1.3.1/end-of-book-rating.png" width="180" alt="End of book with the title, the rating and what to continue with">
-  <img src="docs/images/varagh/v1.3.1/book-menu-rating.png" width="180" alt="The book menu with Rating and its stars after Rename">
-  <img src="docs/images/varagh/v1.3.1/library-stars.png" width="180" alt="Library with a book's stars at the end of its row">
-  <img src="docs/images/varagh/v1.3.1/reading-stats-stars.png" width="180" alt="Reading Stats with the stars in the title strip">
+  <img src="docs/images/neuink/v1.3.1/rating-screen.png" width="180" alt="The rating screen with four and a half stars and Clear rating">
+  <img src="docs/images/neuink/v1.3.1/end-of-book-rating.png" width="180" alt="End of book with the title, the rating and what to continue with">
+  <img src="docs/images/neuink/v1.3.1/book-menu-rating.png" width="180" alt="The book menu with Rating and its stars after Rename">
+  <img src="docs/images/neuink/v1.3.1/library-stars.png" width="180" alt="Library with a book's stars at the end of its row">
+  <img src="docs/images/neuink/v1.3.1/reading-stats-stars.png" width="180" alt="Reading Stats with the stars in the title strip">
 </p>
 
 ---
@@ -827,9 +826,9 @@ New in 1.3.0. **Settings → Dictionaries** (in 1.3.0: Settings → Reader →
 Dictionaries) is one page for every language you read.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/dictionaries.png" width="230" alt="The Dictionaries page on its Deutsch tab">
-  <img src="docs/images/varagh/v1.3.1/dictionaries-persian.png" width="230" alt="The Dictionaries page on its Persian tab">
-  <img src="docs/images/varagh/v1.3.1/online-sources.png" width="230" alt="Choosing the second online source: Wiktionary, English Wiktionary, OpenThesaurus, Wikipedia, None">
+  <img src="docs/images/neuink/v1.3.1/dictionaries.png" width="230" alt="The Dictionaries page on its Deutsch tab">
+  <img src="docs/images/neuink/v1.3.1/dictionaries-persian.png" width="230" alt="The Dictionaries page on its Persian tab">
+  <img src="docs/images/neuink/v1.3.1/online-sources.png" width="230" alt="Choosing the second online source: Wiktionary, English Wiktionary, OpenThesaurus, Wikipedia, None">
 </p>
 
 - **A tab per language.** **+** adds a language (English, Deutsch, فارسی,
@@ -869,8 +868,8 @@ Dictionaries) is one page for every language you read.
 New in 1.3.0, on the X4 Pro (it needs the touch screen and the front light).
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/control-center.png" width="230" alt="The Control Center with light and warmth sliders and eight buttons">
-  <img src="docs/images/varagh/v1.3.1/control-center-buttons.png" width="230" alt="Settings, Controls, Control Center: eight button slots">
+  <img src="docs/images/neuink/v1.3.1/control-center.png" width="230" alt="The Control Center with light and warmth sliders and eight buttons">
+  <img src="docs/images/neuink/v1.3.1/control-center-buttons.png" width="230" alt="Settings, Controls, Control Center: eight button slots">
 </p>
 
 **Swipe down from the top edge of the screen** to open the Control Center. A
@@ -912,10 +911,10 @@ each with an icon and a short line saying what is inside:
 | Reading Stats | Tracking, all-time stats, backup |
 | Network | Wi-Fi, Bluetooth remote, sync, OPDS |
 
-All VARAGH settings are kept. The side buttons move through the list.
+All NeuInk settings are kept. The side buttons move through the list.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/settings-groups.png" width="230" alt="Settings as eight groups with icons and descriptions">
+  <img src="docs/images/neuink/v1.3.1/settings-groups.png" width="230" alt="Settings as eight groups with icons and descriptions">
 </p>
 
 ---
@@ -926,9 +925,9 @@ New in 1.3.1. Books are laid out again once, the first time each is opened.
 
 <table>
   <tr>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/drop-cap.png" width="250" alt="A chapter opening with a large drop cap over three lines"><br><sub>A drop cap over the first lines.</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/box.png" width="250" alt="A tip in a bordered box with a light grey background"><br><sub>A bordered, lightly shaded box.</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/table.png" width="250" alt="A table laid out by the book, with a drop cap above it"><br><sub>A table, as the book lays it out.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/drop-cap.png" width="250" alt="A chapter opening with a large drop cap over three lines"><br><sub>A drop cap over the first lines.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/box.png" width="250" alt="A tip in a bordered box with a light grey background"><br><sub>A bordered, lightly shaded box.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/table.png" width="250" alt="A table laid out by the book, with a drop cap above it"><br><sub>A table, as the book lays it out.</sub></td>
   </tr>
 </table>
 
@@ -980,15 +979,15 @@ New in 1.3.0.
   a bolt while charging and "!" at 15 % or less.
 
 <p>
-  <img src="docs/images/varagh/v1.3.1/home.png" width="230" alt="Home with the Shahnameh cover, the bold icons and the battery icon">
-  <img src="docs/images/varagh/v1.3.1/apps.png" width="230" alt="Apps tiles in the same icon style">
+  <img src="docs/images/neuink/v1.3.1/home.png" width="230" alt="Home with the Shahnameh cover, the bold icons and the battery icon">
+  <img src="docs/images/neuink/v1.3.1/apps.png" width="230" alt="Apps tiles in the same icon style">
 </p>
 
 ---
 
 ## 21. Readers without touch
 
-From 1.3.0 VARAGH also runs on the **X4 Classic** and the **X3 / X4**, the same
+From 1.3.0 NeuInk also runs on the **X4 Classic** and the **X3 / X4**, the same
 version as on the X4 Pro. They have no touch screen or front light, so:
 
 - **Apps with buttons.** Apps is on Home. A frame shows what is picked; the
@@ -1008,9 +1007,9 @@ version as on the X4 Pro. They have no touch screen or front light, so:
 
 <table>
   <tr>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/control-center.png" width="230" alt="X4 Pro: the Control Center"><br><sub><b>X4 Pro</b>: the Control Center.</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/x4-classic-apps.png" width="230" alt="X4 Classic: Apps with a frame on Tic Tac Toe"><br><sub><b>X4 Classic</b>: Apps, the frame moved with the buttons.</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/varagh/v1.3.1/x3-button-selection.png" width="230" alt="X3: three words selected with the buttons and Look Up, Highlight, Add to"><br><sub><b>X3</b>: three words picked with the buttons, then Look Up, Highlight, Add to.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/control-center.png" width="230" alt="X4 Pro: the Control Center"><br><sub><b>X4 Pro</b>: the Control Center.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/x4-classic-apps.png" width="230" alt="X4 Classic: Apps with a frame on Tic Tac Toe"><br><sub><b>X4 Classic</b>: Apps, the frame moved with the buttons.</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v1.3.1/x3-button-selection.png" width="230" alt="X3: three words selected with the buttons and Look Up, Highlight, Add to"><br><sub><b>X3</b>: three words picked with the buttons, then Look Up, Highlight, Add to.</sub></td>
   </tr>
 </table>
 
@@ -1024,7 +1023,7 @@ How to install on these readers: [README, Readers without touch](README.md#reade
   source is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), OFL
   licence texts were added for all built-in fonts, and each release includes a
   full-source zip (the firmware binary includes GPL-licensed wolfSSL).
-- The display and UI library (FreeInk SDK) has VARAGH changes: the display idle
+- The display and UI library (FreeInk SDK) has NeuInk changes: the display idle
   power-off hook, a read-only touch hit-test used by swipe to delete, and in
   1.1.0 the 40 MHz SD card and the Faster Screen Link. The library with these
   changes is in each release's full-source zip and at
@@ -1043,8 +1042,8 @@ How to install on these readers: [README, Readers without touch](README.md#reade
   1.1.0 keeps that format, so books are not indexed again. 1.3.0 (a Persian
   fix) and 1.3.1 (drop caps, text sizes, boxes) each lay books out again once,
   the first time each is opened.
-- Guides: [fonts](docs/varagh/FONTS.md), [dictionaries](docs/varagh/DICTIONARIES.md),
-  [keeping up with CrossInk and CrossPoint](docs/varagh/UPSTREAM-SYNC.md),
+- Guides: [fonts](docs/neuink/FONTS.md), [dictionaries](docs/neuink/DICTIONARIES.md),
+  [keeping up with CrossInk and CrossPoint](docs/neuink/UPSTREAM-SYNC.md),
   [changelog](CHANGELOG.md).
 
 ---

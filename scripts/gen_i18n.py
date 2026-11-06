@@ -554,7 +554,7 @@ def generate_keys_header(
         "};"
     )
     lines.append("")
-    # VARAGH: every language in picker order, built in or not; the ones left out
+    # NeuInk: every language in picker order, built in or not; the ones left out
     # can come from a language pack on the SD card (see write_language_packs).
     all_sorted = [english_idx] + sorted(
         (i for i in range(len(languages)) if i != english_idx), key=lambda i: language_names[i]

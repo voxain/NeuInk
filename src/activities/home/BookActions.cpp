@@ -54,7 +54,7 @@ std::vector<FileBrowserActionActivity::MenuItem> buildBookActionItems(const std:
                                                                       const bool includeRemoveFromRecents) {
   std::vector<FileBrowserActionActivity::MenuItem> items;
   items.reserve(includeRemoveFromRecents ? 10 : 9);
-  // VARAGH: a book's rating leads its menu, with its stars in the row.
+  // NeuInk: a book's rating leads its menu, with its stars in the row.
   if (FsHelpers::hasEpubExtension(fullPath) || FsHelpers::hasXtcExtension(fullPath)) {
     const uint8_t rating = BookRatings::get(fullPath);
     items.push_back({FileBrowserAction::Rate, StrId::STR_RATING, std::nullopt,

@@ -33,7 +33,7 @@ class EndOfBookOptions {
   // book without them is called by its file name.
   void loadOnce(const std::string& currentBookPath, const std::string& title = {}, const std::string& author = {});
 
-  // VARAGH: the end screen asks for the book's rating with a row of stars. A
+  // NeuInk: the end screen asks for the book's rating with a row of stars. A
   // tap at this point that lands on them changes the rating and saves it; true
   // then, and the screen wants drawing again.
   bool rateAt(int x, int y);
@@ -90,7 +90,7 @@ class EndOfBookOptions {
   std::atomic<uint8_t> rating{0};
   // Written by the render task in loadOnce(), immutable afterwards; the main task only
   // reads it after isLoaded is observed true (acquire), so no further locking is needed.
-  // Absolute paths of the suggestions, in row order. VARAGH: the next book of
+  // Absolute paths of the suggestions, in row order. NeuInk: the next book of
   // the series, when the Library knows one, comes first.
   std::vector<std::string> names;
   // Built once with the suggestions so render() does not allocate on each e-ink refresh.

@@ -154,7 +154,7 @@ class EpubReaderActivity final : public Activity {
   uint16_t cachedPageParagraphOffset = 0;
   uint16_t cachedPageParagraphSpan = 0;
   std::atomic<uint8_t> pendingHeapShapeReaderRedrawStages{0};
-  // VARAGH: the next render is the one that follows a touch which found no word:
+  // NeuInk: the next render is the one that follows a touch which found no word:
   // the panel and the framebuffer still hold this page, so nothing is drawn.
   std::atomic<bool> skipRenderAfterMissedWord{false};
   static constexpr uint8_t HEAP_SHAPE_REDRAW_CLIP = 1U << 0;

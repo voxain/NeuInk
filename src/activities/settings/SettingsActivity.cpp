@@ -50,7 +50,6 @@
 #include "activities/util/KeyboardEntryActivity.h"
 #include "activities/util/OptionSelectionActivity.h"
 #include "components/CompactHeader.h"
-#include "components/CodenameMark.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
@@ -167,12 +166,11 @@ std::string formatCompactDuration(const uint32_t seconds) {
 
 void drawSystemVersionFooter(const GfxRenderer& renderer, const int pageWidth, const int pageHeight,
                              const ThemeMetrics& metrics) {
-  // "VARAGH 1.3.0 Lion" and the codename mark; Check for Updates shows the full
-  // version string.
-  const std::string label = std::string(tr(STR_CROSSINK)) + " " + CodenameMark::versionLabel();
+  // The product name and the version, plain. Check for Updates shows the same version.
+  const std::string label = std::string(tr(STR_CROSSINK)) + " " + CROSSINK_VERSION;
   const int bottomLineY =
       pageHeight - metrics.buttonHintsHeight - metrics.verticalSpacing - systemVersionFooterBottomInset;
-  CodenameMark::drawLabelCentered(renderer, SMALL_FONT_ID, pageWidth, bottomLineY, label.c_str());
+  renderer.drawCenteredText(SMALL_FONT_ID, bottomLineY, label.c_str());
 }
 
 bool isNightTimeSetting(const SettingInfo& setting) {
@@ -660,7 +658,7 @@ void SettingsActivity::openWordSpacingPicker() {
 }
 
 void SettingsActivity::openLanguagePicker() {
-  // VARAGH: every language; one left out of this firmware is marked for
+  // NeuInk: every language; one left out of this firmware is marked for
   // download until its pack is on the SD card (util/LanguagePacks).
   std::vector<std::string> options;
   options.reserve(std::size(ALL_SORTED_LANGUAGE_INDICES));
