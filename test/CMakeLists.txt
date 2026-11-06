@@ -115,7 +115,6 @@ add_subdirectory(library_builder)
 
 add_subdirectory(library_recent_order)
 add_subdirectory(scalable_fonts)
-add_subdirectory(wordle_game)
 add_subdirectory(sudoku_game)
 add_subdirectory(online_dictionary_text)
 add_subdirectory(chess_game)

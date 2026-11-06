@@ -659,16 +659,9 @@ you only tap it.
   <img src="docs/images/neuink/v1.3.1/apps-manage.png" width="230" alt="Manage apps with a switch per app and Settings for Sudoku and Clock">
 </p>
 
-### Wordle
+### Wordle (removed)
 
-- Find the five-letter English word in six tries. Black = right letter in the
-  right place, grey = in the word but elsewhere, faded = not in the word. The
-  keyboard keys carry the same marks.
-- Tap any box of the row you are typing to put the next letter there.
-- About 1,900 everyday answers; about 22,000 English words are accepted as
-  guesses.
-- **Give up** (top right) has to be held. After a round: your statistics, and
-  **Look up word** opens the answer in your English dictionary.
+NeuInk removed Wordle to keep firmware updates small enough for online (OTA) installs; see the changelog.
 
 ### Sudoku
 

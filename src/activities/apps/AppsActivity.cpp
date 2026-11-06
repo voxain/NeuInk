@@ -14,7 +14,6 @@
 #include "MappedInputManager.h"
 #include "SudokuActivity.h"
 #include "TicTacToeActivity.h"
-#include "WordleActivity.h"
 #include "fontIds.h"
 
 namespace {
@@ -31,25 +30,6 @@ constexpr int kStatusTop = 171;
 constexpr int kRowHeight = 72;
 constexpr int kRowGap = 12;
 constexpr uint8_t kFileMagic[3] = {'V', 'A', 'P'};
-
-// Three rows of three letter tiles in the game's own three looks, the last row solved.
-void drawWordleIcon(const GfxRenderer& renderer, const int x, const int y) {
-  enum Look : uint8_t { Open, Grey, Black };
-  static constexpr Look kLooks[9] = {Open, Grey, Black, Grey, Black, Open, Black, Black, Black};
-  constexpr int gap = 5;
-  constexpr int tile = (kIconSize - 2 * gap) / 3;
-  constexpr int radius = 5;
-  for (int i = 0; i < 9; ++i) {
-    const int tileX = x + (i % 3) * (tile + gap);
-    const int tileY = y + (i / 3) * (tile + gap);
-    if (kLooks[i] == Black) {
-      renderer.fillRoundedRect(tileX, tileY, tile, tile, radius, Color::Black);
-      continue;
-    }
-    if (kLooks[i] == Grey) renderer.fillRoundedRect(tileX, tileY, tile, tile, radius, Color::LightGray);
-    renderer.drawRoundedRect(tileX, tileY, tile, tile, 2, radius, true);
-  }
-}
 
 // One box of a Sudoku grid, heavy frame, with a few digits in it.
 void drawSudokuIcon(const GfxRenderer& renderer, const int x, const int y) {
@@ -177,8 +157,8 @@ void drawSwitch(const GfxRenderer& renderer, const int x, const int y, const boo
   }
 }
 
-// The names the app screens give themselves, in the order of AppId.
-constexpr const char* kActivityNames[] = {"Wordle", "Sudoku", "Chess", "Checkers", "Clock", "TicTacToe", "Go"};
+// The names the app screens give themselves, in the order of AppId. Slot 0 was Wordle (removed).
+constexpr const char* kActivityNames[] = {"", "Sudoku", "Chess", "Checkers", "Clock", "TicTacToe", "Go"};
 
 }  // namespace
 
@@ -188,7 +168,7 @@ AppsActivity::AppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInpu
 uint8_t AppsActivity::resumeIdFor(const std::string& activityName) {
   static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == kAppCount, "one name for every app");
   if (activityName == "Apps") return kResumeList;
-  for (int app = 0; app < kAppCount; ++app) {
+  for (const int app : kOrder) {
     if (activityName == kActivityNames[app]) return static_cast<uint8_t>(kResumeList + 1 + app);
   }
   return kResumeNone;
@@ -207,7 +187,7 @@ void AppsActivity::onEnter() {
   // tiles are read and drawn when that app is left.
   const int resumeApp = static_cast<int>(resumeId) - (kResumeList + 1);
   resumeId = kResumeNone;
-  if (resumeApp >= 0 && resumeApp < kAppCount && !hidden(resumeApp)) {
+  if (resumeApp > kRemovedWordle && resumeApp < kAppCount && !hidden(resumeApp)) {
     open(static_cast<AppId>(resumeApp));
     return;
   }
@@ -223,21 +203,6 @@ void AppsActivity::saveHidden() const {
 
 void AppsActivity::readStatus() {
   char line[96];
-
-  wordle::Game wordleGame;
-  uint8_t wordleBytes[wordle::Game::kSaveBytes];
-  if (gameui::readSave(WordleActivity::kSavePath, wordleBytes, sizeof(wordleBytes))) {
-    wordleGame.load(wordleBytes, sizeof(wordleBytes));
-  }
-  if (wordleGame.started() && wordleGame.state() == wordle::Game::State::Playing && wordleGame.guessCount() > 0) {
-    snprintf(line, sizeof(line), tr(STR_WORDLE_IN_PROGRESS), wordleGame.guessCount() + 1);
-  } else if (wordleGame.stats().played > 0) {
-    snprintf(line, sizeof(line), tr(STR_WORDLE_RECORD), static_cast<unsigned>(wordleGame.stats().played),
-             static_cast<unsigned>(wordleGame.stats().streak));
-  } else {
-    line[0] = '\0';
-  }
-  status[Wordle] = line;
 
   {
     // Larger than the main task's stack should carry next to the lines above.
@@ -342,9 +307,6 @@ void AppsActivity::changeClockSetting(const int row) {
 void AppsActivity::open(const AppId app) {
   std::unique_ptr<Activity> activity;
   switch (app) {
-    case Wordle:
-      activity = std::make_unique<WordleActivity>(renderer, mappedInput);
-      break;
     case Sudoku:
       activity = std::make_unique<SudokuActivity>(renderer, mappedInput);
       break;
@@ -432,7 +394,7 @@ void AppsActivity::loop() {
       requestUpdate();
       return;
     }
-    for (int app = 0; app < kAppCount; ++app) {
+    for (const int app : kOrder) {
       if (!rows[app].contains(tx, ty)) continue;
       hiddenMask ^= static_cast<uint8_t>(1u << app);
       saveHidden();
@@ -456,9 +418,6 @@ void AppsActivity::loop() {
 
 void AppsActivity::drawIcon(const int app, const int x, const int y) const {
   switch (app) {
-    case Wordle:
-      drawWordleIcon(renderer, x, y);
-      break;
     case Sudoku:
       drawSudokuIcon(renderer, x, y);
       break;
@@ -481,7 +440,7 @@ void AppsActivity::drawIcon(const int app, const int x, const int y) const {
 }
 
 void AppsActivity::drawTiles() const {
-  const char* names[kAppCount] = {tr(STR_GAME_WORDLE),   tr(STR_GAME_SUDOKU), tr(STR_GAME_CHESS),
+  const char* names[kAppCount] = {"",                   tr(STR_GAME_SUDOKU), tr(STR_GAME_CHESS),
                                   tr(STR_GAME_CHECKERS), tr(STR_APP_CLOCK),   tr(STR_GAME_TICTACTOE),
                                   tr(STR_GAME_GO)};
   for (int i = 0; i < shownCount; ++i) {
@@ -506,10 +465,10 @@ void AppsActivity::drawTiles() const {
 }
 
 void AppsActivity::drawManage() const {
-  const char* names[kAppCount] = {tr(STR_GAME_WORDLE),   tr(STR_GAME_SUDOKU), tr(STR_GAME_CHESS),
+  const char* names[kAppCount] = {"",                   tr(STR_GAME_SUDOKU), tr(STR_GAME_CHESS),
                                   tr(STR_GAME_CHECKERS), tr(STR_APP_CLOCK),   tr(STR_GAME_TICTACTOE),
                                   tr(STR_GAME_GO)};
-  for (int app = 0; app < kAppCount; ++app) {
+  for (const int app : kOrder) {
     const gameui::Box& row = rows[app];
     renderer.drawRoundedRect(row.x, row.y, row.w, row.h, 2, 12, true);
     const gameui::Box label{row.x + 24, row.y + 6, 190, row.h - 12};
@@ -520,7 +479,7 @@ void AppsActivity::drawManage() const {
     if (app == Clock) gameui::button(renderer, clockSettingsBox, tr(STR_SETTINGS_SHORT), false);
     if (app == Sudoku) gameui::button(renderer, sudokuSettingsBox, tr(STR_SETTINGS_SHORT), false);
   }
-  const int y = rows[kOrder[kAppCount - 1]].y + kRowHeight + 14;
+  const int y = rows[kOrder[kShownCount - 1]].y + kRowHeight + 14;
   int lineY = y;
   for (const auto& line : renderer.wrappedText(SMALL_FONT_ID, tr(STR_APPS_HIDDEN_NOTE),
                                                renderer.getScreenWidth() - 60, 3)) {

@@ -9,11 +9,20 @@
 #include "../../src/fontIds.h"
 #include "HalScalableFont.h"
 #include "ScalableAssets.generated.h"
+// NeuInk: NEUINK_PERSIAN_FONTS=1 embeds the Vazirmatn supplement (about 35 KB) that lends Persian and
+// Arabic letters to Bitter and Lexend Deca. Off by default in the X4 Pro build to save flash: Persian
+// then uses an installed SD-card font (NotoVazir) as before 1.3.1. Other builds keep it on.
+#ifndef NEUINK_PERSIAN_FONTS
+#define NEUINK_PERSIAN_FONTS 1
+#endif
+
 namespace {
 std::optional<HalScalableFont> faces[8];
+#if NEUINK_PERSIAN_FONTS
 // NeuInk: Persian letters the reader fonts lack, borrowed glyph by glyph (regular and bold).
 std::optional<HalScalableFont> persianFace;
 std::optional<HalScalableFont> persianBoldFace;
+#endif
 // NeuInk: pronunciation (IPA) letters and combining marks, the family's shared fallback.
 std::optional<HalScalableFont> ipaFace;
 bool ready[2] = {};
@@ -58,6 +67,7 @@ void ensureScalableBuiltinFamily(GfxRenderer& renderer, unsigned family) {
     LOG_ERR("TTF", "Built-in family unavailable; using UI recovery font");
   }
   ready[family] = ok;
+#if NEUINK_PERSIAN_FONTS
   if (ok && !persianFace) {
     persianFace.emplace();
     if (!persianFace->openMemory(vazirmatn_persianOutline, sizeof(vazirmatn_persianOutline))) {
@@ -72,6 +82,7 @@ void ensureScalableBuiltinFamily(GfxRenderer& renderer, unsigned family) {
       LOG_ERR("TTF", "Built-in Persian bold supplement unavailable");
     }
   }
+#endif
   if (ok && !ipaFace) {
     ipaFace.emplace();
     if (!ipaFace->openMemory(noto_ipaOutline, sizeof(noto_ipaOutline))) {
@@ -84,10 +95,12 @@ void ensureScalableBuiltinFamily(GfxRenderer& renderer, unsigned family) {
       EpdFontFamily font(faces[family * 4]->atSize(points), faces[family * 4 + 1]->atSize(points),
                          faces[family * 4 + 2]->atSize(points), faces[family * 4 + 3]->atSize(points),
                          ipaFace ? ipaFace->atSize(points) : nullptr);
+#if NEUINK_PERSIAN_FONTS
       if (persianFace) {
         const EpdFont* persian = persianFace->atSize(points);
         font = font.withSupplement(persian, persianBoldFace ? persianBoldFace->atSize(points) : persian);
       }
+#endif
       renderer.insertFont(scalableBuiltinReaderFontId(family, points), font);
       for (unsigned size = 0; size < 4; ++size)
         if (points == 10 + size * 2) renderer.insertFont(ids[family][size], font);

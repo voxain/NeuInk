@@ -1,5 +1,32 @@
 # NeuInk changelog
 
+## [Unreleased]
+
+Makes the firmware smaller. The X4 Pro firmware was at 6.29 MB of its 6.55 MB update
+slot (96%), and online (OTA) updates only work while the image fits that slot, so every
+new feature was closer to making updates impossible. This release removes or trims
+features to get room back; each item says why. The image is now 6.07 MB, 217 KB smaller, leaving
+482 KB free.
+
+- Removed Wordle (about 65 KB): the game, its 22,000-word list and its tests. It was the
+  largest single feature that is not part of reading. Sudoku, Chess, Checkers, Go, Tic
+  Tac Toe and the Clock stay. The numbers of the apps in the saved hide/resume files are
+  unchanged, so nothing else needs resetting. An old `wordle.bin` on the SD card is
+  ignored and can be deleted.
+- Hyphenation now ships for English and German only (about 117 KB saved). The patterns
+  for French, Spanish, Italian, Polish, Portuguese, Russian, Swedish and Ukrainian are no
+  longer built into the firmware; books in those languages are laid out without
+  hyphenation, which only changes where long words break at line ends. German is the
+  largest pattern set (206 KB) and stays because NeuInk's main use is English and German
+  books. The generated pattern files are still in the tree, and building with
+  `-DNEUINK_HYPHENATION_ALL=1` brings every language back.
+- The Persian font supplement (Vazirmatn, about 35 KB) is now optional at build time. The
+  X4 Pro build leaves it out with `-DNEUINK_PERSIAN_FONTS=0`; remove that flag to put it
+  back. Without it, Bitter and Lexend Deca have no Persian or Arabic letters of their
+  own, so Persian books use an installed NotoVazir from the SD card, as they did before
+  1.3.1. Persian menus, keyboard, dictionary and right-to-left layout are unchanged.
+  The reason: it duplicates NotoVazir, which can live on the SD card instead of in flash.
+
 ## [NeuInk 0.2.0] - 2026-11-06
 
 Adds switching to VARAGH, CrossInk or CrossPoint from the settings, and repairs online

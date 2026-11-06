@@ -85,7 +85,7 @@ list, with photos and how to use each one, is in **[FEATURES.md](FEATURES.md)**.
 
 ### Apps and clock
 
-- **Games:** Wordle, Sudoku with five levels, a daily puzzle and explaining hints,
+- **Games:** Sudoku with five levels, a daily puzzle and explaining hints,
   Chess, Checkers, Go and Tic Tac Toe. Apps stay open across sleep, and you can hide
   the ones you do not use.
 - **Clock & Calendar**, also as a sleep screen.
