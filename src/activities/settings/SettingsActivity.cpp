@@ -1671,9 +1671,10 @@ void SettingsActivity::buildGroupList(UiApp::ScreenType& screen) {
   props.textGap = 14;    // a little more air between the icon and the text
   const fui::Rect body = screen.body();
   configureUiList(props, screen.theme(), body, UiListRowType::WithSubtitle);
-  // Every group keeps the same room however many there are; the list scrolls when they do not all fit.
-  props.rowHeight = std::max<int16_t>(props.rowHeight, 88);
-  props.rowGap = std::max<int16_t>(props.rowGap, 10);
+  // About nine groups fill the screen, whatever its size, at a comfortable height; with more they scroll.
+  constexpr int kGroupsOnScreen = 9;
+  const int fillHeight = (body.height - props.rowGap * (kGroupsOnScreen - 1)) / kGroupsOnScreen;
+  props.rowHeight = static_cast<int16_t>(std::clamp(fillHeight, static_cast<int>(props.rowHeight), 96));
   const auto rows = fui::listVisibleRows(body, props.rowHeight, props.rowGap);
   visibleRows = rows > 0 ? rows : 1;
   topIndex = scrollListBy(topIndex, 0, visibleRows, GroupCount);

@@ -10,12 +10,15 @@
 #include "MappedInputManager.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
+#include "activities/apps/AppRegistry.h"
+#include "activities/reader/ReadingStatsUtils.h"
 #include "fontIds.h"
+#include "util/AppUsage.h"
 
 namespace {
 constexpr int kSide = 16;
 constexpr int kCardPad = 20;
-constexpr int kCardHeight = 300;
+constexpr int kCardHeight = 250;
 constexpr int kAxisWidth = 44;  // room for the % labels
 constexpr int kAxisHeight = 30;  // room for the time labels
 }  // namespace
@@ -121,7 +124,7 @@ void BatteryActivity::render(RenderLock&&) {
     }
     const float denominator = count * sumXX - sumX * sumX;
     if (lastIndex >= 0 && count >= 3 && denominator > 0.0f) {
-      const float slope = (count * sumXY - sumX * sumY) / denominator;  // percent per half hour
+      const float slope = (count * sumXY - sumX * sumY) / denominator;  // percent per quarter hour
       const float from = levels[lastIndex];
       const int steps = BatteryHistory::kBuckets;
       int fromX = plotX + half * lastIndex / last;
@@ -131,7 +134,7 @@ void BatteryActivity::render(RenderLock&&) {
         level = level < 0.0f ? 0.0f : (level > 100.0f ? 100.0f : level);
         const int toX = middle + half * k / steps;
         const int toY = levelY(level);
-        if ((k / 2) % 2 == 0) renderer.drawLine(fromX, fromY, toX, toY, 3, true);  // dashed: an estimate
+        if ((k / 4) % 2 == 0) renderer.drawLine(fromX, fromY, toX, toY, 3, true);  // dashed: an estimate
         fromX = toX;
         fromY = toY;
         if (level <= 0.0f || level >= 100.0f) break;
@@ -145,6 +148,27 @@ void BatteryActivity::render(RenderLock&&) {
     renderer.drawText(SMALL_FONT_ID, kSide, y, line.c_str(), true);
     y += renderer.getLineHeight(SMALL_FONT_ID);
   }
+
+  // Time in each app today: a gray row per app that was opened.
+  y += 10;
+  renderer.drawText(UI_10_FONT_ID, kSide, y, tr(STR_APPS_TIME_TODAY), true, EpdFontFamily::BOLD);
+  y += renderer.getLineHeight(UI_10_FONT_ID) + 8;
+  bool any = false;
+  for (const apps::Info& app : apps::kAll) {
+    const uint32_t seconds = AppUsage::secondsToday(app.id);
+    if (seconds == 0) continue;
+    any = true;
+    constexpr int rowHeight = 40;
+    renderer.fillRoundedRect(kSide, y, width - 2 * kSide, rowHeight, rowHeight / 2, Color::LightGray);
+    const int textY = y + (rowHeight - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
+    renderer.drawText(UI_10_FONT_ID, kSide + 20, textY, I18N.get(app.name), true);
+    char duration[24];
+    formatCompactReadingDuration(seconds, duration, sizeof(duration));
+    renderer.drawText(UI_10_FONT_ID, width - kSide - 20 - renderer.getTextWidth(UI_10_FONT_ID, duration, EpdFontFamily::BOLD),
+                      textY, duration, true, EpdFontFamily::BOLD);
+    y += rowHeight + 6;
+  }
+  if (!any) renderer.drawText(SMALL_FONT_ID, kSide, y, tr(STR_NO_APP_TIME), true);
 
   const auto labels = mappedInput.mapLabels(mappedInput.withBackArrow(tr(STR_BACK)), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

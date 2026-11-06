@@ -1196,10 +1196,11 @@ class SimulatorSmokeTest {
           inputScript.push_back(render("Settings Back returns to the group list", 3));
           inputScript.push_back(assertSettingsNavigation(-1, 1));
           addTap(down);  // Reader
+          addTap(down);  // Network
           addTap(down);  // Dictionaries
           addTap(down);  // Controls
           addTap(MappedInputManager::Button::Confirm);
-          inputScript.push_back(assertSettingsNavigation(4, 1));  // Power Button
+          inputScript.push_back(assertSettingsNavigation(5, 1));  // Controls, the sixth group; first row: Power Button
           addTap(down);  // Front Buttons
           addTap(down);  // Side Buttons
           addTap(MappedInputManager::Button::Confirm);

@@ -1,3 +1,4 @@
+#include "util/AppUsage.h"
 #include "ActivityManager.h"
 
 #include <BlePageTurner.h>
@@ -680,6 +681,9 @@ void ActivityManager::loop() {
         exitActivity(lock);
         // Clear the stack
         while (!stackActivities.empty()) {
+#if NEUINK_BATTERY_HISTORY
+          AppUsage::exit(stackActivities.back()->name);
+#endif
           stackActivities.back()->onExit();
           stackActivities.pop_back();
         }
@@ -691,6 +695,9 @@ void ActivityManager::loop() {
       currentActivity = std::move(pendingActivity);
 
       lock.unlock();  // onEnter may acquire its own lock
+#if NEUINK_BATTERY_HISTORY
+      AppUsage::enter(currentActivity->name);
+#endif
       currentActivity->onEnter();
 
       if (pendingAction == PendingAction::None && pendingReaderMenuAction >= 0 &&
@@ -853,6 +860,9 @@ void ActivityManager::exitActivity(const RenderLock& lock) {
   // Note: lock must be held by the caller
   if (currentActivity) {
     TouchRegistry::getInstance().clear();
+#if NEUINK_BATTERY_HISTORY
+    AppUsage::exit(currentActivity->name);
+#endif
     currentActivity->onExit();
     currentActivity.reset();
   }
@@ -870,6 +880,9 @@ void ActivityManager::replaceActivity(std::unique_ptr<Activity>&& newActivity) {
     // No current activity, safe to launch immediately
     TouchRegistry::getInstance().clear();
     currentActivity = std::move(newActivity);
+#if NEUINK_BATTERY_HISTORY
+    AppUsage::enter(currentActivity->name);
+#endif
     currentActivity->onEnter();
   }
 }
