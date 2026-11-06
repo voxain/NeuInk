@@ -31,17 +31,14 @@ namespace {
 #define CROSSINK_OTA_RELEASE_URL "https://api.github.com/repos/voxain/NeuInk/releases/latest"
 #endif
 
-constexpr char latestReleaseUrl[] = CROSSINK_OTA_RELEASE_URL;
+constexpr char neuInkReleaseUrl[] = CROSSINK_OTA_RELEASE_URL;
 
 #ifdef CROSSINK_FIRMWARE_DEVICE_TYPE
-constexpr char firmwareAssetStem[] = "firmware-" CROSSINK_FIRMWARE_DEVICE_TYPE;
-constexpr char firmwareAssetName[] = "firmware-" CROSSINK_FIRMWARE_DEVICE_TYPE ".bin";
+constexpr char firmwareDeviceType[] = CROSSINK_FIRMWARE_DEVICE_TYPE;
 #else
-constexpr char firmwareAssetStem[] = "firmware";
-constexpr char firmwareAssetName[] = "firmware.bin";
+constexpr char firmwareDeviceType[] = "";
 #endif
 
-constexpr char binSuffix[] = ".bin";
 constexpr size_t VERSION_SEGMENT_COUNT = 4;
 constexpr size_t OTA_PROGRESS_UPDATE_BYTES = 64 * 1024;
 constexpr size_t OTA_HASH_CHUNK = 4096;
@@ -115,12 +112,6 @@ int compareVersions(const char* latestVersion, const char* currentVersion) {
   return 0;
 }
 
-bool startsWith(const char* value, const char* prefix) {
-  if (value == nullptr || prefix == nullptr) return false;
-  const size_t prefixLength = strlen(prefix);
-  return strncmp(value, prefix, prefixLength) == 0;
-}
-
 char lowerHex(const uint8_t value) {
   return value < 10 ? static_cast<char>('0' + value) : static_cast<char>('a' + value - 10);
 }
@@ -150,20 +141,12 @@ bool sha256Matches(const uint8_t digest[32], const char* expectedHex) {
 
 bool isHttpUrl(const std::string& url) { return url.rfind("http://", 0) == 0; }
 
-bool endsWith(const char* value, const char* suffix) {
-  if (value == nullptr || suffix == nullptr) return false;
-  const size_t valueLength = strlen(value);
-  const size_t suffixLength = strlen(suffix);
-  if (suffixLength > valueLength) return false;
-  return strcmp(value + valueLength - suffixLength, suffix) == 0;
-}
+// ReleaseJsonParser takes a plain function pointer, so the target being checked
+// is kept here. checkForUpdate() sets it just before it builds the parser.
+firmware_targets::Target assetMatchTarget = firmware_targets::Target::NEUINK;
 
 bool isMatchingFirmwareAssetName(const char* assetName) {
-  if (assetName == nullptr) return false;
-  if (strcmp(assetName, firmwareAssetName) == 0) return true;
-  if (!startsWith(assetName, firmwareAssetStem)) return false;
-  if (assetName[strlen(firmwareAssetStem)] != '-') return false;
-  return endsWith(assetName, binSuffix);
+  return firmware_targets::matchesAsset(assetMatchTarget, firmwareDeviceType, assetName);
 }
 
 /*
@@ -282,6 +265,9 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
   processedSize = 0;
   totalSize = 0;
 
+  const char* const latestReleaseUrl = firmware_targets::releaseUrl(target, neuInkReleaseUrl);
+  assetMatchTarget = target;
+
   esp_err_t esp_err;
   ReleaseJsonParser releaseParser(isMatchingFirmwareAssetName);
 
@@ -299,7 +285,7 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
   };
 
   totalBytesReceived = 0;
-  LOG_DBG("OTA", "Checking for update (current: %s)", CROSSINK_VERSION);
+  LOG_DBG("OTA", "Checking %s for update (current: %s)", firmware_targets::displayName(target), CROSSINK_VERSION);
 
   esp_http_client_handle_t client_handle = esp_http_client_init(&client_config);
   if (!client_handle) {
@@ -345,7 +331,8 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
   latestVersion = releaseParser.getTagName();
 
   if (!releaseParser.foundFirmware()) {
-    LOG_ERR("OTA", "No matching %s asset found for release %s", firmwareAssetStem, latestVersion.c_str());
+    LOG_ERR("OTA", "No %s firmware for device \"%s\" in release %s", firmware_targets::displayName(target),
+            firmwareDeviceType, latestVersion.c_str());
     return NO_UPDATE;
   }
 
@@ -362,9 +349,12 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
 }
 
 bool OtaUpdater::isUpdateNewer() const {
-  if (!updateAvailable || latestVersion.empty() || latestVersion == CROSSINK_VERSION) {
-    return false;
-  }
+  if (!updateAvailable || latestVersion.empty()) return false;
+  // A cross-grade installs another project's latest release. Its version numbers
+  // (VARAGH 1.3.2, CrossPoint 2.0.0) are not comparable with NeuInk's, so there
+  // is nothing to compare.
+  if (isCrossGrade()) return true;
+  if (latestVersion == CROSSINK_VERSION) return false;
 
   const int comparison = compareVersions(latestVersion.c_str(), CROSSINK_VERSION);
   LOG_DBG("OTA", "Version comparison latest=%s current=%s result=%d", latestVersion.c_str(), CROSSINK_VERSION,
@@ -388,6 +378,12 @@ OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate(ProgressCallback onProgres
     return CANCELLED_ERROR;
   }
   const bool hasManifestSha256 = isSha256Hex(otaSha256.c_str());
+  if (isCrossGrade() && !hasManifestSha256) {
+    // Replacing NeuInk with someone else's build must be pinned to the digest the
+    // release API published, so the bytes are exactly what the maintainers shipped.
+    LOG_ERR("OTA", "Refusing cross-grade firmware without a manifest sha256");
+    return JSON_PARSE_ERROR;
+  }
   if (!otaSha256.empty() && !hasManifestSha256) {
     LOG_ERR("OTA", "Refusing firmware with invalid manifest sha256");
     return JSON_PARSE_ERROR;
