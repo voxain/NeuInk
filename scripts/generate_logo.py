@@ -87,7 +87,7 @@ def write_boot_header(rows):
 
 
 WORDMARK_FONT = ROOT / "lib" / "EpdFont" / "builtinFonts" / "source" / "GasoekOne" / "GasoekOne-Regular.ttf"
-WORDMARK_HEADER = ROOT / "src" / "images" / "SleepWordmark.h"
+WORDMARK_HEADER = ROOT / "src" / "images" / "NeuInkWordmark.h"
 WORDMARK_TEXT = "NeuInk"
 WORDMARK_WIDTH = 336  # upright width, a multiple of 8
 WORDMARK_HEIGHT = 104  # upright height, a multiple of 8
@@ -114,14 +114,14 @@ def write_wordmark_header():
         "// 1 bit per pixel (1 = white), stored rotated like BootLogo192 for the portrait",
         "// draw path. Generated from lib/EpdFont/builtinFonts/source/GasoekOne by",
         "// scripts/generate_logo.py; do not edit.",
-        "static const uint8_t SleepWordmark[] = {",
+        "static const uint8_t NeuInkWordmark[] = {",
     ]
     for start in range(0, len(data), 19):
         chunk = ", ".join(f"0x{b:02x}" for b in data[start : start + 19])
         last = start + 19 >= len(data)
         lines.append(f"    {chunk}{'};' if last else ','}")
     lines.append(
-        f'static_assert(sizeof(SleepWordmark) == {WORDMARK_WIDTH * WORDMARK_HEIGHT} / 8, "SleepWordmark size");'
+        f'static_assert(sizeof(NeuInkWordmark) == {WORDMARK_WIDTH * WORDMARK_HEIGHT} / 8, "NeuInkWordmark size");'
     )
     WORDMARK_HEADER.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 

@@ -44,7 +44,7 @@
 #include "components/themes/minimal/MinimalTheme.h"
 #include "fontIds.h"
 #include "images/BootLogo192.h"
-#include "images/SleepWordmark.h"
+#include "images/NeuInkWordmark.h"
 #include "images/MoonIcon.h"
 
 namespace {
@@ -673,7 +673,7 @@ void SleepActivity::renderDefaultSleepScreen() const {
   renderer.drawImage(BootLogo192, (pageWidth - 192) / 2, (pageHeight - 192) / 2, 192, 192);
   // The wordmark is 336x104 upright. Its stored bitmap is 104 wide and 336 tall
   // in panel coordinates; in portrait the logical x is one less than the panel x.
-  renderer.drawImage(SleepWordmark, (pageWidth - 336) / 2 - 1, pageHeight / 2 + 116, 104, 336);
+  renderer.drawImage(NeuInkWordmark, (pageWidth - 336) / 2 - 1, pageHeight / 2 + 116, 104, 336);
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 250, tr(STR_SLEEPING));
   if (!lightSleepScreen) {
     renderer.invertScreen();
