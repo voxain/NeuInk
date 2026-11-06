@@ -31,7 +31,7 @@ constexpr char kSaveDir[] = "/.crosspoint/games";
 // - kBottomMargin between the lowest control and the foot of the screen.
 constexpr int kHeaderGap = 8;
 constexpr int kSectionGap = 12;
-constexpr int kBottomMargin = 20;
+constexpr int kBottomMargin = 44;  // clear of the panel's bezel, which sits recessed at the foot
 // A button in the header is as tall as the smallest comfortable touch target.
 constexpr int kCornerHeight = 44;
 // The back arrow and the title sit this far below their usual place, which
@@ -105,11 +105,21 @@ inline void stamp(const GfxRenderer& renderer, const appart::Bitmap& bitmap, con
   bitsAt(renderer, bitmap.bits, bitmap.width, bitmap.height, x, y, black);
 }
 
-// A piece that stays readable on any square: its white underlay first, then its ink.
-inline void stampOver(const GfxRenderer& renderer, const appart::Bitmap& ink, const appart::Bitmap& underlay,
-                      const int x, const int y) {
-  stamp(renderer, underlay, x, y, false);
-  stamp(renderer, ink, x, y, true);
+// A chess piece: its outline for white, its filled shape for black. The filled shape goes under a white
+// piece in white, and around a black one as a one-pixel rim, so either stays readable on a hatched square.
+inline void piece(const GfxRenderer& renderer, const appart::Bitmap& outline, const appart::Bitmap& silhouette,
+                  const bool white, const int x, const int y) {
+  if (white) {
+    stamp(renderer, silhouette, x, y, false);
+    stamp(renderer, outline, x, y, true);
+    return;
+  }
+  for (int dy = -1; dy <= 1; ++dy) {
+    for (int dx = -1; dx <= 1; ++dx) {
+      if (dx != 0 || dy != 0) stamp(renderer, silhouette, x + dx, y + dy, false);
+    }
+  }
+  stamp(renderer, silhouette, x, y, true);
 }
 
 // The large game letters and digits (GameGlyphs.h), which the UI fonts are too

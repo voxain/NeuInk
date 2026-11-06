@@ -35,6 +35,7 @@
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
 #include "components/UiAppHelpers.h"
+#include "components/icons/homeIcons.h"
 #include "components/icons/listIcons.h"
 #include "components/themes/minimal/MinimalTheme.h"
 #include "fontIds.h"
@@ -1398,10 +1399,9 @@ void FileBrowserActivity::buildListScreen(UiApp::ScreenType& screen) {
     settings.styles = fui::plainStyles(fui::Paint::solid(fui::Color::Black));
     settings.minTouchSize = screen.theme().minTouchSize;
     screen.button(settings, settingsRect);
-    const auto icon = fui::bitmapFromIcon(icon_sliders_horizontal_24);
+    const auto icon = fui::bitmapFromIcon(icon_controls_24);
     const int16_t iconX = static_cast<int16_t>(settingsRect.x + (settingsRect.width - icon.width) / 2);
-    const int16_t iconY = static_cast<int16_t>(backLayout.iconRect.y + TouchHeaderBackButton::TITLE_VERTICAL_OFFSET +
-                                               (backLayout.iconRect.height - icon.height) / 2);
+    const int16_t iconY = static_cast<int16_t>(TouchHeaderBackButton::titleCenterY(header) - icon.height / 2);
     screen.target().bitmap(fui::Rect{iconX, iconY, icon.width, icon.height}, icon, fui::BitmapMode::Center,
                            fui::Paint::solid(fui::Color::Black));
   }

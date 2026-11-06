@@ -16,11 +16,11 @@
 namespace {
 
 constexpr int kSquare = 58;
-constexpr int kPieceInset = 1;  // the piece bitmaps are 56 pixels
+constexpr int kPieceInset = 5;  // the piece bitmaps are 48 pixels
 constexpr int kStripHeight = 30;
 constexpr int kToolHeight = 100;
 constexpr int kToolGap = 8;
-constexpr int kSmallStep = 20;
+constexpr int kSmallStep = 24;
 constexpr uint8_t kFileMagic[4] = {'V', 'C', 'A', '1'};
 // Room for the computer to remember this many positions, from the reader's
 // large memory (PSRAM); boards without it play without. In matches on a PC a
@@ -461,9 +461,8 @@ void ChessActivity::drawBoard() const {
     if (!content) continue;
     const gameui::Box box = squareBox(square);
     const int kind = artIndex(chess::pieceOf(content));
-    const appart::Bitmap& ink =
-        chess::colourOf(content) == chess::White ? *appart::kPieceWhite[kind] : *appart::kPieceBlack[kind];
-    gameui::stampOver(renderer, ink, *appart::kPieceUnder[kind], box.x + kPieceInset, box.y + kPieceInset);
+    gameui::piece(renderer, *appart::kPieceOutline[kind], *appart::kPieceSilhouette[kind],
+                  chess::colourOf(content) == chess::White, box.x + kPieceInset, box.y + kPieceInset);
   }
 
   if (selected >= 0) {
@@ -513,10 +512,10 @@ void ChessActivity::drawStrip(const int y, const chess::Colour side) const {
   int x = board.x + board.w - count * kSmallStep - 6;
   for (const chess::Piece piece : kOrder) {
     const int kind = artIndex(piece);
-    const appart::Bitmap& art =
-        victim == chess::White ? *appart::kSmallPieceWhite[kind] : *appart::kSmallPieceBlack[kind];
+    const appart::Bitmap& art = *appart::kSmallPieceOutline[kind];
     for (int i = game->lost(victim, piece); i > 0; --i) {
-      gameui::stampOver(renderer, art, *appart::kSmallPieceUnder[kind], x, y + (kStripHeight - art.height) / 2);
+      gameui::piece(renderer, art, *appart::kSmallPieceSilhouette[kind], victim == chess::White, x,
+                    y + (kStripHeight - art.height) / 2);
       x += kSmallStep;
     }
   }
@@ -547,8 +546,9 @@ void ChessActivity::drawPromotionPanel() const {
     const gameui::Box& box = promotionBoxes[i];
     renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 8, true);
     const int kind = artIndex(kChoices[i]);
-    const appart::Bitmap& art = white ? *appart::kPieceWhite[kind] : *appart::kPieceBlack[kind];
-    gameui::stamp(renderer, art, box.x + (box.w - art.width) / 2, box.y + (box.h - art.height) / 2);
+    const appart::Bitmap& art = *appart::kPieceOutline[kind];
+    gameui::piece(renderer, art, *appart::kPieceSilhouette[kind], white, box.x + (box.w - art.width) / 2,
+                  box.y + (box.h - art.height) / 2);
   }
 }
 

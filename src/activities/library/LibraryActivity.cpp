@@ -33,6 +33,7 @@
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/libraryIcons.h"
+#include "components/icons/homeIcons.h"
 #include "components/icons/listIcons.h"
 
 namespace fui = freeink::ui;
@@ -926,33 +927,34 @@ void LibraryActivity::buildListScreen(UiApp::ScreenType& screen) {
   const int16_t controlSize = HEADER_CONTROL_SIZE;
   const auto header = TouchHeaderBackButton::headerRect(renderer, mappedInput);
   const int16_t right = static_cast<int16_t>(renderer.getScreenWidth() - bounds[1] - headerControlRightInset());
+  // On the title's line, so the icons sit level with it.
+  const int16_t controlY = static_cast<int16_t>(TouchHeaderBackButton::titleCenterY(header) - controlSize / 2);
   if (mappedInput.hasTouchHardware()) {
     fui::ButtonProps action;
     action.action = ACTION_CONTROL;
     action.inputMask = fui::InputTouch;
     action.styles = fui::plainStyles();
     action.styles.selected = screen.theme().button.selected;
-    action.icon = fui::bitmapFromIcon(icon_refresh_cw_32);
+    action.icon = fui::bitmapFromIcon(icon_refresh_24);
     action.value = 0;
     action.state = showSelection && selection == 0 ? fui::StateSelected : fui::StateNormal;
     screen.button(action,
                   fui::Rect{static_cast<int16_t>(right - 3 * controlSize - 2 * HEADER_CONTROL_GAP),
-                            static_cast<int16_t>(header.y + header.height - controlSize), controlSize, controlSize});
-    action.icon = fui::bitmapFromIcon(icon_search_32);
+                            controlY, controlSize, controlSize});
+    action.icon = fui::bitmapFromIcon(icon_search_24);
     action.value = 1;
     action.state = showSelection && selection == 1 ? fui::StateSelected : fui::StateNormal;
     screen.button(action,
                   fui::Rect{static_cast<int16_t>(right - 2 * controlSize - HEADER_CONTROL_GAP),
-                            static_cast<int16_t>(header.y + header.height - controlSize), controlSize, controlSize});
-    action.icon = fui::bitmapFromIcon(icon_ellipsis_vertical_32);
+                            controlY, controlSize, controlSize});
+    action.icon = fui::bitmapFromIcon(icon_more_vertical_24);
     action.value = 2;
     action.state = showSelection && selection == 2 ? fui::StateSelected : fui::StateNormal;
-    // Give the small overflow icon a 56px touch target. Keep its bottom edge at
-    // the header boundary so the expanded target cannot steal taps from sorting.
+    // Give the small overflow icon a 56px touch target.
     action.hitPadding = fui::Insets{12, 6, 0, 6};
     screen.button(action,
                   fui::Rect{static_cast<int16_t>(right - controlSize),
-                            static_cast<int16_t>(header.y + header.height - controlSize), controlSize, controlSize});
+                            controlY, controlSize, controlSize});
   }
   buildSortHeader(screen);
   if (scanFailed || index.ranksDegraded() || filterFailed) {

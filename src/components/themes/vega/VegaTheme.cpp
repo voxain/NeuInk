@@ -181,7 +181,7 @@ const freeink::Icon* VegaTheme::headerIcon() const {
       {"OpdsBookBrowser", UIIcon::Opds},         {"OpdsServerList", UIIcon::Opds},
       {"OpdsSettings", UIIcon::Opds},            {"Apps", UIIcon::Apps},
       {"CrossPointWebServer", UIIcon::Transfer}, {"NetworkModeSelection", UIIcon::Transfer},
-      {"WifiSelection", UIIcon::Wifi},           {"BookStats", UIIcon::Chart},
+      {"WifiSelection", UIIcon::Wifi},           {"BookStats", UIIcon::Chart},           {"StatsPicker", UIIcon::Chart},
       {"HighlightsHub", UIIcon::BookmarkIcon},   {"HighlightCategory", UIIcon::BookmarkIcon},
       {"SavedItemsHome", UIIcon::BookmarkIcon},
   };
@@ -195,7 +195,7 @@ int VegaTheme::statusClockFontId() const { return UI_10_FONT_ID; }
 
 // A battery without an outline: a rounded light-gray body, filled black to the charge, the percentage
 // (without its sign) inside it, drawn white over the filled part and black over the rest. A bolt beside
-// it while charging, and the Wi-Fi icon when Wi-Fi is on.
+// it while charging, and the Wi-Fi icon when Wi-Fi is on (crossed out while it is on but not joined).
 void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const bool batteryLeft,
                                  const bool showPercentage, const bool onBand) const {
   const uint16_t percentage = std::min<uint16_t>(powerManager.getBatteryPercentage(), 100);
@@ -222,6 +222,6 @@ void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const b
     return left;
   };
   if (gpio.isUsbConnected() && percentage < 100) drawBatteryLightningBolt(renderer, place(8), centerY - 6, true);
-  const freeink::Icon* wifi = OnlineWifi::connected() ? &icon_wifi_on_24 : (OnlineWifi::manualOn() ? &icon_wifi_zero_24 : nullptr);
+  const freeink::Icon* wifi = OnlineWifi::connected() ? &icon_wifi_on_24 : (OnlineWifi::manualOn() ? &icon_wifi_off_24 : nullptr);
   if (wifi != nullptr) drawLucideIcon(renderer, *wifi, place(wifi->w), centerY - wifi->h / 2);
 }

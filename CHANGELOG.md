@@ -38,6 +38,16 @@
 - About: the SD card's used space is worked out on request (it reads the whole FAT).
 - Switches in reader menus use the 50% gray, which survives the reader's refresh; the File Browser
   settings and the reader drawer use the same switch as the lists now.
+- Reading Stats opens a list first: "All Books" on top, then every recent book with its progress, so
+  the stats to see are chosen first. The stats pages use rounded light-gray tiles and rounded bars
+  instead of outlined boxes; the shared action buttons (e.g. the Wi-Fi prompts) follow the same look.
+- Chess pieces are Lucide (48 px on the board, 24 px for the captured pieces): the outline is the
+  white piece and the same shape filled in is the black one. That is about half the size of the old
+  Noto bitmaps (4.3 KB, was 8.9 KB). The checkers crown is Lucide's too.
+- The status bar's "on but not joined" Wi-Fi icon is Lucide's crossed-out Wi-Fi (the single dot was
+  too easy to miss). The title bars' trailing icons (File Manager, Library, OPDS) are Lucide and sit
+  on the title's line. The quick settings pane has no outline. Vega's Home does a half refresh after
+  the pane closes. The games' controls keep a larger gap to the foot of the screen.
 - Fixed: the quick-settings panel drew a gray bar at the top; the book card's top rows were
   painted over by the Home header.
 - File Transfer is now part of the File Manager (its settings page) and no longer a Home

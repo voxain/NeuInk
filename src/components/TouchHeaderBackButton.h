@@ -21,6 +21,9 @@ struct Layout {
 Layout layout(const Rect& header);
 int height(const ThemeMetrics& metrics, const MappedInputManager& input);
 Rect headerRect(const GfxRenderer& renderer, const MappedInputManager& input);
+// The y of the middle of the title row of a header drawn by draw()/drawCompact(): where the back arrow and the
+// title are centred. Icons at the right end of the bar use it to sit on the same line.
+int titleCenterY(const Rect& header, int verticalOffset = TITLE_VERTICAL_OFFSET);
 Rect standardHeaderRect(const GfxRenderer& renderer);
 Rect compactHeaderRect(const GfxRenderer& renderer);
 bool wasTapped(const MappedInputManager& input, const Rect& header);

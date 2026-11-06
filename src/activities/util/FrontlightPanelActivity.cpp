@@ -55,7 +55,7 @@ constexpr fui::ActionId ACTION_CC_BUTTON = 8;
 constexpr int CC_CARD_TOP = 34;
 constexpr int CC_CARD_SIDE = 12;
 constexpr int CC_CARD_PAD = 22;
-constexpr int CC_CARD_RADIUS = 28;
+constexpr int CC_CARD_RADIUS = 32;
 constexpr int CC_LIGHT_H = 84;
 constexpr int CC_LIGHT_BOX_H = 64;  // the brightness box inside its row
 constexpr int CC_BOX_RADIUS = 20;
@@ -80,7 +80,7 @@ const freeink::Icon* controlButtonIcon(const uint8_t button, const bool on) {
     case CrossPointSettings::CC_NIGHT_LIGHT: return &icon_cc_moon_24;
     case CrossPointSettings::CC_GUIDE_DOTS: return &icon_cc_more_24;
     case CrossPointSettings::CC_FOCUS_READING: return &icon_cc_focus_24;
-    case CrossPointSettings::CC_REFRESH: return &icon_cc_refresh_24;
+    case CrossPointSettings::CC_REFRESH: return &icon_refresh_24;
     case CrossPointSettings::CC_SYNC: return &icon_cc_sync_24;
     case CrossPointSettings::CC_SLEEP: return &icon_cc_power_24;
     case CrossPointSettings::CC_SETTINGS: return &icon_settings_24;
@@ -824,11 +824,9 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   const int x1 = width - CC_CARD_SIDE;
   const int cardBottom = panelBottom;
 
-  // Card: a soft dotted shadow, white body, 2 px rim.
-  renderer.fillRoundedRect(x0 + 3, CC_CARD_TOP + 4, x1 - x0, cardBottom - CC_CARD_TOP, CC_CARD_RADIUS,
-                           Color::LightGray);
+  // Card: a white rounded body on a gray shadow, no outline, like the other surfaces of the UI.
+  renderer.fillRoundedRect(x0 + 1, CC_CARD_TOP + 6, x1 - x0, cardBottom - CC_CARD_TOP, CC_CARD_RADIUS, Color::DarkGray);
   renderer.fillRoundedRect(x0, CC_CARD_TOP, x1 - x0, cardBottom - CC_CARD_TOP, CC_CARD_RADIUS, Color::White);
-  renderer.drawRoundedRect(x0, CC_CARD_TOP, x1 - x0, cardBottom - CC_CARD_TOP, 2, CC_CARD_RADIUS, true);
 
   // Taps outside the card close it; the grabber band closes it too.
   const int screenH = renderer.getScreenHeight();
@@ -838,7 +836,7 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   drawerHandleRect = fui::Rect{static_cast<int16_t>(width / 2 - 60), static_cast<int16_t>(cardBottom - CC_GRABBER_BAND),
                                120, CC_GRABBER_BAND};
   screen.frame().hit(drawerHandleRect, ACTION_DISMISS, 0, fui::InputTouch);
-  renderer.fillRoundedRect(width / 2 - 24, cardBottom - 14, 48, 5, 2, Color::Black);
+  renderer.fillRoundedRect(width / 2 - 24, cardBottom - 14, 48, 6, 3, Color::DarkGray);
 
   // Light: a rounded box, light gray, filled dark up to the level with the percent in it. The - and +
   // buttons for exact steps only show while the buttons are being used; a finger drags the box.

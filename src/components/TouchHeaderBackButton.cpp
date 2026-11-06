@@ -48,6 +48,11 @@ Layout layout(const Rect& header) {
           actionX + actionWidth + titleGap};
 }
 
+int titleCenterY(const Rect& header, const int verticalOffset) {
+  const Layout back = layout(header);
+  return back.iconRect.y + effectiveVerticalOffset(back, header, verticalOffset) + back.iconRect.height / 2;
+}
+
 Rect standardHeaderRect(const GfxRenderer& renderer) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   return Rect{0, metrics.topPadding, renderer.getScreenWidth(), metrics.headerHeight};

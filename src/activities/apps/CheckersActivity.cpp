@@ -420,9 +420,8 @@ void CheckersActivity::drawPiece(const gameui::Box& box, const uint8_t content) 
     gameui::ring(renderer, cx, cy, radius - 6, 2, false);
   }
   if (checkers::isKing(content)) {
-    const appart::Bitmap& crown = appart::kSmallPieceBlackQueen;
     if (!light) gameui::disc(renderer, cx, cy, radius - 8, true);
-    gameui::stamp(renderer, crown, cx - crown.width / 2, cy - crown.height / 2, light);
+    drawLucideIcon(renderer, icon_crown_24, cx - 12, cy - 12, light);
   }
 }
 

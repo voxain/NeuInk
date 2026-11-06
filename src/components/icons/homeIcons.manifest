@@ -29,7 +29,8 @@ stats = chart-column
 settings = settings
 transfer_arrows = arrow-left-right
 wifi_on = wifi
-wifi_zero = wifi-zero
+wifi_off = wifi-off
+crown = crown
 chevron_right = chevron-right
 display = monitor
 reader = book-open
@@ -48,7 +49,7 @@ cc_bulb_off = lightbulb-off
 cc_moon = moon
 cc_more = ellipsis
 cc_focus = a-large-small
-cc_refresh = refresh-cw
+refresh = refresh-cw
 cc_sync = cloud-sync
 cc_power = power
 cc_rotate = rotate-cw
@@ -57,3 +58,7 @@ cc_warm = flame
 
 # The Clock app's exit button.
 exit_x = x
+
+# Trailing icons of the title bars.
+search = search
+more_vertical = ellipsis-vertical
