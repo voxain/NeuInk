@@ -33,7 +33,7 @@ class CrossPointState : public PersistableStore<CrossPointState> {
   uint8_t recentBootFill = 0;                         // valid entries (0..BOOT_RECENT_COUNT)
   uint8_t readerActivityLoadCount = 0;
   bool lastSleepFromReader = false;
-  // VARAGH: the app that was open when sleep began (one of AppsActivity's
+  // NeuInk: the app that was open when sleep began (one of AppsActivity's
   // resume numbers, 0 for none), so waking returns to it as it does to a book.
   uint8_t lastSleepApp = 0;
   bool showBootScreen = true;

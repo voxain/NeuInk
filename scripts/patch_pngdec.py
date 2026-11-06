@@ -21,7 +21,7 @@ import re
 import sys
 
 TARGETS = ("inflate.c", "inffast.c")
-DISABLED = "// #define ALLOWS_UNALIGNED  /* VARAGH: byte-wise copies, see scripts/patch_pngdec.py */"
+DISABLED = "// #define ALLOWS_UNALIGNED  /* NeuInk: byte-wise copies, see scripts/patch_pngdec.py */"
 DEFINE_RE = re.compile(r"^#define ALLOWS_UNALIGNED[ \t]*(?=\r?$)", re.MULTILINE)
 
 

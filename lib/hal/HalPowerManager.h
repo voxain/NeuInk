@@ -26,10 +26,10 @@ class HalPowerManager {
   int normalFreq = 0;  // MHz
   bool isLowPower = false;
   bool panelWaitLowered = false;  // CPU lowered by beginPanelWait(), not setPowerSaving()
-  // VARAGH: set while Wi-Fi is only kept associated in the background (the
+  // NeuInk: set while Wi-Fi is only kept associated in the background (the
   // online dictionary's "keep Wi-Fi on"), not carrying a transfer.
   bool wifiIdleLowPowerAllowed = false;
-  // VARAGH: background jobs that need the processor while the screen is being
+  // NeuInk: background jobs that need the processor while the screen is being
   // refreshed (a board game's computer move, an online lookup with a book open).
   std::atomic<uint8_t> backgroundJobs{0};
   // Wi-Fi needs the 80 MHz bus clock, which the S3 boards keep at their low
@@ -57,11 +57,11 @@ class HalPowerManager {
   static constexpr unsigned long BATTERY_POLL_MS = 1500;       // ms
 
   void begin();
-  // VARAGH: lets the idle clock drop while Wi-Fi is merely kept associated.
+  // NeuInk: lets the idle clock drop while Wi-Fi is merely kept associated.
   // Every other Wi-Fi user leaves this off and keeps the full clock.
   void setWifiIdleLowPowerAllowed(bool allowed) { wifiIdleLowPowerAllowed = allowed; }
 
-  // VARAGH: brackets a background job that needs the processor. While one
+  // NeuInk: brackets a background job that needs the processor. While one
   // runs, beginPanelWait() leaves the clock alone: the wait is idle time for
   // the task that draws, but not for the job.
   void beginBackgroundJob();

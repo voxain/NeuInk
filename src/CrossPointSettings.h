@@ -38,7 +38,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     QUICK_RESUME = 9,
     MINIMAL_STATS_SLEEP = 10,
     DASHBOARD_SLEEP = 11,
-    // VARAGH: today's date over the month's calendar, as the Clock app draws it.
+    // NeuInk: today's date over the month's calendar, as the Clock app draws it.
     CLOCK_SLEEP = 12,
     SLEEP_SCREEN_MODE_COUNT
   };
@@ -336,7 +336,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     HOME_BUTTON_TOGGLE_FRONTLIGHT = 24,
     HOME_BUTTON_READER_MENU = 25,
     HOME_BUTTON_ACTION_COUNT = 26,
-    // VARAGH: go straight to the Home screen from anywhere. HOME_BUTTON_BACK_HOME
+    // NeuInk: go straight to the Home screen from anywhere. HOME_BUTTON_BACK_HOME
     // stays the one-step Back action. The value sits far above the shared
     // power-button actions so an upstream addition can never collide with it.
     HOME_BUTTON_HOME = 250
@@ -399,7 +399,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     TILT_PAGE_TURN_DIRECTION_COUNT
   };
 
-  // VARAGH Control Center buttons (Settings > Controls > Control Center).
+  // NeuInk Control Center buttons (Settings > Controls > Control Center).
   // Values are persisted: append only.
   enum CONTROL_CENTER_BUTTON : uint8_t {
     CC_EMPTY = 0,
@@ -528,8 +528,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Set once an NTP sync writes both date and time. Kept separate so older
   // time-only syncs do not unlock date display with stale RTC date registers.
   uint8_t clockDateHasBeenSynced = 0;
-  // Set the UTC offset (summer time included) from the network's location on each clock sync.
-  uint8_t clockAutoZone = 1;
   // Redraw the clock when the minute changes, while the reader or Home screen is open.
   uint8_t liveClock = 0;
   // Text rendering settings
@@ -554,7 +552,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
         return 450;
     }
   }
-  // VARAGH: what lifting the finger does once a long press has selected a word
+  // NeuInk: what lifting the finger does once a long press has selected a word
   // or more: look it up (as before), ask with a bubble of choices, or highlight
   // or file it at once. Persisted by index: append only.
   enum WORD_HOLD_ACTION : uint8_t {
@@ -565,16 +563,16 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     HOLD_ACTION_COUNT
   };
   uint8_t wordHoldAction = HOLD_ASK;
-  // VARAGH: a tap on a word looks it up. Taps then no longer turn the page in
+  // NeuInk: a tap on a word looks it up. Taps then no longer turn the page in
   // a book (swipes still do); a long press still selects several words.
   uint8_t tapToLookUp = 0;
   // Page-turn gestures remain independently configurable while touch reader controls stay enabled.
   uint8_t pageTurnGesture = TAP_AND_SWIPE;
   uint8_t previousPageGesture = TAP_AND_SWIPE;
-  // VARAGH: right-to-left books (Persian, Arabic, Hebrew) swap the touch page-turn
+  // NeuInk: right-to-left books (Persian, Arabic, Hebrew) swap the touch page-turn
   // sides, so the left side is "next". 0 keeps the same sides as every other book.
   uint8_t rtlBookMirrorPageTurns = 1;
-  // VARAGH (experimental): keep Wi-Fi joined while a book is open, so the
+  // NeuInk (experimental): keep Wi-Fi joined while a book is open, so the
   // online dictionary answers in place instead of restarting twice. Costs
   // battery for as long as a book is open. See network/OnlineWifi.h.
   uint8_t onlineDictWifiAlwaysOn = 0;
@@ -765,7 +763,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t frontlightScheduleEnabled = 0;
   uint16_t frontlightScheduleStart = 0xFFFF;
   uint16_t frontlightScheduleEnd = 0xFFFF;
-  // VARAGH night light: dimmer and warmer between the two times. The live
+  // NeuInk night light: dimmer and warmer between the two times. The live
   // brightness/warmth above belong to the day or the night set
   // (frontlightLiveIsNight); the other set waits in frontlightOther*.
   uint8_t frontlightNightEnabled = 0;

@@ -19,10 +19,10 @@
 namespace fui = freeink::ui;
 
 namespace {
-constexpr int MENU_ITEMS = 8;
-const StrId menuNames[MENU_ITEMS] = {StrId::STR_USERNAME,          StrId::STR_PASSWORD,      StrId::STR_SYNC_SERVER_URL,
-                                     StrId::STR_DOCUMENT_MATCHING, StrId::STR_SEND_METADATA, StrId::STR_SYNC_BEHAVIOR,
-                                     StrId::STR_SIGN_UP,           StrId::STR_AUTHENTICATE};
+constexpr int MENU_ITEMS = 7;
+const StrId menuNames[MENU_ITEMS] = {StrId::STR_USERNAME,          StrId::STR_PASSWORD,      StrId::STR_DOCUMENT_MATCHING,
+                                     StrId::STR_SEND_METADATA, StrId::STR_SYNC_BEHAVIOR, StrId::STR_SIGN_UP,
+                                     StrId::STR_AUTHENTICATE};
 constexpr fui::ActionId ACTION_ROW = 1;
 }  // namespace
 
@@ -129,21 +129,6 @@ void KOReaderSettingsActivity::handleSelection() {
                              }
                            });
   } else if (selectedIndex == 2) {
-    // Sync Server URL - prefill with https:// if empty to save typing
-    const std::string currentUrl = KOREADER_STORE.getServerUrl();
-    const std::string prefillUrl = currentUrl.empty() ? "https://" : currentUrl;
-    startActivityForResult(std::make_unique<KeyboardEntryActivity>(renderer, mappedInput, tr(STR_SYNC_SERVER_URL),
-                                                                   prefillUrl, 128, InputType::Url),
-                           [this](const ActivityResult& result) {
-                             if (!result.isCancelled) {
-                               const auto& kb = std::get<KeyboardResult>(result.data);
-                               const std::string urlToSave =
-                                   (kb.text == "https://" || kb.text == "http://") ? "" : kb.text;
-                               KOREADER_STORE.setServerUrl(urlToSave);
-                               KOREADER_STORE.saveToFile();
-                             }
-                           });
-  } else if (selectedIndex == 3) {
     // Document Matching - toggle between Filename and Binary
     const auto current = KOREADER_STORE.getMatchMethod();
     const auto newMethod =
@@ -151,12 +136,12 @@ void KOReaderSettingsActivity::handleSelection() {
     KOREADER_STORE.setMatchMethod(newMethod);
     KOREADER_STORE.saveToFile();
     requestUpdate();
-  } else if (selectedIndex == 4) {
+  } else if (selectedIndex == 3) {
     // Send Metadata - toggle on/off
     KOREADER_STORE.setSendMetadata(!KOREADER_STORE.getSendMetadata());
     KOREADER_STORE.saveToFile();
     requestUpdate();
-  } else if (selectedIndex == 5) {
+  } else if (selectedIndex == 4) {
     // Sync behavior - toggle between Ask and Smart
     const auto current = KOREADER_STORE.getSyncBehavior();
     const auto newBehavior = (current == KOReaderSyncBehavior::ASK_EVERY_TIME) ? KOReaderSyncBehavior::SMART
@@ -164,13 +149,13 @@ void KOReaderSettingsActivity::handleSelection() {
     KOREADER_STORE.setSyncBehavior(newBehavior);
     KOREADER_STORE.saveToFile();
     requestUpdate();
-  } else if (selectedIndex == 6) {
+  } else if (selectedIndex == 5) {
     // Sign Up - create a new account on the sync server with the entered credentials
     if (!KOREADER_STORE.hasCredentials()) {
       return;
     }
     silentRestartToNetwork(NetworkBootTarget::KOREADER_AUTH, 1);
-  } else if (selectedIndex == 7) {
+  } else if (selectedIndex == 6) {
     // Authenticate
     if (!KOREADER_STORE.hasCredentials()) {
       // Can't authenticate without credentials - just show message briefly
@@ -201,19 +186,8 @@ void KOReaderSettingsActivity::buildListScreen(UiApp::ScreenType& screen) {
     } else if (i == 1) {
       values[i] = KOREADER_STORE.getPassword().empty() ? tr(STR_NOT_SET) : "******";
     } else if (i == 2) {
-      values[i] = KOREADER_STORE.getServerUrl();
-      if (values[i].empty()) {
-        // Show which server the default actually is, scheme stripped for space
-        std::string defaultUrl = KOREADER_STORE.getBaseUrl();
-        const auto schemeEnd = defaultUrl.find("://");
-        if (schemeEnd != std::string::npos) {
-          defaultUrl.erase(0, schemeEnd + 3);
-        }
-        values[i] = std::string(tr(STR_DEFAULT_VALUE)) + ": " + defaultUrl;
-      }
-    } else if (i == 3) {
       values[i] = KOREADER_STORE.getMatchMethod() == DocumentMatchMethod::FILENAME ? tr(STR_FILENAME) : tr(STR_BINARY);
-    } else if (i == 5) {
+    } else if (i == 4) {
       values[i] =
           KOREADER_STORE.getSyncBehavior() == KOReaderSyncBehavior::SMART ? tr(STR_SMART_SYNC) : tr(STR_ASK_EVERY_TIME);
     } else {
@@ -227,7 +201,7 @@ void KOReaderSettingsActivity::buildListScreen(UiApp::ScreenType& screen) {
     fui::ListItem item;
     item.label = I18N.get(menuNames[i]);
     if (!values[i].empty()) item.value = values[i].c_str();
-    item.toggle = i == 4;
+    item.toggle = i == 3;
     item.toggleChecked = KOREADER_STORE.getSendMetadata();
     item.actionValue = static_cast<int16_t>(i);
     items.push_back(item);

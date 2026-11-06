@@ -374,11 +374,11 @@ class GfxRenderer {
   // Grayscale functions
   void setRenderMode(RenderMode mode);
   bool grayPlanesAreAbsolute() const { return absoluteGrayPlanes; }
-  // VARAGH: round corners without the one-pixel bump at their outermost point
+  // NeuInk: round corners without the one-pixel bump at their outermost point
   // (a pixel counts when its centre is within radius + 1/2). Used by the
   // Control Center only; other screens keep their exact look.
   void setSmoothRoundEnds(const bool on) { smoothRoundEnds = on; }
-  // VARAGH: draw each glyph one pixel wider and taller (Focus Reading's Persian bold, which
+  // NeuInk: draw each glyph one pixel wider and taller (Focus Reading's Persian bold, which
   // is too close to the regular weight on e-ink). Done in one pass: redrawing shifted copies
   // would let one copy's grey edge pixels turn the other copy's black pixels grey.
   void setThickenGlyphs(const bool on) const { thickenGlyphs_ = on; }

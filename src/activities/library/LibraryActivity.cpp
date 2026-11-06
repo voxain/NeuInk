@@ -751,7 +751,7 @@ void LibraryActivity::listScreen(UiApp::ScreenType& screen, void* user) {
 
 void LibraryActivity::provideRow(void* user, const uint16_t row, fui::ListItem& item) {
   auto* self = static_cast<LibraryActivity*>(user);
-  // VARAGH: ratings are kept by full path, so read that when there are any;
+  // NeuInk: ratings are kept by full path, so read that when there are any;
   // the file name is enough for the icon otherwise.
   if (!self->readBook(row, self->rowScratch, !self->ratings.empty())) {
     item.label = tr(STR_LIBRARY_UNAVAILABLE);
@@ -760,7 +760,7 @@ void LibraryActivity::provideRow(void* user, const uint16_t row, fui::ListItem& 
   }
   item.label = self->rowScratch.title.c_str();
   if (!self->rowScratch.author.empty()) item.subtitle = self->rowScratch.author.c_str();
-  // VARAGH: a rated book shows its stars at the end of its row.
+  // NeuInk: a rated book shows its stars at the end of its row.
   if (const uint8_t rating = self->ratings.find(self->rowScratch.path)) {
     self->ratingScratch = bookrating::stars(rating);
     item.value = self->ratingScratch.c_str();
@@ -1232,7 +1232,7 @@ void LibraryActivity::promptDeleteBook(const RecentBook& book) {
   openDialog(makeUniqueNoThrow<ConfirmationActivity>(renderer, mappedInput, heading, book.title), std::move(handler));
 }
 
-// VARAGH: Delete revealed by swiping a list row left. Sorted by Recently Read
+// NeuInk: Delete revealed by swiping a list row left. Sorted by Recently Read
 // it removes the entry from the recent books (the file stays), as the Recent
 // Books list did; in the other sorts it asks before deleting the book file,
 // as the file browser does.

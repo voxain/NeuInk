@@ -5,7 +5,7 @@
 #include <cstring>
 #include <string_view>
 
-// VARAGH: Focus Reading for Persian (and other Arabic-script) words.
+// NeuInk: Focus Reading for Persian (and other Arabic-script) words.
 //
 // Like English, the first part of every word is bold (Focus Reading's share of
 // its letters, at least one letter). The cut may fall between two joined

@@ -127,5 +127,5 @@ class SudokuActivity final : public Activity {
   gameui::Box solvedNewBox;
   gameui::Box checkBoxes[kCheckButtonCount];
   gameui::Box pairBoxes[2];  // the two buttons of the Hint and Over panels
-  gameui::ButtonPointer pointer;  // VARAGH: apps on button readers
+  gameui::ButtonPointer pointer;  // NeuInk: apps on button readers
 };

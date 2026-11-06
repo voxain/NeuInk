@@ -80,7 +80,7 @@ TEST(BookRatingText, NamesCannotBreakALineApart) {
 TEST(BookRatingText, SkipsLinesThatAreNotRatings) {
   ListLine entry;
   EXPECT_FALSE(bookrating::parseLine("", entry));
-  EXPECT_FALSE(bookrating::parseLine("# VARAGH book ratings", entry));
+  EXPECT_FALSE(bookrating::parseLine("# NeuInk book ratings", entry));
   EXPECT_FALSE(bookrating::parseLine("3.5\tOnly a title", entry));
   EXPECT_FALSE(bookrating::parseLine("\tTitle\tAuthor\t/x.epub", entry));
   EXPECT_FALSE(bookrating::parseLine("4\tTitle\tAuthor\t", entry));

@@ -365,7 +365,7 @@ void BookStatsActivity::loop() {
     return;
   }
 #if CROSSINK_APP_CAP_TOUCH
-  // VARAGH: a tap on the title strip of the book's card, where its stars are.
+  // NeuInk: a tap on the title strip of the book's card, where its stars are.
   if (page == Page::PerBook && !ratedBookPath.empty() && !usesNoRtcSingleScreenLayout()) {
     int tapX = 0;
     int tapY = 0;

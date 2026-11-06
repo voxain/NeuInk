@@ -221,7 +221,7 @@ std::unique_ptr<PageDropCap> PageDropCap::deserialize(FsFile& file) {
 void PageBorderBox::renderBackground(GfxRenderer& renderer, const int xOffset, const int yOffset,
                                      const bool foregroundBlack) const {
   if (!shaded) return;
-  // VARAGH: a sparse dot screen (1 pixel in 9, staggered) reads as light gray but, unlike the
+  // NeuInk: a sparse dot screen (1 pixel in 9, staggered) reads as light gray but, unlike the
   // 50% dither CrossPoint uses, leaves the letters on top clear.
   const int x0 = xPos + xOffset;
   const int y0 = yPos + yOffset;

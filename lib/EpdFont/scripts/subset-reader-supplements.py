@@ -1,4 +1,4 @@
-"""VARAGH: small outlines the scalable built-in reader fonts borrow letters from.
+"""NeuInk: small outlines the scalable built-in reader fonts borrow letters from.
 
 vazirmatn_persian.ttf / vazirmatn_persian_bold.ttf: Persian letters (EpdFontFamily::withSupplement).
 noto_ipa.ttf: pronunciation (IPA) letters and combining marks (the family fallback).

@@ -119,9 +119,9 @@ void SdFirmwareUpdateActivity::promptConfirmation() {
     RenderLock lock(*this);
     state = State::CONFIRMING;
   }
-  // Warn that a CrossInk file replaces VARAGH, then "Update firmware?" with
+  // Warn that a CrossInk file replaces NeuInk, then "Update firmware?" with
   // the file name as the body line.
-  std::string heading = std::string(tr(STR_VARAGH_UPDATE_WARNING)) + " " + tr(STR_FIRMWARE_UPDATE_PROMPT);
+  std::string heading = std::string(tr(STR_NEUINK_UPDATE_WARNING)) + " " + tr(STR_FIRMWARE_UPDATE_PROMPT);
   // Use the basename only to keep the body short.
   std::string body = firmwarePath;
   const auto pos = body.find_last_of('/');

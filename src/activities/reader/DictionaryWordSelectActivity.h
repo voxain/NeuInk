@@ -60,7 +60,7 @@ class DictionaryWordSelectActivity final : public Activity {
   void loop() override;
   void render(RenderLock&&) override;
 
-  // VARAGH: true once after a touch found no word under it and the screen
+  // NeuInk: true once after a touch found no word under it and the screen
   // closed again without drawing anything. The reader then has no page to draw
   // again (with Tap to Look Up every stray tap would otherwise cost a refresh).
   static bool takeMissedWord() { return missedWord_.exchange(false, std::memory_order_acq_rel); }
@@ -146,7 +146,7 @@ class DictionaryWordSelectActivity final : public Activity {
   int touchDragStartY_ = 0;
   void* readerContext_ = nullptr;
   ReaderPageLoadFn readerPageLoad_ = nullptr;
-  // VARAGH: what lifting the finger does once words are selected (one of
+  // NeuInk: what lifting the finger does once words are selected (one of
   // CrossPointSettings::WORD_HOLD_ACTION).
   uint8_t releaseAction_ = 0;
   // "Ask": the words stay selected under a bubble with Look up, Highlight and

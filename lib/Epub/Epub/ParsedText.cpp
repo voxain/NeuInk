@@ -535,7 +535,7 @@ bool isWordCharacter(uint32_t cp) {
   // General Punctuation Block, Currency, Math, Arrows, & Symbols (0x2000 - 0x2BFF)
   if (cp >= 0x2000 && cp <= 0x2BFF) {
     // Explicitly allow smart quotes, reject all other general punctuation (em-dashes, etc.)
-    // VARAGH: ZWNJ/ZWJ sit inside Persian words (می‌روم); PersianFocus::boundary() breaks there itself.
+    // NeuInk: ZWNJ/ZWJ sit inside Persian words (می‌روم); PersianFocus::boundary() breaks there itself.
     return cp == 0x2018 || cp == 0x2019 || cp == 0x200C || cp == 0x200D;
   }
 

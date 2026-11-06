@@ -209,9 +209,9 @@ void OtaUpdateActivity::render(RenderLock&&) {
   renderer.displayBuffer(screenTransitionRefresh.modeFor(static_cast<uint8_t>(state)));
 }
 
-// Warn before anything is downloaded: a CrossInk release would replace VARAGH.
-void OtaUpdateActivity::confirmVaraghUpdate() {
-  const std::string heading = std::string(tr(STR_VARAGH_UPDATE_WARNING)) + " " + tr(STR_FIRMWARE_UPDATE_PROMPT);
+// Warn before anything is downloaded: a CrossInk release would replace NeuInk.
+void OtaUpdateActivity::confirmNeuInkUpdate() {
+  const std::string heading = std::string(tr(STR_NEUINK_UPDATE_WARNING)) + " " + tr(STR_FIRMWARE_UPDATE_PROMPT);
   startActivityForResult(std::make_unique<ConfirmationActivity>(renderer, mappedInput, heading, ""),
                          [this](const ActivityResult& result) {
                            installAccepted = !result.isCancelled;
@@ -290,7 +290,7 @@ void OtaUpdateActivity::loop() {
       const auto actions = getOtaActionLayout(renderer);
       const int action = TouchActionButtons::indexAt(actions, x, y);
       if (action == 0) {
-        confirmVaraghUpdate();
+        confirmNeuInkUpdate();
         return;
       }
       if (action == 1) {
@@ -300,7 +300,7 @@ void OtaUpdateActivity::loop() {
     }
 
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-      confirmVaraghUpdate();
+      confirmNeuInkUpdate();
       return;
     }
 

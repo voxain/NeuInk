@@ -220,7 +220,7 @@ for size in ${UI_FONT_SIZES[@]}; do
   done
 done
 
-# VARAGH: Persian supplement for the bitmap reader fonts (X3/X4). Persian letters
+# NeuInk: Persian supplement for the bitmap reader fonts (X3/X4). Persian letters
 # only, regular and bold: Lexend/Bitter keep their own Latin and borrow these.
 # Keep in step with PERSIAN_RANGES in subset-reader-supplements.py (the S3 builds).
 PERSIAN_INTERVALS=(

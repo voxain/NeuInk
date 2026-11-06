@@ -520,7 +520,7 @@ inline void appendShortcutOptions(SettingInfo& setting, const ShortcutOptionCata
   setting.enumRawValues.reserve(QuickActions::shortcutActionOrder.size() + 4 + extraOptions);
 
   if (catalog == ShortcutOptionCatalog::HomeButton) {
-    // VARAGH: Back (one step; from a book it returns Home) and Home (straight
+    // NeuInk: Back (one step; from a book it returns Home) and Home (straight
     // to the Home screen) are separate choices.
     setting.enumValues.push_back(StrId::STR_BACK);
     setting.enumRawValues.push_back(CrossPointSettings::HOME_BUTTON_BACK_HOME);
@@ -747,14 +747,14 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
     add(SettingInfo::Enum(StrId::STR_WORD_SELECT_HOLD, &CrossPointSettings::wordSelectHold,
                           {StrId::STR_HOLD_FAST, StrId::STR_HOLD_NORMAL, StrId::STR_HOLD_SLOW, StrId::STR_HOLD_VERY_SLOW},
                           "wordSelectHold", StrId::STR_CAT_READER));
-    // VARAGH: in the order of CrossPointSettings::WORD_HOLD_ACTION.
+    // NeuInk: in the order of CrossPointSettings::WORD_HOLD_ACTION.
     add(SettingInfo::Enum(
         StrId::STR_WORD_HOLD_ACTION, &CrossPointSettings::wordHoldAction,
         {StrId::STR_LOOKUP_SHORT, StrId::STR_WORD_HOLD_ASK, StrId::STR_SAVE_CLIPPING, StrId::STR_ADD_TO},
         "wordHoldAction", StrId::STR_CAT_READER));
     add(SettingInfo::Toggle(StrId::STR_TAP_TO_LOOK_UP, &CrossPointSettings::tapToLookUp, "tapToLookUp",
                             StrId::STR_CAT_READER));
-    // VARAGH: only on the boards where Wi-Fi fits next to an open book.
+    // NeuInk: only on the boards where Wi-Fi fits next to an open book.
     if constexpr (HalPowerManager::LOW_POWER_FREQ >= 80) {
       add(SettingInfo::Toggle(StrId::STR_ONLINE_WIFI_ALWAYS, &CrossPointSettings::onlineDictWifiAlwaysOn,
                               "onlineDictWifiAlwaysOn", StrId::STR_CAT_READER));
@@ -938,13 +938,6 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
           KOREADER_STORE.saveToFile();
         },
         "koPassword", StrId::STR_KOREADER_SYNC));
-    add(SettingInfo::DynamicString(
-        StrId::STR_SYNC_SERVER_URL, [] { return KOREADER_STORE.getServerUrl(); },
-        [](const std::string& v) {
-          KOREADER_STORE.setServerUrl(v);
-          KOREADER_STORE.saveToFile();
-        },
-        "koServerUrl", StrId::STR_KOREADER_SYNC));
     add(SettingInfo::DynamicEnum(
         StrId::STR_DOCUMENT_MATCHING, {StrId::STR_FILENAME, StrId::STR_BINARY},
         [] { return static_cast<uint8_t>(KOREADER_STORE.getMatchMethod()); },
@@ -1006,8 +999,6 @@ inline const std::vector<SettingInfo>& getBaseSettingsList() {
                           "xtcStatusBarMode", StrId::STR_STATUS_BARS));
     // Clock detail entries live under System > Device in the device UI.
     // Range 0..104 = quarter-hour steps from UTC-12:00 to UTC+14:00, biased by 48.
-    add(SettingInfo::Toggle(StrId::STR_CLOCK_AUTO_ZONE, &CrossPointSettings::clockAutoZone, "clockAutoZone",
-                            StrId::STR_CAT_SYSTEM));
     add(SettingInfo::Toggle(StrId::STR_LIVE_CLOCK, &CrossPointSettings::liveClock, "liveClock",
                             StrId::STR_CAT_SYSTEM));
     add(SettingInfo::Value(StrId::STR_CLOCK_UTC_OFFSET, &CrossPointSettings::clockUtcOffsetQ, {0, 104, 1},
@@ -1575,7 +1566,6 @@ inline std::vector<SettingInfo> buildGeneralSettingsList(const std::vector<Setti
   if (halClock.isAvailable()) {
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_FORMAT);
     addSettingByName(settings, allSettings, StrId::STR_LIVE_CLOCK);
-    addSettingByName(settings, allSettings, StrId::STR_CLOCK_AUTO_ZONE);
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_UTC_OFFSET);
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_DST);
     addSettingByName(settings, allSettings, StrId::STR_DATE_FORMAT);

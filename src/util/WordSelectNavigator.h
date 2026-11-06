@@ -134,7 +134,7 @@ class WordSelectNavigator {
     completedSelectionStart = -1;
     completedSelectionEnd = -1;
   }
-  // VARAGH: moves the end of a finished selection by one word (+1 adds the next
+  // NeuInk: moves the end of a finished selection by one word (+1 adds the next
   // word, -1 takes the last one off), keeping at least one word and staying on
   // this page. The two halves of a word hyphenated across lines count as one.
   // False when the selection cannot change that way.
@@ -197,7 +197,7 @@ class WordSelectNavigator {
   // In multi-select: highlights the anchor..cursor range.
   // In single-select: highlights the cursor word (+ hyphenated continuation if any).
   void renderHighlight(const GfxRenderer& renderer, int lineHeight, bool foregroundBlack) const;
-  // VARAGH: the selection a touch drag has just finished (see
+  // NeuInk: the selection a touch drag has just finished (see
   // finishTouchMultiSelect), marked as it was while the finger was down. False
   // when there is none.
   bool renderCompletedSelection(const GfxRenderer& renderer, int lineHeight, bool foregroundBlack) const;

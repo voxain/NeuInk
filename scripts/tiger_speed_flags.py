@@ -1,5 +1,5 @@
 """
-PlatformIO pre-build script: compile VARAGH's hot compute paths for speed.
+PlatformIO pre-build script: compile NeuInk's hot compute paths for speed.
 
 The Arduino core builds everything with -Os (smallest code). That is the right
 default for a 6.4 MB app slot, but the few libraries that do the heavy work --

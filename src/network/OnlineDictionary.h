@@ -44,7 +44,7 @@ bool isStorePath(const std::string& path, onlinedict::Lang& lang, onlinedict::Pr
 // and the dictionary in use is one on the card (not saved online answers).
 bool readyInPlace(const std::string& bookCachePath);
 bool hasSaved(onlinedict::Lang lang, onlinedict::Provider provider, const std::string& word);
-// Adds or replaces an answer. html is an entry in the layout of the VARAGH dictionaries.
+// Adds or replaces an answer. html is an entry in the layout of the NeuInk dictionaries.
 bool save(onlinedict::Lang lang, onlinedict::Provider provider, const std::string& word, const std::string& html);
 
 // The reader's choice for a language (Settings > Reader > Dictionaries),

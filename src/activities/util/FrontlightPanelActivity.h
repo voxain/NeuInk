@@ -67,7 +67,7 @@ class FrontlightPanelActivity final : public Activity {
   int computePanelBottom() const;
   void prepareReaderDetailsLayout();
   void drawReaderDetails(UiApp::ScreenType& screen);
-  // VARAGH Control Center (boards with a front light).
+  // NeuInk Control Center (boards with a front light).
   static void onControlButtonEvent(const freeink::ui::ActionEvent& event, void* user);
   void drawThinSlider(int left, int right, int midY, int knobX, int knobD) const;
   int lightSliderW = 1;    // Control Center slider widths, for the drag maths

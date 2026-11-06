@@ -209,7 +209,7 @@ bool writeInfo(const DictPaths& paths, const onlinedict::Lang lang, const online
   snprintf(info, sizeof(info),
            "StarDict's dict ifo file\nversion=2.4.2\nwordcount=%u\nidxfilesize=%u\n"
            "bookname=Online (%s)\nsametypesequence=h\nlang=%s-%s\n"
-           "description=Answers saved by the VARAGH online dictionary from %s.\n",
+           "description=Answers saved by the NeuInk online dictionary from %s.\n",
            static_cast<unsigned>(wordCount), static_cast<unsigned>(indexBytes), onlinedict::providerName(provider),
            onlinedict::code(lang), onlinedict::code(lang), onlinedict::providerName(provider));
   return writeWholeFile(paths.ifo(), info);

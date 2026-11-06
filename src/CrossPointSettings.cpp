@@ -256,10 +256,10 @@ const char* CrossPointSettings::getDefaultDeviceName() {
   return "X4 Classic";
 #endif
   if (BoardConfig::isSticky()) return "Sticky";
-  if (BoardConfig::isX4Pro()) return "VARAGH X4 Pro";
-  if (gpio.deviceIsX3()) return "VARAGH X3";
-  if (gpio.deviceIsX4()) return "VARAGH X4";
-  return "VARAGH";
+  if (BoardConfig::isX4Pro()) return "NeuInk X4 Pro";
+  if (gpio.deviceIsX3()) return "NeuInk X3";
+  if (gpio.deviceIsX4()) return "NeuInk X4";
+  return "NeuInk";
 }
 
 const char* CrossPointSettings::getEffectiveDeviceName() const {

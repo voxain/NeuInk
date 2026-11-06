@@ -31,7 +31,7 @@
 #include "components/icons/readingStatsIcons.h"
 #include "components/icons/tablerIcons.h"
 #include "components/icons/touchscreenStateIcons.h"
-#include "components/icons/varaghIcons.h"
+#include "components/icons/neuinkIcons.h"
 #include "network/OnlineWifi.h"
 #include "network/WifiUtils.h"
 #include "util/FrontlightNight.h"
@@ -762,7 +762,7 @@ void FrontlightPanelActivity::render(RenderLock&&) {
 }
 
 // ---------------------------------------------------------------------------
-// VARAGH Control Center (design C): a calm card with the light and warmth
+// NeuInk Control Center (design C): a calm card with the light and warmth
 // sliders and eight buttons the reader picks in Settings > Controls.
 
 // Buttons in use: empty slots are skipped and the rest close up, four a row.

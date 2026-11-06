@@ -25,13 +25,13 @@ class OtaUpdateActivity : public Activity {
   unsigned int lastUpdaterPercentage = UNINITIALIZED_PERCENTAGE;
   StrId failureMessage = StrId::STR_UPDATE_FAILED;
   OtaUpdater updater;
-  // Set when the user accepted the "VARAGH only" warning; loop() then starts
+  // Set when the user accepted the "NeuInk only" warning; loop() then starts
   // the install on its own task instead of inside the popup's result callback.
   bool installAccepted = false;
 
   void onWifiSelectionComplete(bool success);
   void runUpdateInstall();
-  void confirmVaraghUpdate();
+  void confirmNeuInkUpdate();
 
  public:
   explicit OtaUpdateActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)

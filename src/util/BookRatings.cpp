@@ -15,7 +15,7 @@ namespace BookRatings {
 namespace {
 
 constexpr char kTmpPath[] = "/.crosspoint/ratings.txt.tmp";
-constexpr char kHeader[] = "# VARAGH book ratings: stars (0.5 to 5), title, author, file. Separated by tabs.\n";
+constexpr char kHeader[] = "# NeuInk book ratings: stars (0.5 to 5), title, author, file. Separated by tabs.\n";
 constexpr char kBookFileName[] = "/rating.txt";
 constexpr size_t kMaxLineBytes = 1024;
 

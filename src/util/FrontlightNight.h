@@ -4,7 +4,7 @@
 
 #include "FrontlightSchedule.h"
 
-// VARAGH night light: a second brightness/warmth set for the evening.
+// NeuInk night light: a second brightness/warmth set for the evening.
 //
 // SETTINGS.frontlightBrightness/Warmth always hold the set in use (so every
 // existing light control keeps working unchanged); the other set waits in

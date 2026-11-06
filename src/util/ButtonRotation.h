@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-// VARAGH: which physical buttons take each other's job when the screen is
+// NeuInk: which physical buttons take each other's job when the screen is
 // turned, so that the button nearer the start of the text (left or top, as
 // the reader now holds the device) always goes back. Always on in the reader;
 // it replaced the two "Orientation aware" switches, which swapped the same

@@ -1,4 +1,21 @@
-# VARAGH changelog
+# NeuInk changelog
+
+## [NeuInk 0.1.0] - unreleased
+
+First NeuInk release. NeuInk numbers its own versions from 0.1.0 and no longer shows
+the version with a codename on the boot and settings screens. Forked from VARAGH 1.3.2
+(`main`). The VARAGH history below is kept as it was.
+
+- Renamed VARAGH to NeuInk in the firmware, the interface, the build, the docs and
+  the translations. The logo files still show the VARAGH artwork until NeuInk has its own.
+- Online updates and language-pack downloads come from `voxain/NeuInk` releases;
+  none have been published yet.
+- Removed the time zone lookup over HTTP. The UTC offset and summer time are set by
+  hand under System > Device; the Automatic Time Zone setting is gone.
+- Pinned `freeink-sdk` to `Free-Ink/freeink-sdk` at `6993701`.
+- Removed the funding link of the original author.
+
+## VARAGH history
 
 VARAGH versions are listed first; the CrossInk history it builds on follows.
 

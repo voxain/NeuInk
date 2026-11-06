@@ -38,7 +38,7 @@ class DictionaryLookupController {
     // "Add to..." on the not-found popup (word selection only): the caller
     // offers the Highlights categories for the looked-up text.
     AddTo,
-    // VARAGH: not on the card, and Wi-Fi is already on: the caller asks the
+    // NeuInk: not on the card, and Wi-Fi is already on: the caller asks the
     // online sources (only for screens that called setOnlineFallback).
     TryOnline
   };
@@ -177,7 +177,7 @@ class DictionaryLookupController {
   std::string preparedQuickIndexPath;
 
   std::string lookupWord;
-  // VARAGH: when lookupWord is a phrase of several selected words, the first of
+  // NeuInk: when lookupWord is a phrase of several selected words, the first of
   // them, looked up when the dictionary has no entry for the whole phrase.
   std::string phraseFallbackWord_;
   std::string pendingPhraseFallback_;  // handed to the next startLookup()
