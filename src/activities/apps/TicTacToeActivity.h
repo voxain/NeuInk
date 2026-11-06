@@ -63,7 +63,7 @@ class TicTacToeActivity final : public Activity {
   Panel panel = Panel::Board;
   unsigned long lastMoveMs = 0;
 
-  gameui::HoldButton newHold;
+  gameui::Box newButton;  // "New" in the title bar: a tap opens the New game panel
   gameui::Box board;
   gameui::Box panelBox;
   gameui::Box kindBoxes[2];

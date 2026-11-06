@@ -76,7 +76,10 @@ void VegaTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
     // The card and the cover are drawn once and kept in the snapshot; the text goes over it.
     renderer.fillRoundedRect(cardX, cardY, cardW, cardH, kCardRadius, Color::LightGray);
     coverWidth = drawCoverThumb(renderer, book, coverX, coverY, metrics.homeCoverHeight, coverWidth, false);
+    // The corner cut-outs must continue the card's own dither pattern, which is anchored to its corner.
+    renderer.setDitherOrigin(cardX, cardY);
     roundCorners(renderer, coverX, coverY, coverWidth, metrics.homeCoverHeight, kCoverRadius, Color::LightGray);
+    renderer.setDitherOrigin(0, 0);
     coverBufferStored = storeCoverBuffer();
     coverRendered = coverBufferStored;
   }

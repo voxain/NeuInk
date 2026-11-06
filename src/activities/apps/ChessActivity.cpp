@@ -112,8 +112,8 @@ void ChessActivity::layout() {
   topStripY = gameui::contentTop(renderer, mappedInput);
   // As in Go, the board takes what the strips, the status line and the tool row leave of the height.
   const int fixedHeight = 2 * (kStripHeight + gameui::kHeaderGap) + 4 + 34 + gameui::kSectionGap + kToolHeight;
-  square = std::clamp((gameui::contentBottom(renderer) - topStripY - fixedHeight) / 8, 40, kMaxSquare);
-  const int size = square * 8;
+  squareSize = std::clamp((gameui::contentBottom(renderer) - topStripY - fixedHeight) / 8, 40, kMaxSquare);
+  const int size = squareSize * 8;
   board = {(width - size) / 2, topStripY + kStripHeight + gameui::kHeaderGap, size, size};
   bottomStripY = board.y + size + gameui::kHeaderGap;
   statusY = bottomStripY + kStripHeight + 4;
@@ -123,7 +123,7 @@ void ChessActivity::layout() {
     tools[i] = {board.x + i * (toolWidth + kToolGap), toolsY, toolWidth, kToolHeight};
   }
   newGameBox = {board.x + (size - 260) / 2, toolsY + 18, 260, 64};
-  newHold.box = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
+  newButton = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
 
   // The New game panel lies over the middle of the board.
   constexpr int pad = 18;
@@ -298,13 +298,13 @@ gameui::Box ChessActivity::squareBox(const int square) const {
   const int file = square & 7;
   const int column = settings.flipped ? 7 - file : file;
   const int row = settings.flipped ? rank : 7 - rank;
-  return {board.x + column * square, board.y + row * square, square, square};
+  return {board.x + column * squareSize, board.y + row * squareSize, squareSize, squareSize};
 }
 
 int ChessActivity::squareAt(const int x, const int y) const {
   if (!board.contains(x, y)) return -1;
-  const int column = (x - board.x) / square;
-  const int row = (y - board.y) / square;
+  const int column = (x - board.x) / squareSize;
+  const int row = (y - board.y) / squareSize;
   const int file = settings.flipped ? 7 - column : column;
   const int rank = settings.flipped ? row : 7 - row;
   return rank * 8 + file;
@@ -326,17 +326,6 @@ void ChessActivity::loop() {
     }
     return;
   }
-
-  bool repaint = false;
-  if (panel == Panel::Board && game->started() && newHold.update(mappedInput, repaint, &pointer)) {
-    draft = settings;
-    panel = Panel::NewGame;
-    selected = -1;
-    targetCount = 0;
-    requestUpdate();
-    return;
-  }
-  if (repaint) requestUpdate();
 
   int tx = 0;
   int ty = 0;
@@ -384,7 +373,14 @@ void ChessActivity::loop() {
     return;
   }
 
-  if (newHold.box.contains(tx, ty)) return;  // New needs a hold; a tap does nothing
+  if (newButton.contains(tx, ty) && panel == Panel::Board && game->started()) {
+    draft = settings;
+    panel = Panel::NewGame;
+    selected = -1;
+    targetCount = 0;
+    requestUpdate();
+    return;
+  }
   const int square = squareAt(tx, ty);
   if (square >= 0) {
     tapSquare(square);
@@ -534,6 +530,7 @@ void ChessActivity::drawNewGamePanel() const {
   for (int i = 0; i < 3; ++i) gameui::choice(renderer, levelBoxes[i], levelName(i), draft.level == i, computer);
   gameui::choice(renderer, colourBoxes[0], tr(STR_CHESS_WHITE), draft.human == chess::White, computer);
   gameui::choice(renderer, colourBoxes[1], tr(STR_CHESS_BLACK), draft.human == chess::Black, computer);
+  gameui::panelRule(renderer, panelBox, startBox.y - 8);
   if (game->started()) gameui::button(renderer, cancelBox, tr(STR_CANCEL), false);
   gameui::button(renderer, startBox, tr(STR_GAME_START), true);
 }
@@ -559,7 +556,7 @@ void ChessActivity::render(RenderLock&&) {
   layout();
   renderer.clearScreen();
   gameui::drawHeader(renderer, mappedInput, tr(STR_GAME_CHESS));
-  if (panel == Panel::Board && game->started()) newHold.draw(renderer, tr(STR_GAME_NEW_SHORT), tr(STR_HOLD_FOR_NEW_GAME));
+  if (panel == Panel::Board && game->started()) gameui::cornerButton(renderer, newButton, tr(STR_GAME_NEW_SHORT));
 
   drawStrip(topStripY, settings.flipped ? chess::White : chess::Black);
   drawBoard();
@@ -594,7 +591,7 @@ void ChessActivity::render(RenderLock&&) {
     } else {
       for (const auto& b : tools) pointer.add(b);
     }
-    if (game->started()) pointer.add(newHold.box);
+    if (game->started()) pointer.add(newButton);
   }
   pointer.draw(renderer);
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

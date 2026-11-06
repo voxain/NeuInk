@@ -243,7 +243,7 @@ void SudokuActivity::layout() {
   for (int i = 0; i < kToolCount; ++i) {
     tools[i] = {grid.x + i * (toolWidth + kToolGap), toolsY, toolWidth, kToolHeight};
   }
-  newHold.box = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
+  newButton = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
 
   panelBox = {grid.x, padY, gridSize, toolsY + kToolHeight - padY};
   const int thirdWidth = (gridSize - 2 * kToolGap) / 3;
@@ -353,17 +353,6 @@ void SudokuActivity::loop() {
     if (thinker.takeFinished()) startPendingPuzzle();
     return;
   }
-
-  // New is held, not tapped: it fills while the finger rests on it.
-  bool repaint = false;
-  if (panel == Panel::Pad && newHold.update(mappedInput, repaint, &pointer)) {
-    tickClock();
-    day = today();
-    panel = Panel::NewPuzzle;
-    requestUpdate();
-    return;
-  }
-  if (repaint) requestUpdate();
 
   int tx = 0;
   int ty = 0;
@@ -482,7 +471,13 @@ void SudokuActivity::loop() {
     return;
   }
 
-  if (newHold.box.contains(tx, ty)) return;  // a tap on New does nothing
+  if (newButton.contains(tx, ty) && panel == Panel::Pad) {
+    tickClock();
+    day = today();
+    panel = Panel::NewPuzzle;
+    requestUpdate();
+    return;
+  }
   tickClock();
   if (grid.contains(tx, ty)) {
     const int cell = ((ty - grid.y) / cellSize) * 9 + (tx - grid.x) / cellSize;
@@ -810,7 +805,7 @@ void SudokuActivity::drawHeaderLine() const {
   const int left = TouchHeaderBackButton::layout(header).titleX +
                    renderer.getTextWidth(UI_12_FONT_ID, tr(STR_GAME_SUDOKU), EpdFontFamily::BOLD) + 12;
   const int centreY = gameui::headerTitleCentreY(renderer, mappedInput);
-  const int width = newHold.box.x - 8 - left;
+  const int width = newButton.x - 8 - left;
   gameui::centredText(renderer, UI_10_FONT_ID, {left, centreY - 16, width, 34},
                       renderer.truncatedText(UI_10_FONT_ID, text, width).c_str());
 }
@@ -822,7 +817,7 @@ void SudokuActivity::render(RenderLock&&) {
   gameui::drawHeader(renderer, mappedInput, tr(STR_GAME_SUDOKU));
   if ((panel == Panel::Pad || panel == Panel::Hint) && game.started()) {
     drawHeaderLine();
-    if (panel == Panel::Pad) newHold.draw(renderer, tr(STR_GAME_NEW_SHORT), tr(STR_HOLD_FOR_NEW_GAME));
+    if (panel == Panel::Pad) gameui::cornerButton(renderer, newButton, tr(STR_GAME_NEW_SHORT));
   }
 
   drawGrid();
@@ -869,7 +864,7 @@ void SudokuActivity::render(RenderLock&&) {
     }
     for (const auto& b : digitKeys) pointer.add(b);
     for (const auto& b : tools) pointer.add(b);
-    if (game.started()) pointer.add(newHold.box);
+    if (game.started()) pointer.add(newButton);
   }
   pointer.draw(renderer);
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

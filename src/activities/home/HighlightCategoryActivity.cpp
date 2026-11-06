@@ -143,22 +143,20 @@ HighlightCategoryActivity::Rect4 HighlightCategoryActivity::practiceRect() const
 
 void HighlightCategoryActivity::drawPracticeButton() {
   const Rect4 r = practiceRect();
-  renderer.fillRoundedRect(r.x, r.y, r.w, r.h, 10, Color::Black);
-  // Ring the button when side-button navigation has moved focus onto it.
-  if (practiceFocused() && !mappedInput.hasTouchHardware()) {
-    renderer.drawRoundedRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8, 2, 13, true);
-  }
+  // Gray pill; black while side-button navigation has focus on it.
+  const bool focused = practiceFocused() && mappedInput.buttonsInUse();
+  renderer.fillRoundedRect(r.x, r.y, r.w, r.h, r.h / 2, focused ? Color::Black : Color::LightGray);
   const char* label = tr(STR_STUDY_FLASHCARDS);
   const int labelW = renderer.getTextWidth(UI_12_FONT_ID, label, EpdFontFamily::BOLD);
   const int labelX = r.x + (r.w - labelW) / 2;
-  renderer.drawText(UI_12_FONT_ID, labelX, r.y + (r.h - renderer.getLineHeight(UI_12_FONT_ID)) / 2, label, false,
+  renderer.drawText(UI_12_FONT_ID, labelX, r.y + (r.h - renderer.getLineHeight(UI_12_FONT_ID)) / 2, label, !focused,
                     EpdFontFamily::BOLD);
   // The known count sits at the right edge when it fits beside the label.
   const int summaryW = renderer.getTextWidth(UI_10_FONT_ID, knownSummary.c_str());
   const int summaryX = r.x + r.w - 16 - summaryW;
   if (summaryX > labelX + labelW + 12) {
     renderer.drawText(UI_10_FONT_ID, summaryX, r.y + (r.h - renderer.getLineHeight(UI_10_FONT_ID)) / 2,
-                      knownSummary.c_str(), false);
+                      knownSummary.c_str(), !focused);
   }
 }
 

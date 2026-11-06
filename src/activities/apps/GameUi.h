@@ -105,23 +105,35 @@ inline void stamp(const GfxRenderer& renderer, const appart::Bitmap& bitmap, con
   bitsAt(renderer, bitmap.bits, bitmap.width, bitmap.height, x, y, black);
 }
 
-// A chess piece: the Lucide outline for white; for black the same icon inverted (a black body with the outline
-// in white, so the inner details show). The filled shape goes under a white piece in white, and around a black
-// one as a one-pixel rim, so either stays readable on a hatched square.
-inline void piece(const GfxRenderer& renderer, const appart::Bitmap& outline, const appart::Bitmap& silhouette,
-                  const bool white, const int x, const int y) {
-  if (white) {
-    stamp(renderer, silhouette, x, y, false);
-    stamp(renderer, outline, x, y, true);
-    return;
-  }
-  for (int dy = -1; dy <= 1; ++dy) {
-    for (int dx = -1; dx <= 1; ++dx) {
-      if (dx != 0 || dy != 0) stamp(renderer, silhouette, x + dx, y + dy, false);
+// A one-bit shape filled with the 50% gray checkerboard.
+inline void stampGray(const GfxRenderer& renderer, const appart::Bitmap& bitmap, const int x, const int y) {
+  const int stride = (bitmap.width + 7) / 8;
+  for (int row = 0; row < bitmap.height; ++row) {
+    for (int column = 0; column < bitmap.width; ++column) {
+      if (bitmap.bits[row * stride + column / 8] & (0x80 >> (column % 8))) {
+        renderer.drawPixel(x + column, y + row, ((x + column + y + row) & 1) == 0);
+      }
     }
   }
-  stamp(renderer, silhouette, x, y, true);
-  stamp(renderer, outline, x, y, false);
+}
+
+// A chess piece: the Lucide outline over its filled shape, which is white for a white piece and 50% gray for a
+// black one. A black piece also gets a one-pixel white rim, so either stays readable on a hatched square.
+inline void piece(const GfxRenderer& renderer, const appart::Bitmap& outline, const appart::Bitmap& silhouette,
+                  const bool white, const int x, const int y) {
+  if (!white) {
+    for (int dy = -1; dy <= 1; ++dy) {
+      for (int dx = -1; dx <= 1; ++dx) {
+        if (dx != 0 || dy != 0) stamp(renderer, silhouette, x + dx, y + dy, false);
+      }
+    }
+  }
+  if (white) {
+    stamp(renderer, silhouette, x, y, false);
+  } else {
+    stampGray(renderer, silhouette, x, y);
+  }
+  stamp(renderer, outline, x, y, true);
 }
 
 // The large game letters and digits (GameGlyphs.h), which the UI fonts are too
@@ -239,6 +251,12 @@ inline void choice(const GfxRenderer& renderer, const Box& box, const char* labe
   if (!enabled) fade(renderer, box);
 }
 
+// A thin gray rule across a panel at y: between its settings and its buttons.
+inline void panelRule(const GfxRenderer& renderer, const Box& panel, const int y) {
+  constexpr int inset = 18;
+  renderer.fillRectDither(panel.x + inset, y, panel.w - 2 * inset, 2, Color::DarkGray);
+}
+
 // A white panel with a frame, laid over whatever is already drawn.
 inline void panelFrame(const GfxRenderer& renderer, const Box& box) {
   renderer.fillRoundedRect(box.x - 3, box.y - 3, box.w + 6, box.h + 6, 14, Color::White);
@@ -337,7 +355,6 @@ struct ButtonPointer {
     focusX = b.x + b.w / 2;
     focusY = b.y + b.h / 2;
   }
-  bool focusedOn(const Box& b) const { return enabled && count > 0 && b.contains(focusX, focusY); }
 
   // Call at the end of render, before the display update.
   void draw(const GfxRenderer& renderer) {
@@ -378,13 +395,6 @@ struct ButtonPointer {
     return true;
   }
 
-  // Confirm held this long on the framed box (HoldButton on button readers).
-  unsigned long heldOn(const MappedInputManager& input, const Box& b) const {
-    if (!focusedOn(b) || confirmDownMs == 0 || !input.isPressed(MappedInputManager::Button::Confirm)) return 0;
-    return millis() - confirmDownMs;
-  }
-  // A completed hold must not also tap the box when Confirm comes up.
-  void consumeConfirm() { confirmDownMs = 0; }
 
  private:
   uint16_t nearest(const int px, const int py) const {
@@ -426,76 +436,6 @@ struct ButtonPointer {
     focusX = bx;
     focusY = by;
     return true;
-  }
-};
-
-// A button that acts only when it is held: it fills from the left while the
-// finger rests on it, in a few steps because the panel repaints slowly.
-struct HoldButton {
-  static constexpr unsigned long kHoldMs = 1200;
-  static constexpr uint8_t kSteps = 4;
-
-  static constexpr unsigned long kHintMs = 2000;
-
-  Box box;
-  uint8_t step = 0;  // 0 = not held, kSteps = full
-  // A plain tap shows a short note under the button: it needs a hold.
-  unsigned long hintUntilMs = 0;
-
-  // Call on every loop. Returns true once, when the hold is complete; sets
-  // `repaint` when the fill has to be drawn again.
-  // With a ButtonPointer on a button reader, Confirm held on the framed box counts.
-  bool update(MappedInputManager& input, bool& repaint, ButtonPointer* pointer = nullptr) {
-    int x = 0;
-    int y = 0;
-    unsigned long heldMs = 0;
-    uint8_t now = 0;
-    if (pointer && pointer->enabled) {
-      heldMs = pointer->heldOn(input, box);
-      if (heldMs >= kHoldMs) {
-        pointer->consumeConfirm();
-        step = 0;
-        repaint = true;
-        return true;
-      }
-      now = heldMs >= 100 ? static_cast<uint8_t>(1 + (heldMs - 100) * (kSteps - 1) / (kHoldMs - 100)) : 0;
-    } else if (box.w > 0 && input.isScreenTouchTapCandidate(x, y, heldMs) && box.grown(8).contains(x, y)) {
-      if (heldMs >= kHoldMs) {
-        // The rest of this touch is not a tap on whatever comes next.
-        input.suppressCurrentTouchContact();
-        step = 0;
-        repaint = true;
-        return true;
-      }
-      now = heldMs >= 100 ? static_cast<uint8_t>(1 + (heldMs - 100) * (kSteps - 1) / (kHoldMs - 100)) : 0;
-    }
-    if (now != step) {
-      step = now;
-      repaint = true;
-    }
-    if (box.w > 0 && input.wasScreenTapped(x, y) && box.grown(8).contains(x, y)) {
-      hintUntilMs = millis() + kHintMs;
-      repaint = true;
-    } else if (hintUntilMs != 0 && static_cast<long>(millis() - hintUntilMs) >= 0) {
-      hintUntilMs = 0;
-      repaint = true;
-    }
-    return false;
-  }
-
-  void draw(const GfxRenderer& renderer, const char* label, const char* hint) const {
-    cornerButton(renderer, box, label);
-    if (step > 0) renderer.invertRect(box.x + 4, box.y + 4, (box.w - 8) * step / kSteps, box.h - 8);
-    if (hintUntilMs == 0) return;
-    // The note sits under the button, right edges lined up, over whatever is there.
-    const int textW = renderer.getTextWidth(SMALL_FONT_ID, hint);
-    const int w = textW + 24;
-    const int h = renderer.getLineHeight(SMALL_FONT_ID) + 14;
-    const int x = box.x + box.w - w;
-    const int y = box.y + box.h + 6;
-    renderer.fillRoundedRect(x, y, w, h, 10, Color::White);
-    renderer.drawRoundedRect(x, y, w, h, 2, 10, true);
-    renderer.drawText(SMALL_FONT_ID, x + 12, y + 7, hint, true);
   }
 };
 

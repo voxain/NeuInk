@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Games: fixed the broken Chess, Checkers and Go boards (the board now fits the screen),
+  black chess pieces are filled with gray and outlined, "New" in the title bar is a plain tap
+  (nothing resets until Start), and the new-game popup has a rule above Start and Cancel.
+  Highlights uses gray squircle icons and a gray Study button. Book-cover corners line up
+  with the new dither phase again.
 - New default UI theme, Vega: the last opened book as a card (cover, title, author, pill
   progress bar) over a paged grid of light-gray squircles for every Home action and app.
   Swipe or use the buttons to change page. Only this theme lists the apps on Home, with

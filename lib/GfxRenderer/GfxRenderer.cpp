@@ -1947,11 +1947,8 @@ void GfxRenderer::fillRoundedRect(const int x, const int y, const int width, con
   // Anchor the dither to this box's corner for the whole fill (see ditherPhaseX_).
   struct PhaseGuard {
     const GfxRenderer& renderer;
-    PhaseGuard(const GfxRenderer& r, const int x, const int y) : renderer(r) {
-      renderer.ditherPhaseX_ = static_cast<uint8_t>(x & 1);
-      renderer.ditherPhaseY_ = static_cast<uint8_t>(y & 1);
-    }
-    ~PhaseGuard() { renderer.ditherPhaseX_ = renderer.ditherPhaseY_ = 0; }
+    PhaseGuard(const GfxRenderer& r, const int x, const int y) : renderer(r) { renderer.setDitherOrigin(x, y); }
+    ~PhaseGuard() { renderer.setDitherOrigin(0, 0); }
   } phaseGuard(*this, x, y);
 
   // Assume if we're not rounding all corners then we are only rounding one side
