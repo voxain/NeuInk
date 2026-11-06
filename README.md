@@ -76,6 +76,9 @@ list, with photos and how to use each one, is in **[FEATURES.md](FEATURES.md)**.
 
 ### Screen, light and controls
 
+- **Vega, the new default theme:** the last book as a card above a grid of gray squircles
+  for every action and app, Lucide icons, light-gray title bars, and a selection that shows
+  only while you use the buttons.
 - **Settings in eight groups**, each with an icon and a short description.
 - **Control Center:** swipe down for light and warmth in 1 % steps, with eight buttons
   you choose (X4 Pro).

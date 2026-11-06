@@ -28,7 +28,7 @@ Fetched by PlatformIO at the versions pinned in `platformio.ini`, or vendored in
 | SdFat (Bill Greiman) | MIT |
 | expat, miniz, MiniBidi (`lib/`) | MIT |
 | uzlib (`lib/`) | zlib licence |
-| Lucide icons (inside the SDK); Tabler Icons and Lucide as the models for several of NeuInk's own icon drawings in `src/components/icons` (since 1.3.0, drawn by `scripts/generate_varagh_icons.py`) | ISC, MIT |
+| Lucide icons (inside the SDK, and the Vega theme's Home, app, game and chess-piece icons, generated from lucide-static by `freeink-sdk/libs/assets/Icons/tools/gen_icons.py` and `scripts/generate_app_art.py`); Tabler Icons and Lucide as the models for several of NeuInk's own icon drawings in `src/components/icons` (since 1.3.0, drawn by `scripts/generate_varagh_icons.py`) | ISC, MIT |
 
 **Firmware binaries.** Because `firmware-*.bin` links wolfSSL (GPL-2.0-or-later),
 each released binary is distributed under the terms of the GNU GPL version 3 or
