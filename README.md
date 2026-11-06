@@ -1,7 +1,7 @@
 <h1 align="center">NeuInk</h1>
 
 <p align="center">
-  <b>E-reader firmware for the Xteink X4 Pro, X4 Classic and X3, with the features of CrossInk and VARAGH.</b>
+  <b>E-reader firmware for the Xteink X4 Pro, with the features of CrossInk and VARAGH.</b>
 </p>
 
 <p align="center">
@@ -16,15 +16,16 @@
   <a href="#credits-and-licences"><b>Credits</b></a>
 </p>
 
-**NeuInk** is e-reader firmware for the **Xteink X4 Pro**, **X4 Classic** and **X3**.
+**NeuInk** is e-reader firmware for the **Xteink X4 Pro**. The X4 Classic and X3 can
+also be built, but they are experimental and have not been tested on hardware.
 It is a fork of [VARAGH](https://github.com/PewPewzxc/VARAGH), which is itself a fork of
 [CrossInk](https://github.com/uxjulia/crossink), which in turn comes from
 [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader). Each fork
 keeps the features of the one before it.
 
 The X4 Pro gets every feature, with touch and a front light. The X4 Classic and X3 have
-no touch screen or front light, so everything works with the buttons (see
-[Readers without touch](#readers-without-touch)).
+no touch screen or front light, so their code path works with the buttons only (see
+[Experimental readers](#experimental-readers-x4-classic-and-x3)).
 
 > NeuInk is an independent community project, not affiliated with or endorsed by
 > Xteink, CrossInk, CrossPoint or VARAGH.
@@ -123,7 +124,12 @@ Xteink firmware, read the [installation guide](docs/installation.md) first.
 
 Optional: a German → English dictionary, see [Dictionaries](docs/neuink/DICTIONARIES.md).
 
-### Readers without touch
+### Experimental readers: X4 Classic and X3
+
+**Only the X4 Pro is supported and tested.** The X4 Classic and X3 have no touch screen
+or front light. Their builds exist, but nobody has confirmed them on hardware yet.
+If you have one and test a build, a report in
+[Issues](https://github.com/voxain/NeuInk/issues/new/choose) is very welcome.
 
 <table>
   <tr>
@@ -150,16 +156,17 @@ so clone with submodules:
 ```bash
 git clone --recurse-submodules https://github.com/voxain/NeuInk.git
 cd NeuInk
-pio run -e x4-pro       # X4 Pro
-pio run -e x4-classic   # X4 Classic
-pio run -e default      # X3 and the original X4
+pio run -e x4-pro       # X4 Pro (supported)
 ```
+
+Experimental, not tested on hardware: `pio run -e x4-classic` (X4 Classic) and
+`pio run -e default` (X3 and the original X4).
 
 If you cloned without submodules, run `git submodule update --init` first.
 
-The firmware is written to `.pio/build/<env>/` (`firmware-x4-pro.bin`,
-`firmware-x4-classic.bin`, `firmware-x3-x4.bin`). The `default` build also writes the
-menu-language packs to `.pio/lang-packs/default/`. Developer notes are in
+The firmware is written to `.pio/build/<env>/` (`firmware-x4-pro.bin`, and for the
+experimental builds `firmware-x4-classic.bin` and `firmware-x3-x4.bin`). The `default`
+build also writes the menu-language packs to `.pio/lang-packs/default/`. Developer notes are in
 [docs/development](docs/development). The [upstream sync guide](docs/neuink/UPSTREAM-SYNC.md)
 explains how to bring in changes from the projects this one forks.
 
