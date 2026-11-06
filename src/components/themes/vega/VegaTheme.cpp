@@ -148,7 +148,7 @@ void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
     const bool selected = selectedIndex == i;
     freeink::ui::GfxRendererTarget target(renderer);
     freeink::ui::fillPlate(target, freeink::ui::Rect{static_cast<int16_t>(cx - squircleSize / 2), static_cast<int16_t>(top),
-                                                         squircleSize, squircleSize},
+                                                         static_cast<int16_t>(squircleSize), static_cast<int16_t>(squircleSize)},
                               static_cast<freeink::ui::PlateShape>(SETTINGS.homeIconShape),
                               selected ? freeink::ui::Paint::solid(freeink::ui::Color::Black)
                                        : freeink::ui::Paint::dither(freeink::ui::Color::LightGray));

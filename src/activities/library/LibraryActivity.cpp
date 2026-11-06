@@ -174,7 +174,6 @@ bool LibraryActivity::rebuildIndex(const bool showScanning) {
 
 void LibraryActivity::resolveRecents() {
   recentCount = 0;
-  unopened.reset();
   unopenedCount = 0;
   if (!index.isOpen()) return;
   const auto& books = RECENT_BOOKS.getBooks();
@@ -201,18 +200,12 @@ void LibraryActivity::resolveRecents() {
       recentRows[recentCount++] = rows[i];
     }
   }
-  // The rest of the library follows, by title. Without the memory for the list, only the recent books show.
-  const uint16_t total = index.bookCount();
-  unopened = makeUniqueNoThrow<uint16_t[]>(total);
-  if (!unopened) return;
-  uint16_t opened[RecentBooksStore::MAX_RECENT_BOOKS];
-  for (size_t i = 0; i < recentCount; ++i) opened[i] = index.ordinalForRow(library::SortOrder::RecentAsc, recentRows[i]);
-  for (uint16_t row = 0; row < total; ++row) {
-    const uint16_t ordinal = index.ordinalForRow(library::SortOrder::TitleAsc, row);
-    if (ordinal != UINT16_MAX && std::find(opened, opened + recentCount, ordinal) == opened + recentCount) {
-      unopened[unopenedCount++] = ordinal;
-    }
+  // The rest of the library follows, by title.
+  for (size_t i = 0; i < recentCount; ++i) {
+    openedOrdinals[i] = index.ordinalForRow(library::SortOrder::RecentAsc, recentRows[i]);
   }
+  std::sort(openedOrdinals, openedOrdinals + recentCount);
+  unopenedCount = static_cast<uint16_t>(index.bookCount() - recentCount);
 }
 
 library::SortOrder LibraryActivity::indexOrder() const {
@@ -296,7 +289,12 @@ uint16_t LibraryActivity::ordinalForRow(const int row) {
 // The book of a row before any filter: in Recently Opened the recent ones, then the unopened ones.
 uint16_t LibraryActivity::sourceOrdinal(const uint16_t row) {
   if (sort != Sort::RecentlyRead) return index.ordinalForRow(indexOrder(), row);
-  if (row >= recentCount) return row - recentCount < unopenedCount ? unopened[row - recentCount] : UINT16_MAX;
+  if (row >= recentCount) {
+    if (row - recentCount >= unopenedCount) return UINT16_MAX;
+    uint16_t ordinal = static_cast<uint16_t>(row - recentCount);
+    for (size_t i = 0; i < recentCount; ++i) ordinal += openedOrdinals[i] <= ordinal ? 1 : 0;
+    return ordinal;
+  }
   return index.ordinalForRow(indexOrder(),
                              library::recentHistoryRow(row, index.bookCount(), recentRows, recentCount, descending));
 }

@@ -1,14 +1,14 @@
 # Manifest for src/components/icons/homeIcons.h: Lucide 1.70.0 (ISC), the icons of the apps, Home and Settings
 # entries, title bars, the status bar and the games' tool buttons.
 #
-# 24 px is Lucide's own grid, pixel-exact. 32 px is what squircles and tiles use (42 and 48 are the Home grid's larger sizes); a 24-unit grid does not
+# 24 px is Lucide's own grid, pixel-exact. 32 px is what squircles and tiles use; a 24-unit grid does not
 # divide into 32 pixels, so the one icon whose repeated parts must be evenly spaced (the landmark's pillars)
 # comes from src/components/icons/lucide-snapped/, with those parts moved onto whole pixels.
 #
 # The vendored SDK does not carry the Lucide SVGs: generate with the SVGs of Lucide (npm: lucide-static) and
 # the snapped ones in one folder:
 #   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py --svgdir <folder> \
-#     --manifest src/components/icons/homeIcons.manifest --sizes 24,32,42,48 --out src/components/icons/homeIcons.h
+#     --manifest src/components/icons/homeIcons.manifest --sizes 24,32 --out src/components/icons/homeIcons.h
 sudoku = grid-3x3
 chess = chess-knight
 checkers = disc-3

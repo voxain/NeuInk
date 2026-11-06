@@ -62,8 +62,9 @@ class LibraryActivity final : public Activity {
   uint16_t filteredCount = 0;
   uint16_t recentRows[RecentBooksStore::MAX_RECENT_BOOKS]{};
   size_t recentCount = 0;
-  // Books that were never opened, by title, listed after the recent ones in Recently Opened.
-  std::unique_ptr<uint16_t[]> unopened;
+  // The recent books' ordinals, ascending: the other books follow the recent ones in Recently Opened, by title
+  // (the title order is the ordinal order, so the k-th of them is k plus the recent ones below it).
+  uint16_t openedOrdinals[RecentBooksStore::MAX_RECENT_BOOKS]{};
   uint16_t unopenedCount = 0;
   // SDK rowProvider consumes the strings before asking for the next row.
   // Reuse one row instead of retaining every title/author in the library.

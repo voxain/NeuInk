@@ -2,7 +2,6 @@
 
 #include <I18n.h>
 
-#include <algorithm>
 
 #include "CrossPointSettings.h"
 #include "components/UiAppHelpers.h"

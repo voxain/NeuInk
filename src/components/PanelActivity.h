@@ -105,11 +105,10 @@ class PanelActivity : public Activity {
  protected:
   using UiApp = freeink::ui::FreeInkApp<24, 12>;
   using Screen = UiApp::ScreenType;
-  static constexpr freeink::ui::ActionId ACTION_CHOICE = 1;  // a panel::tiles / toggleRow hit: value = index
 
   // The height of what goes inside the card, between its padding.
   virtual int contentHeight() const = 0;
-  // Draw the content from y, between x and x + width, and register its hits with ACTION_CHOICE (or own actions).
+  // Draw the content from y, between x and x + width, and register its hits under ACTION_FIRST_CONTROL and up (a tile's value is its index).
   virtual void buildContent(Screen& screen, int x, int y, int width) = 0;
   // A hit on a control: which one is up to the subclass (its action id) and which option (value).
   virtual void onChoice(freeink::ui::ActionId action, int value) = 0;

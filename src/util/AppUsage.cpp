@@ -4,6 +4,8 @@
 
 #include <Arduino.h>
 
+#include <cstring>
+
 #include "activities/reader/ReadingStatsUtils.h"
 
 #ifndef SIMULATOR
@@ -13,12 +15,12 @@
 #endif
 
 namespace {
-constexpr uint32_t kMagic = 0x41505531;  // "APU1"
+constexpr uint32_t kMagic = 0x41505532;  // "APU2"
 
 struct Totals {
   uint32_t magic;
-  uint32_t day;  // the local day the seconds belong to
-  uint32_t seconds[apps::kIdCount];
+  uint32_t day;  // the newest local day in the ring
+  uint32_t seconds[AppUsage::kDays][apps::kIdCount];  // by day % kDays
 };
 RTC_DATA_ATTR Totals totals;
 
@@ -26,16 +28,25 @@ RTC_DATA_ATTR Totals totals;
 uint8_t runningId = 0;
 unsigned long runningSince = 0;
 
-// Starts a new day's totals when the local day changed (or the memory is fresh). Without a clock they just go on.
-void rollDay() {
+void clearDay(const uint32_t day) {
+  for (uint32_t& value : totals.seconds[day % AppUsage::kDays]) value = 0;
+}
+
+// Brings the ring up to today: the days since the last visit start empty, and memory that is fresh, a clock that
+// went back or a week without any visit starts over. Without a clock it all stays on the one day.
+uint32_t rollDay() {
   ReadingStatsDateTime now;
   const bool haveClock = getCurrentLocalReadingStatsDateTime(now) && now.isValid();
+  if (!haveClock && totals.magic == kMagic) return totals.day;
   const uint32_t day = haveClock ? readingStatsDayIndex(now.date) : 0;
-  if (totals.magic != kMagic || (haveClock && totals.day != day)) {
+  if (totals.magic != kMagic || day < totals.day || day - totals.day >= AppUsage::kDays) {
+    memset(&totals, 0, sizeof(totals));
     totals.magic = kMagic;
-    totals.day = day;
-    for (uint32_t& value : totals.seconds) value = 0;
+  } else {
+    for (uint32_t d = totals.day + 1; d <= day; ++d) clearDay(d);
   }
+  totals.day = day;
+  return day;
 }
 
 uint8_t appIdOf(const std::string& activityName) {
@@ -56,15 +67,20 @@ void enter(const std::string& activityName) {
 void exit(const std::string& activityName) {
   const uint8_t id = appIdOf(activityName);
   if (id == 0 || runningId != id) return;
-  rollDay();
-  totals.seconds[id] += (millis() - runningSince) / 1000;
+  totals.seconds[rollDay() % kDays][id] += (millis() - runningSince) / 1000;
   runningId = 0;
 }
 
 uint32_t secondsToday(const apps::Id id) {
-  rollDay();
-  uint32_t seconds = totals.seconds[id];
+  uint32_t seconds = totals.seconds[rollDay() % kDays][id];
   if (runningId == id) seconds += (millis() - runningSince) / 1000;
+  return seconds;
+}
+
+uint32_t secondsWeek(const apps::Id id) {
+  rollDay();
+  uint32_t seconds = runningId == id ? (millis() - runningSince) / 1000 : 0;
+  for (const auto& day : totals.seconds) seconds += day[id];
   return seconds;
 }
 

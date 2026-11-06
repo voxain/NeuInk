@@ -151,19 +151,24 @@ void BatteryActivity::render(RenderLock&&) {
 
   // Time in each app today: a gray row per app that was opened.
   y += 10;
-  renderer.drawText(UI_10_FONT_ID, kSide, y, tr(STR_APPS_TIME_TODAY), true, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, kSide, y, tr(STR_APPS_TIME), true, EpdFontFamily::BOLD);
   y += renderer.getLineHeight(UI_10_FONT_ID) + 8;
   bool any = false;
   for (const apps::Info& app : apps::kAll) {
-    const uint32_t seconds = AppUsage::secondsToday(app.id);
-    if (seconds == 0) continue;
+    const uint32_t week = AppUsage::secondsWeek(app.id);
+    if (week == 0) continue;
     any = true;
     constexpr int rowHeight = 40;
     renderer.fillRoundedRect(kSide, y, width - 2 * kSide, rowHeight, rowHeight / 2, Color::LightGray);
     const int textY = y + (rowHeight - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
     renderer.drawText(UI_10_FONT_ID, kSide + 20, textY, I18N.get(app.name), true);
-    char duration[24];
-    formatCompactReadingDuration(seconds, duration, sizeof(duration));
+    // "today · week"
+    char today[16];
+    char thisWeek[16];
+    char duration[40];
+    formatCompactReadingDuration(AppUsage::secondsToday(app.id), today, sizeof(today));
+    formatCompactReadingDuration(week, thisWeek, sizeof(thisWeek));
+    snprintf(duration, sizeof(duration), "%s  \xC2\xB7  %s", today, thisWeek);
     renderer.drawText(UI_10_FONT_ID, width - kSide - 20 - renderer.getTextWidth(UI_10_FONT_ID, duration, EpdFontFamily::BOLD),
                       textY, duration, true, EpdFontFamily::BOLD);
     y += rowHeight + 6;
