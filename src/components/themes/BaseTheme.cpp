@@ -510,13 +510,13 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
                                    : static_cast<int16_t>(band.right() - batteryEdgeInset - metrics.batteryWidth -
                                                           (batteryDetached ? 0 : batteryNubWidth));
   const Rect batteryRect{batteryIconX, batteryY, metrics.batteryWidth, metrics.batteryHeight};
-  drawHeaderStatus(renderer, batteryRect, batteryLeft, showBatteryPercentage);
+  drawHeaderStatus(renderer, batteryRect, batteryLeft, showBatteryPercentage, headerBand() && title != nullptr);
 
   drawTopStatusBarClock(renderer, rect.y, nullptr, readerContext, clockYOffset);
 }
 
 void BaseTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, const bool batteryLeft,
-                                 const bool showPercentage) const {
+                                 const bool showPercentage, const bool /*onBand*/) const {
   if (batteryLeft) {
     drawBatteryLeft(renderer, batteryRect, showPercentage);
   } else {

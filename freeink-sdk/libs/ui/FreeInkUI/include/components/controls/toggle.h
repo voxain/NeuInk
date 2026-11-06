@@ -15,13 +15,14 @@ struct ToggleProps {
   int16_t value = 0;
   uint16_t inputMask = InputDefault;
   int16_t minTouchSize = 44;
-  int16_t width = 38;
-  int16_t height = 18;
-  uint8_t radius = 0;
-  uint8_t knobRadius = 0;
+  // A pill track with a round knob: light gray off, dark on, the knob inverted.
+  int16_t width = 46;
+  int16_t height = 26;
+  uint8_t radius = 255;
+  uint8_t knobRadius = 255;
   int16_t knobInset = 3;
-  uint8_t borderWidth = 1;
-  Paint track = Paint::solid(Color::White);
+  uint8_t borderWidth = 0;
+  Paint track = Paint::dither(Color::LightGray);
   Paint checkedTrack = Paint::solid(Color::Black);
   Paint border = Paint::solid(Color::Black);
   Paint knob = Paint::solid(Color::Black);

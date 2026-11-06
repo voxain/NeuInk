@@ -1557,25 +1557,38 @@ inline std::vector<SettingInfo> buildNetworkSettingsList() {
 
 inline std::vector<SettingInfo> buildGeneralSettingsList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> settings;
-  settings.reserve(15);
+  settings.reserve(8);
   addSettingByName(settings, allSettings, StrId::STR_DEVICE_NAME);
-  addSettingByName(settings, allSettings, StrId::STR_TIME_TO_SLEEP);
-  addSettingByName(settings, allSettings, StrId::STR_CUSTOM_BOOTSCREEN);
   settings.push_back(SettingInfo::Action(StrId::STR_LANGUAGE, SettingAction::Language));
   settings.push_back(SettingInfo::Action(StrId::STR_KEYBOARD_LAYOUTS, SettingAction::KeyboardLayouts));
+  addSettingByName(settings, allSettings, StrId::STR_TIME_TO_SLEEP);
+  addSettingByName(settings, allSettings, StrId::STR_CUSTOM_BOOTSCREEN);
   if (halClock.isAvailable()) {
-    addSettingByName(settings, allSettings, StrId::STR_CLOCK_FORMAT);
-    addSettingByName(settings, allSettings, StrId::STR_LIVE_CLOCK);
-    addSettingByName(settings, allSettings, StrId::STR_CLOCK_UTC_OFFSET);
-    addSettingByName(settings, allSettings, StrId::STR_CLOCK_DST);
-    addSettingByName(settings, allSettings, StrId::STR_DATE_FORMAT);
-    addSettingByName(settings, allSettings, StrId::STR_DATE_SEPARATOR);
-    settings.push_back(SettingInfo::Action(StrId::STR_CLOCK_SYNC_NOW, SettingAction::ClockSync));
+    settings.push_back(SettingInfo::Submenu(StrId::STR_DATE_AND_TIME, SettingAction::GeneralDateTime));
   }
-  settings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
-  settings.push_back(SettingInfo::Action(StrId::STR_SWITCH_FIRMWARE, SettingAction::SwitchFirmware));
-  settings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
+  settings.push_back(SettingInfo::Submenu(StrId::STR_SOFTWARE_UPDATES, SettingAction::GeneralUpdates));
   return settings;
+}
+
+// General > Date and time (only on devices with a clock).
+inline std::vector<SettingInfo> buildGeneralDateTimeSettingsList(const std::vector<SettingInfo>& allSettings) {
+  std::vector<SettingInfo> settings;
+  settings.reserve(7);
+  addSettingByName(settings, allSettings, StrId::STR_CLOCK_FORMAT);
+  addSettingByName(settings, allSettings, StrId::STR_LIVE_CLOCK);
+  addSettingByName(settings, allSettings, StrId::STR_CLOCK_UTC_OFFSET);
+  addSettingByName(settings, allSettings, StrId::STR_CLOCK_DST);
+  addSettingByName(settings, allSettings, StrId::STR_DATE_FORMAT);
+  addSettingByName(settings, allSettings, StrId::STR_DATE_SEPARATOR);
+  settings.push_back(SettingInfo::Action(StrId::STR_CLOCK_SYNC_NOW, SettingAction::ClockSync));
+  return settings;
+}
+
+// General > Software updates.
+inline std::vector<SettingInfo> buildGeneralUpdatesSettingsList() {
+  return {SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates),
+          SettingInfo::Action(StrId::STR_SWITCH_FIRMWARE, SettingAction::SwitchFirmware),
+          SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate)};
 }
 
 inline std::vector<SettingInfo> buildSystemFilesCacheSettingsList(const std::vector<SettingInfo>& allSettings) {

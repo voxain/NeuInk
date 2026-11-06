@@ -9,7 +9,7 @@ namespace VegaMetrics {
 constexpr ThemeMetrics makeValues() {
   ThemeMetrics v = LyraMetrics::values;
   v.homeCoverHeight = 176;
-  v.homeCoverTileHeight = 212;  // the card and a gap
+  v.homeCoverTileHeight = 217;  // the header's overlap (topPadding), the card and a gap
   v.homeMenuTopOffset = 8;
   v.homeTopPadding = 62;  // a taller status bar on Home (Lyra: 56)
   // Title bar: a light-gray band, no black underline, and more room.
@@ -46,8 +46,8 @@ class VegaTheme : public LyraTheme {
   const freeink::Icon* headerIcon() const override;
   int headerExtraHeight() const override { return 14; }
   bool selectionOnlyForButtons() const override { return true; }
-  void drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, bool batteryLeft,
-                        bool showPercentage) const override;
+  void drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, bool batteryLeft, bool showPercentage,
+                        bool onBand) const override;
   int statusClockFontId() const override;
 
  private:

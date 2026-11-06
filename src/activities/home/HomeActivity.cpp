@@ -63,6 +63,7 @@ constexpr uint32_t CAROUSEL_FRAME_MIN_MAX_ALLOC_AFTER_ALLOC = 24U * 1024U;
 constexpr int CAROUSEL_SLOW_DRAG_MIN_PX = 60;
 constexpr unsigned long HOME_BOOK_SWAP_LONG_PRESS_MS = 1000;
 constexpr int HOME_BOOK_SWAP_RECENT_COUNT = 2;
+constexpr int kFastRefreshesBetweenClean = 6;
 
 enum class HomeMenuAction {
   BrowseFiles,
@@ -933,6 +934,9 @@ void HomeActivity::onEnter() {
   homeFirstFrameLogged = false;
 
   hasOpdsServers = OPDS_STORE.hasServers();
+  // Arriving from another screen on Vega: a half refresh, which clears what its gray areas ghosted.
+  if (homeListsApps() && initialRefreshMode == HalDisplay::FAST_REFRESH) initialRefreshMode = HalDisplay::HALF_REFRESH;
+  fastRefreshesSinceClean = 0;
   homeHiddenApps = apps::hiddenMask();
   if (UITheme::hasCoverGridHome()) {
     coverGridUi = makeUniqueNoThrow<CoverGridHomeUi>(renderer);
@@ -2295,6 +2299,13 @@ void HomeActivity::render(RenderLock&&) {
     // A quiet pass only rebuilds the framebuffer and touch areas; the panel
     // already shows this picture.
     if (quietPass) return;
+    if (homeListsApps()) {
+      // Vega's gray areas ghost under fast refreshes: a cleaner one after every few of them.
+      if (initialRefreshMode == HalDisplay::FAST_REFRESH && ++fastRefreshesSinceClean > kFastRefreshesBetweenClean) {
+        initialRefreshMode = HalDisplay::HALF_REFRESH;
+      }
+      if (initialRefreshMode != HalDisplay::FAST_REFRESH) fastRefreshesSinceClean = 0;
+    }
     renderer.displayBuffer(initialRefreshMode);
     initialRefreshMode = HalDisplay::FAST_REFRESH;
     if (!homeFirstFrameLogged) {

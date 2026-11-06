@@ -1,12 +1,14 @@
-# Manifest for src/components/icons/homeIcons.h: Lucide 1.70.0 (ISC), the icons of the apps and Home
-# entries, the title bars, the status bar and the games' tool buttons.
+# Manifest for src/components/icons/homeIcons.h: Lucide 1.70.0 (ISC), the icons of the apps, Home and Settings
+# entries, title bars, the status bar and the games' tool buttons.
 #
-# Only 24 and 48 px: Lucide is drawn on a 24-unit grid with 2-unit strokes, so at 24 px and at exactly
-# twice that every stroke and gap falls on whole pixels. Other sizes smear them (uneven pillars/bars).
+# 24 px is Lucide's own grid, pixel-exact. 32 px is what squircles and tiles use; a 24-unit grid does not
+# divide into 32 pixels, so the two icons whose repeated parts must be evenly spaced (landmark pillars, chart
+# bars) come from src/components/icons/lucide-snapped/, with those parts moved onto whole pixels.
 #
-# The vendored SDK does not carry the Lucide SVGs: generate with the SVGs of Lucide (npm: lucide-static):
-#   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py --svgdir <lucide/icons> \
-#     --manifest src/components/icons/homeIcons.manifest --sizes 24,48 --out src/components/icons/homeIcons.h
+# The vendored SDK does not carry the Lucide SVGs: generate with the SVGs of Lucide (npm: lucide-static) and
+# the snapped ones in one folder:
+#   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py --svgdir <folder> \
+#     --manifest src/components/icons/homeIcons.manifest --sizes 24,32 --out src/components/icons/homeIcons.h
 sudoku = grid-3x3
 chess = chess-knight
 checkers = disc-3
@@ -21,10 +23,18 @@ fill = paint-bucket
 hint = lightbulb
 flip = arrow-down-up
 files = folder
-library = landmark
+library = landmark-snapped
 opds = library-big
-stats = chart-column
+stats = chart-column-snapped
 settings = settings
 transfer_arrows = arrow-left-right
 wifi_on = wifi
 wifi_zero = wifi-zero
+chevron_right = chevron-right
+display = monitor
+reader = book-open
+dictionaries = book-a
+controls = sliders-horizontal
+library_shelf = library
+apps_grid = layout-grid
+about = info

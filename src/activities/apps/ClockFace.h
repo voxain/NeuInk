@@ -15,7 +15,7 @@ namespace clockface {
 enum Face : uint8_t { Digital = 0, Analog = 1, PersianDays = 2, kFaceCount = 3 };
 enum WeekStart : uint8_t { Monday = 0, Saturday = 1, Sunday = 2, kWeekStartCount = 3 };
 
-// The Clock settings (Apps > Manage > Clock > Settings), kept on the card.
+// The Clock settings (Settings > Apps > Clock), kept on the card.
 struct Options {
   uint8_t face = Digital;
   bool persianDate = false;

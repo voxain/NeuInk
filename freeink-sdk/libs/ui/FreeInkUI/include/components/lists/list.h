@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../FreeInkUICore.h"
+#include "../controls/squircle.h"
 
 #include <atomic>
 #if __has_include(<BoardConfig.h>)
@@ -107,6 +108,11 @@ struct ListProps {
   int16_t sidePadding = -1;
   int16_t textGap = 10;
   int16_t iconSize = 0;
+  // > 0: the icon sits on a light-gray squircle of this size, centered in it. The squircle (not the icon)
+  // then sets the width of the icon column.
+  int16_t iconPlate = 0;
+  // A row whose value is exactly ">" (a submenu) shows this bitmap in its place, when set.
+  BitmapRef chevron{};
   // Extra inset for the right-aligned value slot beyond sidePadding, so a
   // trailing chevron/value keeps air from the row edge on themes with tight
   // row padding.
@@ -119,12 +125,13 @@ struct ListProps {
   // Switch geometry for ListItem::toggle rows (mirrors ToggleRowProps).
   // Colors derive from the row style's foreground so the switch stays legible
   // on inverted (selected) rows.
-  int16_t toggleWidth = 38;
-  int16_t toggleHeight = 18;
-  uint8_t toggleRadius = 0;
-  uint8_t toggleKnobRadius = 0;
+  // A pill track with a round knob: light gray off, the row's ink on, the knob inverted.
+  int16_t toggleWidth = 46;
+  int16_t toggleHeight = 26;
+  uint8_t toggleRadius = 255;
+  uint8_t toggleKnobRadius = 255;
   int16_t toggleKnobInset = 3;
-  uint8_t toggleBorderWidth = 1;
+  uint8_t toggleBorderWidth = 0;
   // Horizontal inset of the ROWS within the rect (the Lyra pill band). The
   // scroll indicator stays at the rect's edge, in the inset margin.
   // -1 = inherit: Screen::list() substitutes the theme's listInset.
@@ -434,6 +441,10 @@ inline void drawListScrollIndicator(DrawTarget &target, const Rect rect,
               Paint::solid(Color::Black));
 }
 
+inline bool listValueIsChevron(const ListProps &props, const ListItem &item) {
+  return props.chevron && item.value && item.value[0] == '>' && item.value[1] == '\0';
+}
+
 // Geometry shared by full rows and previews. Widths are resolved before
 // wrapping, including both the trailing slot and optional balanced wrap cap.
 struct ListRowLayout {
@@ -453,14 +464,16 @@ inline ListRowLayout measureListRow(const DrawTarget &target, AssetResolver *ass
   const int16_t sidePad = props.sidePadding < 0 ? 8 : props.sidePadding;
   const int16_t labelLh = target.lineHeight(props.labelText.font);
   const BitmapRef icon = item.icon ? item.icon : resolveBitmap(assets, item.iconAsset);
-  const int16_t iconSize = icon ? (props.iconSize > 0 ? props.iconSize : icon.width) : 0;
+  const int16_t iconSize = icon ? (props.iconPlate > 0 ? props.iconPlate : (props.iconSize > 0 ? props.iconSize : icon.width)) : 0;
   const int16_t contentWidth = static_cast<int16_t>(width - sidePad * 2 -
                                                    (icon ? iconSize + props.textGap : 0));
   result.labelWidth = contentWidth;
   if (item.toggle) {
     result.valueWidth = props.toggleWidth < 18 ? 18 : props.toggleWidth;
   } else if (item.value) {
-    result.valueWidth = target.measureText(props.valueText.font, item.value, props.valueText).width;
+    result.valueWidth = listValueIsChevron(props, item)
+                            ? props.chevron.width
+                            : target.measureText(props.valueText.font, item.value, props.valueText).width;
   }
   if (item.toggle || item.value)
     result.labelWidth = static_cast<int16_t>(result.labelWidth - result.valueWidth -
@@ -771,9 +784,10 @@ void list(Frame<MaxInteractions> &frame, Rect rect, const ListProps &props) {
     const BitmapRef icon =
         item.icon ? item.icon : resolveBitmap(frame.assets(), item.iconAsset);
     if (icon) {
-      const int16_t iconSize = props.iconSize > 0
-                                   ? props.iconSize
-                                   : static_cast<int16_t>(icon.width);
+      const int16_t glyphSize = props.iconSize > 0
+                                    ? props.iconSize
+                                    : static_cast<int16_t>(icon.width);
+      const int16_t iconSize = props.iconPlate > 0 ? props.iconPlate : glyphSize;
       // Centered on the full row content, not the title band: with a subtitle
       // the icon belongs to the label+subtitle block as a whole. RTL mirrors
       // the icon to the row's trailing (right) edge, matching
@@ -787,6 +801,12 @@ void list(Frame<MaxInteractions> &frame, Rect rect, const ListProps &props) {
           iconX,
           static_cast<int16_t>(content.y + (content.height - iconSize) / 2),
           iconSize, iconSize};
+      if (props.iconPlate > 0) {
+        fillSquircle(frame.target(), iconRect, Paint::dither(Color::LightGray));
+        iconRect = Rect{static_cast<int16_t>(iconRect.x + (iconSize - glyphSize) / 2),
+                        static_cast<int16_t>(iconRect.y + (iconSize - glyphSize) / 2),
+                        glyphSize, glyphSize};
+      }
       frame.target().bitmap(iconRect, icon, BitmapMode::Contain,
                             style.foreground);
       if (!props.rtl)
@@ -819,7 +839,11 @@ void list(Frame<MaxInteractions> &frame, Rect rect, const ListProps &props) {
       const Paint paper = Paint::solid(fgWhite ? Color::Black : Color::White);
       const uint8_t trackRadius = static_cast<uint8_t>(
           props.toggleRadius > togH / 2 ? togH / 2 : props.toggleRadius);
-      frame.target().fill(toggleRect, item.toggleChecked ? fg : paper,
+      // Off: a gray track (darker on an inverted row); on: the row's ink.
+      frame.target().fill(toggleRect,
+                          item.toggleChecked
+                              ? fg
+                              : Paint::dither(fgWhite ? Color::DarkGray : Color::LightGray),
                           trackRadius);
       if (props.toggleBorderWidth > 0) {
         frame.target().stroke(toggleRect, fg, props.toggleBorderWidth,
@@ -852,7 +876,15 @@ void list(Frame<MaxInteractions> &frame, Rect rect, const ListProps &props) {
           ? static_cast<int16_t>(band.x + props.valueInset)
           : static_cast<int16_t>(band.x + availW - valueW - props.valueInset);
       Rect valueRect{valueX, band.y, valueW, band.height};
-      frame.target().text(valueRect, item.value, valueStyle);
+      if (listValueIsChevron(props, item)) {
+        frame.target().bitmap(
+            Rect{valueX,
+                 static_cast<int16_t>(band.y + (band.height - props.chevron.height) / 2),
+                 valueW, props.chevron.height},
+            props.chevron, BitmapMode::Contain, style.foreground);
+      } else {
+        frame.target().text(valueRect, item.value, valueStyle);
+      }
       availW = static_cast<int16_t>(availW - valueW - props.valueInset -
                                     props.textGap);
       if (props.rtl)

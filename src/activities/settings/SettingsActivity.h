@@ -53,6 +53,8 @@ enum class SettingAction {
   DownloadFonts,
   TtfRendering,
   ClockSync,
+  GeneralDateTime,
+  GeneralUpdates,
 };
 
 struct SettingInfo {
@@ -253,6 +255,8 @@ class SettingsActivity final : public Activity {
   std::vector<SettingInfo> controlsTwoFingerSwipeSettings;
   std::vector<SettingInfo> controlsEdgeGestureSettings;
   std::vector<SettingInfo> generalSettings;
+  std::vector<SettingInfo> generalDateTimeSettings;
+  std::vector<SettingInfo> generalUpdatesSettings;
   std::vector<SettingInfo> networkSettings;
   std::vector<SettingInfo> systemFilesCacheSettings;
   std::vector<SettingInfo> fileBrowserSettings;

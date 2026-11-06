@@ -566,9 +566,9 @@ void ChessActivity::render(RenderLock&&) {
   if (game->started() && game->state() != chess::Game::State::Playing) {
     gameui::button(renderer, newGameBox, tr(STR_GAME_NEW), true);
   } else {
-    gameui::iconButton(renderer, tools[Undo], icon_undo_48, tr(STR_SUDOKU_UNDO), false);
-    gameui::iconButton(renderer, tools[Hint], icon_hint_48, tr(STR_SUDOKU_HINT), false);
-    gameui::iconButton(renderer, tools[Flip], icon_flip_48, tr(STR_GAME_FLIP), false);
+    gameui::iconButton(renderer, tools[Undo], icon_undo_32, tr(STR_SUDOKU_UNDO), false);
+    gameui::iconButton(renderer, tools[Hint], icon_hint_32, tr(STR_SUDOKU_HINT), false);
+    gameui::iconButton(renderer, tools[Flip], icon_flip_32, tr(STR_GAME_FLIP), false);
   }
 
   if (panel == Panel::NewGame) drawNewGamePanel();

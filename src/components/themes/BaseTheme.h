@@ -295,8 +295,9 @@ class BaseTheme {
   virtual bool selectionOnlyForButtons() const { return false; }
   // The battery in the top status row of a title bar, with whatever a theme puts beside it. batteryRect is
   // where the classic icon goes; its right edge (left edge when batteryLeft) is the edge to align to.
-  virtual void drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, bool batteryLeft,
-                                bool showPercentage) const;
+  // onBand: the bar sits on the theme's gray band (so "empty" parts must not be gray too).
+  virtual void drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, bool batteryLeft, bool showPercentage,
+                                bool onBand) const;
   // The font of the clock in that row.
   virtual int statusClockFontId() const;
   virtual int getMenuRowHeight(const GfxRenderer& renderer) const;

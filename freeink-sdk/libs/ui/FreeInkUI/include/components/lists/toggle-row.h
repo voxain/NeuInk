@@ -16,12 +16,12 @@ struct ToggleRowProps {
   // other interactions (or toggling must be deliberate): only the switch
   // itself — expanded to row.minTouchSize — responds to taps.
   bool hitToggleOnly = false;
-  int16_t toggleWidth = 38;
-  int16_t toggleHeight = 18;
-  uint8_t radius = 0;
-  uint8_t knobRadius = 0;
+  int16_t toggleWidth = 46;
+  int16_t toggleHeight = 26;
+  uint8_t radius = 255;
+  uint8_t knobRadius = 255;
   int16_t knobInset = 3;
-  uint8_t borderWidth = 1;
+  uint8_t borderWidth = 0;
   Paint track = Paint::solid(Color::White);
   Paint checkedTrack = Paint::solid(Color::Black);
   Paint border = Paint::solid(Color::Black);

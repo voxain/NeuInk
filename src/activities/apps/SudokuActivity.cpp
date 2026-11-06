@@ -635,8 +635,8 @@ void SudokuActivity::drawPad() const {
 
   const char* labels[kToolCount] = {tr(STR_SUDOKU_UNDO), tr(STR_SUDOKU_ERASE), tr(STR_SUDOKU_NOTES),
                                     tr(STR_SUDOKU_FILL), tr(STR_SUDOKU_HINT)};
-  const freeink::Icon* icons[kToolCount] = {&icon_undo_48, &icon_erase_48, &icon_notes_48, &icon_fill_48,
-                                            &icon_hint_48};
+  const freeink::Icon* icons[kToolCount] = {&icon_undo_32, &icon_erase_32, &icon_notes_32, &icon_fill_32,
+                                            &icon_hint_32};
   for (int i = 0; i < kToolCount; ++i) {
     gameui::iconButton(renderer, tools[i], *icons[i], labels[i], i == Notes && notesMode);
   }

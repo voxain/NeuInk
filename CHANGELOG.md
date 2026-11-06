@@ -13,8 +13,23 @@
   a bigger clock, a Wi-Fi icon while Wi-Fi is on (Lucide wifi when joined, wifi-zero while
   joining), and a new battery: no outline, rounded, light-gray empty part, the percentage
   without its sign inside it. The reader's own status bar is unchanged.
-- App and Home icons are Lucide at 24 and 48 px only: that is 1x and 2x of Lucide's own grid,
-  so strokes and gaps (the Library's pillars, the Stats bars) fall on whole pixels.
+- App and Home icons are Lucide. 24 px is Lucide's own grid, pixel-exact (title bars, Wi-Fi);
+  squircles and tiles use 32 px, where the Library's pillars and the Stats bars are moved onto
+  whole pixels so their gaps are equal.
+- Settings: each group's icon sits on a light-gray squircle (all Lucide now) with a smaller
+  description under the title; new About page (version, build, device, chip, memory, SD card,
+  battery, uptime, reading totals), which replaces the version line under the group list;
+  Apps has its own entry; General is split into Date and time and Software updates.
+- Shared UI components: switches are a rounded track with a round knob (light gray off,
+  dark on, knob inverted); a value is now a size smaller than its label; submenu rows show a
+  chevron icon instead of ">". Dictionaries, the Apps options and About are made of the
+  shared list instead of their own drawing code (the Apps screen's own boxes, switches and
+  buttons are gone; the games keep theirs). Dictionaries: Remove language is a row now
+  instead of holding a language chip.
+- Vega's Home does a half refresh when entered from another screen, and after every sixth
+  fast refresh within Home, since its gray areas ghost.
+- Fixed: the quick-settings panel drew a gray bar at the top; the book card's top rows were
+  painted over by the Home header.
 - File Transfer is now part of the File Manager (its settings page) and no longer a Home
   entry in any theme; "Browse Files" is now called "File Manager" (German: Dateimanager).
   A File Transfer button sits under the title bar of the File Manager (touch readers); the

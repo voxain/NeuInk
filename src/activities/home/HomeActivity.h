@@ -40,7 +40,8 @@ class HomeActivity final : public Activity {
   // Vega: the selection shows only while buttons are used (MappedInputManager::buttonsInUse); a touch
   // lights the pressed item instead, which is pressedSelector (-1: none).
   int pressedSelector = -1;
-  int homePage = 0;  // the page of the Vega theme's app grid
+  int homePage = 0;
+  int fastRefreshesSinceClean = 0;  // Vega: fast refreshes since the last half refresh  // the page of the Vega theme's app grid
   int lastCarouselBookIndex = 0;  // remembered position when leaving carousel row
   // Finger travel on Carousel, so a drag slower than the SDK's flick window
   // still counts as a swipe.

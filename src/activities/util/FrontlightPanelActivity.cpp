@@ -726,8 +726,9 @@ void FrontlightPanelActivity::render(RenderLock&&) {
     const int width = renderer.getScreenWidth();
     renderer.fillRect(0, 0, width, panelBottom + 6, false);
     const auto& metrics = UITheme::getInstance().getMetrics();
+    // No title at all (not an empty one): an empty title would make Vega paint its title-bar band here.
     GUI.drawHeader(renderer, Rect{0, metrics.topPadding, width, TouchHeaderBackButton::height(metrics, mappedInput)},
-                   "", nullptr, false);
+                   nullptr, nullptr, false);
     renderer.fillRect(0, CC_CARD_TOP - 4, width, panelBottom + 10 - CC_CARD_TOP, false);
     const uint32_t frameStartMs = millis();
 #ifndef SIMULATOR

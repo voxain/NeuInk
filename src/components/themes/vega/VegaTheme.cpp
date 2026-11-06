@@ -25,8 +25,8 @@ constexpr int kCardRadius = 16;
 constexpr int kCoverRadius = 10;
 constexpr int kCardTextGap = 16;
 constexpr int kBarHeight = 10;
-constexpr int kSquircleSize = 80;
-constexpr int kIconSize = 48;  // 48 (and 24 in title bars): Lucide's grid at 2x, every stroke on whole pixels
+constexpr int kSquircleSize = 68;
+constexpr int kIconSize = 32;
 constexpr int kDotsHeight = 28;
 constexpr int kHeaderIconSize = 24;
 constexpr int kSideMargin = 16;
@@ -73,17 +73,20 @@ void VegaTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
   }
   const auto& metrics = VegaMetrics::values;
   const RecentBook& book = recentBooks[0];
+  // The Home header band ends topPadding below the tile's top, and is drawn after the cached card is
+  // restored: start the card under it, or its top rows are painted over.
+  const int cardY = rect.y + metrics.topPadding;
   const int cardX = metrics.contentSidePadding;
   const int cardW = rect.width - 2 * metrics.contentSidePadding;
   const int cardH = metrics.homeCoverHeight + 2 * kCardPadding;
   const int coverX = cardX + kCardPadding;
-  const int coverY = rect.y + kCardPadding;
-  TouchRegistry::getInstance().add(Rect{cardX, rect.y, cardW, cardH}, 0, TouchRegistry::Cover);
+  const int coverY = cardY + kCardPadding;
+  TouchRegistry::getInstance().add(Rect{cardX, cardY, cardW, cardH}, 0, TouchRegistry::Cover);
 
   if (coverWidth == 0) coverWidth = metrics.homeCoverHeight * 2 / 3;
   if (!coverRendered) {
     // The card and the cover are drawn once and kept in the snapshot; the text goes over it.
-    renderer.fillRoundedRect(cardX, rect.y, cardW, cardH, kCardRadius, Color::LightGray);
+    renderer.fillRoundedRect(cardX, cardY, cardW, cardH, kCardRadius, Color::LightGray);
     coverWidth = drawCoverThumb(renderer, book, coverX, coverY, metrics.homeCoverHeight, coverWidth, false);
     roundCorners(renderer, coverX, coverY, coverWidth, metrics.homeCoverHeight, kCoverRadius, Color::LightGray);
     coverBufferStored = storeCoverBuffer();
@@ -91,7 +94,7 @@ void VegaTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
   }
 
   // Only a card picked with the buttons gets an outline.
-  if (selectorIndex == 0) renderer.drawRoundedRect(cardX, rect.y, cardW, cardH, 3, kCardRadius, true);
+  if (selectorIndex == 0) renderer.drawRoundedRect(cardX, cardY, cardW, cardH, 3, kCardRadius, true);
 
   const int textX = coverX + coverWidth + kCardTextGap;
   const int textW = cardX + cardW - kCardPadding - textX;
@@ -202,7 +205,7 @@ int VegaTheme::statusClockFontId() const { return UI_10_FONT_ID; }
 // (without its sign) inside it, drawn white over the filled part and black over the rest. A bolt beside
 // it while charging, and the Wi-Fi icon when Wi-Fi is on.
 void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const bool batteryLeft,
-                                 const bool showPercentage) const {
+                                 const bool showPercentage, const bool onBand) const {
   const uint16_t percentage = std::min<uint16_t>(powerManager.getBatteryPercentage(), 100);
   const int bodyW = showPercentage ? 38 : 30;
   const int bodyH = showPercentage ? 20 : 14;
@@ -213,8 +216,10 @@ void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const b
   const int bodyY = centerY - bodyH / 2;
   const int radius = bodyH / 3;
 
-  renderer.fillRoundedRect(bodyX, bodyY, bodyW, bodyH, radius, Color::LightGray);
-  renderer.fillRoundedRect(bodyX + bodyW, centerY - 4, nubW, 8, nubW / 2, Color::LightGray);
+  // The empty part is light gray, or white where the bar itself is that gray.
+  const Color empty = onBand ? Color::White : Color::LightGray;
+  renderer.fillRoundedRect(bodyX, bodyY, bodyW, bodyH, radius, empty);
+  renderer.fillRoundedRect(bodyX + bodyW, centerY - 4, nubW, 8, nubW / 2, empty);
   const int fillW = (bodyW * percentage + 50) / 100;
   if (fillW > 0) {
     // The right end of a part-filled body is flat, so it reads as a level, not as a smaller battery.
