@@ -19,6 +19,8 @@ inline void fillSquircle(DrawTarget &target, Rect rect, Paint paint) {
   const int16_t centerX = static_cast<int16_t>(rect.x + halfWidth);
   const float rx = static_cast<float>(halfWidth) + 0.5f;
   const float ry = static_cast<float>(halfHeight) + 0.5f;
+  // A dither is anchored to the middle pixel, so the shape looks the same wherever it sits on the screen.
+  target.setPatternOrigin(centerX, static_cast<int16_t>(rect.y + halfHeight));
   for (int16_t row = 0; row < rect.height; ++row) {
     const float t = static_cast<float>(row - halfHeight) / ry;
     const float t2 = t * t;
@@ -30,6 +32,7 @@ inline void fillSquircle(DrawTarget &target, Rect rect, Paint paint) {
                      static_cast<int16_t>(half * 2 + 1), 1},
                 paint);
   }
+  target.setPatternOrigin(0, 0);
 }
 
 } // namespace ui

@@ -2,55 +2,104 @@
 
 #include <I18n.h>
 
+#include <algorithm>
+
 #include "CrossPointSettings.h"
+#include "components/UiAppHelpers.h"
+#include "fontIds.h"
 
 namespace {
-const std::vector<std::string> kIconSizes = {"32 px", "42 px", "48 px"};
-const std::vector<std::string> kGrids = {"4 x 3", "4 x 4", "3 x 4", "3 x 3"};
+constexpr freeink::ui::ActionId ACTION_ICON = PanelActivity::ACTION_FIRST_CONTROL;
+constexpr freeink::ui::ActionId ACTION_GRID = PanelActivity::ACTION_FIRST_CONTROL + 1;
+constexpr freeink::ui::ActionId ACTION_NAMES = PanelActivity::ACTION_FIRST_CONTROL + 2;
+
+// The options in the order shown, as the values stored in homeIconSize (0 = 32 px, the default) and homeGrid.
+constexpr int kIconPx[] = {24, 32, 42, 48};
+constexpr uint8_t kIconValue[] = {3, 0, 1, 2};
+constexpr const char* kIconLabel[] = {"24", "32", "42", "48"};
+constexpr int kGridColumns[] = {4, 4, 3, 3};
+constexpr int kGridRows[] = {3, 4, 4, 3};
+constexpr const char* kGridLabel[] = {"4x3", "4x4", "3x4", "3x3"};
+
+int iconIndex() {
+  for (int i = 0; i < 4; ++i) {
+    if (kIconValue[i] == SETTINGS.homeIconSize) return i;
+  }
+  return 1;
+}
 }  // namespace
 
 HomeLayoutActivity::HomeLayoutActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-    : RowListActivity(renderer, mappedInput, "HomeLayout", tr(STR_HOME_LAYOUT)) {}
+    : PanelActivity(renderer, mappedInput, "HomeLayout") {}
 
-void HomeLayoutActivity::choose(const char* title, const std::vector<std::string>& options, uint8_t& value) {
-  std::vector<const char*> labels;
-  for (const std::string& option : options) labels.push_back(option.c_str());
-  popup.show(title, labels.data(), static_cast<int>(labels.size()), value, [this, &value](const int index) {
-    value = static_cast<uint8_t>(index);
-    SETTINGS.saveToFile();
-    refresh();
-  });
-  requestUpdate();
+void HomeLayoutActivity::onExit() {
+  SETTINGS.saveToFile();
+  PanelActivity::onExit();
 }
 
-void HomeLayoutActivity::buildRows(std::vector<Row>& rows) {
-  rows.clear();
-  const auto add = [&rows](const Row::Kind kind, const char* label, std::string value, std::function<void()> onTap,
-                           const bool checked = false) {
-    Row row;
-    row.kind = kind;
-    row.label = label;
-    row.value = std::move(value);
-    row.checked = checked;
-    row.onTap = std::move(onTap);
-    rows.push_back(std::move(row));
+int HomeLayoutActivity::contentHeight() const {
+  return 2 * (panel::kLabelHeight + panel::kTileHeight + panel::kRowGap) + panel::kControlHeight;
+}
+
+void HomeLayoutActivity::buildContent(Screen& screen, const int x, int y, const int width) {
+  auto& frame = screen.frame();
+  const auto heading = [&](const char* text) {
+    renderer.drawText(UI_10_FONT_ID, x, y, text, true, EpdFontFamily::BOLD);
+    y += panel::kLabelHeight;
   };
-  add(Row::Kind::Value, tr(STR_ICON_SIZE), kIconSizes[SETTINGS.homeIconSize],
-      [this] { choose(tr(STR_ICON_SIZE), kIconSizes, SETTINGS.homeIconSize); });
-  add(Row::Kind::Value, tr(STR_HOME_GRID), kGrids[SETTINGS.homeGrid],
-      [this] { choose(tr(STR_HOME_GRID), kGrids, SETTINGS.homeGrid); });
-  add(Row::Kind::Toggle, tr(STR_SHOW_NAMES), "",
-      [this] {
-        SETTINGS.homeShowNames = !SETTINGS.homeShowNames;
-        SETTINGS.saveToFile();
-        refresh();
+
+  // Icon size: the Home icon at each size on its squircle.
+  heading(tr(STR_ICON_SIZE));
+  panel::tiles(
+      renderer, frame, x, y, width, 4, iconIndex(), ACTION_ICON, UI_10_FONT_ID,
+      [&](const int cx, const int top, const bool, const int i) {
+        const int plate = kIconPx[i] + 14 | 1;
+        freeink::ui::GfxRendererTarget target(renderer);
+        freeink::ui::fillSquircle(target,
+                                  freeink::ui::Rect{static_cast<int16_t>(cx - plate / 2),
+                                                    static_cast<int16_t>(top + (panel::kPreviewHeight - plate) / 2),
+                                                    static_cast<int16_t>(plate), static_cast<int16_t>(plate)},
+                                  freeink::ui::Paint::dither(freeink::ui::Color::LightGray));
+        if (const freeink::Icon* icon = homeIcon(UIIcon::Apps, kIconPx[i])) {
+          drawLucideIcon(renderer, *icon, cx - kIconPx[i] / 2,
+                         top + (panel::kPreviewHeight - kIconPx[i]) / 2);
+        }
       },
-      SETTINGS.homeShowNames != 0);
-  add(Row::Kind::Chevron, tr(STR_RESET_LAYOUT), "", [this] {
-    SETTINGS.homeIconSize = 0;
-    SETTINGS.homeGrid = 0;
-    SETTINGS.homeShowNames = 1;
-    SETTINGS.saveToFile();
-    refresh();
-  });
+      [](const int i) { return kIconLabel[i]; });
+  y += panel::kTileHeight + panel::kRowGap;
+
+  // Grid: columns x rows of small squares.
+  heading(tr(STR_HOME_GRID));
+  panel::tiles(
+      renderer, frame, x, y, width, 4, SETTINGS.homeGrid, ACTION_GRID, UI_10_FONT_ID,
+      [&](const int cx, const int top, const bool on, const int i) {
+        constexpr int cell = 11;
+        constexpr int gap = 4;
+        const int columns = kGridColumns[i];
+        const int rows = kGridRows[i];
+        const int left = cx - (columns * cell + (columns - 1) * gap) / 2;
+        const int first = top + (panel::kPreviewHeight - (rows * cell + (rows - 1) * gap)) / 2;
+        for (int row = 0; row < rows; ++row) {
+          for (int column = 0; column < columns; ++column) {
+            renderer.fillRoundedRect(left + column * (cell + gap), first + row * (cell + gap), cell, cell, 3,
+                                     on ? Color::White : Color::Black);
+          }
+        }
+      },
+      [](const int i) { return kGridLabel[i]; });
+  y += panel::kTileHeight + panel::kRowGap;
+
+  panel::switchButton(renderer, frame, x, y, width, tr(STR_SHOW_NAMES), SETTINGS.homeShowNames != 0, ACTION_NAMES,
+                      UI_10_FONT_ID);
+}
+
+void HomeLayoutActivity::onChoice(const freeink::ui::ActionId action, const int value) {
+  if (action == ACTION_ICON && value >= 0 && value < 4) {
+    SETTINGS.homeIconSize = kIconValue[value];
+  } else if (action == ACTION_GRID && value >= 0 && value < 4) {
+    SETTINGS.homeGrid = static_cast<uint8_t>(value);
+  } else if (action == ACTION_NAMES) {
+    SETTINGS.homeShowNames = SETTINGS.homeShowNames ? 0 : 1;
+  }
+  requestUpdate();
 }

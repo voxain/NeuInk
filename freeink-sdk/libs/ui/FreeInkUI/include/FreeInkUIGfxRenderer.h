@@ -62,6 +62,14 @@ class GfxRendererTarget final : public DrawTarget {
   template <typename R>
   static bool trySetClip(const R&, Rect, long) { return false; }
 
+  void setPatternOrigin(const int16_t x, const int16_t y) override { trySetOrigin(renderer, x, y, 0); }
+  template <typename R>
+  static auto trySetOrigin(const R& r, const int16_t x, const int16_t y, int) -> decltype(r.setDitherOrigin(x, y), void()) {
+    r.setDitherOrigin(x, y);
+  }
+  template <typename R>
+  static void trySetOrigin(const R&, int16_t, int16_t, long) {}
+
   void setFont(const FontId slot, const int gfxFontId) {
     if (slot < FONT_SLOTS) fonts[slot] = gfxFontId;
   }

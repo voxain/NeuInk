@@ -684,7 +684,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t uiTheme = VEGA;
   // Recently Opened layout in Library; keep the original raw values for older settings.
   uint8_t recentBooksView = RECENT_BOOKS_LIST;
-  // Vega Home grid (the pane under the bottom-edge swipe): icon size (0 = 32, 1 = 42, 2 = 48 px),
+  // Vega Home grid (the pane under the bottom-edge swipe): icon size (0 = 32, 1 = 42, 2 = 48, 3 = 24 px),
   // columns x rows (0 = 4x3, 1 = 4x4, 2 = 3x4, 3 = 3x3) and whether the names show under the icons.
   uint8_t homeIconSize = 0;
   uint8_t homeGrid = 0;

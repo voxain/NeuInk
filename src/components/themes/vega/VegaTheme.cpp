@@ -131,7 +131,7 @@ void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
   const int namesH = showNames ? 6 + 2 * labelH : 0;  // room for a two-line name
   // The icon sizes are 32, 42 or 48 px on a squircle about twice as big (odd: see fillSquircle), kept inside
   // its cell.
-  const int iconSize = SETTINGS.homeIconSize == 2 ? 48 : (SETTINGS.homeIconSize == 1 ? 42 : 32);
+  const int iconSize = SETTINGS.homeIconSize == 3 ? 24 : (SETTINGS.homeIconSize == 2 ? 48 : (SETTINGS.homeIconSize == 1 ? 42 : 32));
   const int squircleSize =
       std::max(iconSize + 15, std::min(2 * iconSize + 5, std::min(cellW - 8, cellH - namesH - 4))) | 1;
   const int contentH = squircleSize + namesH;

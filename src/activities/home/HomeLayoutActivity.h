@@ -1,16 +1,16 @@
 #pragma once
 
-#include "activities/settings/RowListActivity.h"
+#include "components/PanelActivity.h"
 
-// The Vega Home grid's layout, opened by swiping up from the bottom edge of Home: icon size, grid shape and
-// whether the names show. A change shows on Home as soon as this page closes.
-class HomeLayoutActivity final : public RowListActivity {
+// The Vega Home grid's layout, a panel over Home that a swipe up from the bottom edge opens: icon size and grid
+// shape as pictures to pick from, and whether the names show. Saved when it closes; Home redraws behind it.
+class HomeLayoutActivity final : public PanelActivity {
  public:
   HomeLayoutActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
+  void onExit() override;
 
  protected:
-  void buildRows(std::vector<Row>& rows) override;
-
- private:
-  void choose(const char* title, const std::vector<std::string>& options, uint8_t& value);
+  int contentHeight() const override;
+  void buildContent(Screen& screen, int x, int y, int width) override;
+  void onChoice(freeink::ui::ActionId action, int value) override;
 };

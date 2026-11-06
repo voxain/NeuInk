@@ -119,17 +119,19 @@ inline void drawLucideIcon(const GfxRenderer& renderer, const freeink::Icon& ico
 // viewport (topIndex) without touching the selection; button navigation moves
 // the selection and pulls the viewport along just enough to keep it visible.
 
-// Page dots: the current page is a black pill, the others light-gray dots, centred in the band at y (height 8).
+// Page dots: one size for all, the current page black and the others light gray, centred in the band at y (height 9).
+// Odd size and anchored to their middle (fillSquircle), so a gray dot's corners dither the same on every side.
 inline void drawPageDots(const GfxRenderer& renderer, const int x, const int y, const int width, const int pages,
                          const int page) {
-  constexpr int dot = 8;
-  constexpr int pill = 22;
-  constexpr int gap = 8;
-  int px = x + (width - ((pages - 1) * (dot + gap) + pill)) / 2;
+  constexpr int dot = 9;
+  constexpr int gap = 9;
+  freeink::ui::GfxRendererTarget target(renderer);
+  int px = x + (width - (pages * dot + (pages - 1) * gap)) / 2;
   for (int p = 0; p < pages; ++p) {
-    const bool current = p == page;
-    renderer.fillRoundedRect(px, y, current ? pill : dot, dot, dot / 2, current ? Color::Black : Color::LightGray);
-    px += (current ? pill : dot) + gap;
+    freeink::ui::fillSquircle(target, freeink::ui::Rect{static_cast<int16_t>(px), static_cast<int16_t>(y), dot, dot},
+                              p == page ? freeink::ui::Paint::solid(freeink::ui::Color::Black)
+                                        : freeink::ui::Paint::dither(freeink::ui::Color::LightGray));
+    px += dot + gap;
   }
 }
 

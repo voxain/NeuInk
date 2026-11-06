@@ -1,5 +1,7 @@
 #include "FrontlightPanelActivity.h"
 
+#include "components/PanelActivity.h"
+
 #include <SpeedLog.h>
 
 #include <CrossInkHalFrontlight.h>
@@ -824,18 +826,9 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   const int x1 = width - CC_CARD_SIDE;
   const int cardBottom = panelBottom;
 
-  // Card: a light-gray rounded surface with white controls on it, no outline and no shadow.
-  renderer.fillRoundedRect(x0, CC_CARD_TOP, x1 - x0, cardBottom - CC_CARD_TOP, CC_CARD_RADIUS, Color::LightGray);
-
-  // Taps outside the card close it; the grabber band closes it too.
-  const int screenH = renderer.getScreenHeight();
-  screen.frame().hit(fui::Rect{0, static_cast<int16_t>(cardBottom + 6), static_cast<int16_t>(width),
-                               static_cast<int16_t>(screenH - cardBottom - 6)},
-                     ACTION_DISMISS, 0, fui::InputTouch);
-  drawerHandleRect = fui::Rect{static_cast<int16_t>(width / 2 - 60), static_cast<int16_t>(cardBottom - CC_GRABBER_BAND),
-                               120, CC_GRABBER_BAND};
-  screen.frame().hit(drawerHandleRect, ACTION_DISMISS, 0, fui::InputTouch);
-  renderer.fillRoundedRect(width / 2 - 24, cardBottom - 14, 48, 6, 3, Color::White);
+  // Card: a light-gray rounded surface with white controls on it, no outline and no shadow; taps outside it and on
+  // the grabber close it.
+  drawerHandleRect = panel::card(renderer, screen.frame(), fui::SheetEdge::Top, CC_CARD_TOP, cardBottom, ACTION_DISMISS);
 
   // Light: a rounded box, light gray, filled dark up to the level with the percent in it. The - and +
   // buttons for exact steps only show while the buttons are being used; a finger drags the box.

@@ -713,6 +713,9 @@ public:
   // false; components must then omit partially visible content.
   virtual Rect clipRect() const { return Rect{0, 0, 32767, 32767}; }
   virtual bool setClipRect(Rect) { return false; }
+  // Anchors a gray dither to a point (its pixel parity) until set back to (0, 0). A shape whose edge rows should
+  // look the same on both sides (a squircle) anchors it to its middle. Targets without a dither ignore it.
+  virtual void setPatternOrigin(int16_t, int16_t) {}
   virtual Size measureText(FontId font, const char *text,
                            TextStyle style) const = 0;
   virtual int16_t lineHeight(FontId font) const = 0;
