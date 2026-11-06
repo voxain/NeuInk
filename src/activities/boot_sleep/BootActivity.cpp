@@ -16,6 +16,7 @@
 #include "ImageFolderIndex.h"
 #include "fontIds.h"
 #include "images/BootLogo192.h"
+#include "images/NeuInkWordmark.h"
 
 namespace {
 
@@ -119,8 +120,9 @@ void drawDefaultBootLogo(const GfxRenderer& renderer) {
 
   renderer.clearScreen();
   renderer.drawImage(BootLogo192, (pageWidth - 192) / 2, (pageHeight - 192) / 2, 192, 192);
-  renderer.drawCenteredText(UI_12_FONT_ID, pageHeight / 2 + 116, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 148, tr(STR_BOOTING));
+  // The wordmark is 336x104 upright, drawn the same way as on the sleep screen.
+  renderer.drawImage(NeuInkWordmark, (pageWidth - 336) / 2 - 1, pageHeight / 2 + 116, 104, 336);
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 250, tr(STR_BOOTING));
 }
 
 }  // namespace
