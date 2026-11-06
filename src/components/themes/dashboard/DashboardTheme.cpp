@@ -33,6 +33,7 @@
 #include "components/icons/night.h"
 #include "components/icons/streak.h"
 #include "fontIds.h"
+#include "components/icons/listIcons.h"
 
 namespace {
 constexpr int kContentInsetX4 = 20;

@@ -15,6 +15,7 @@
 #include "activities/settings/QuickActionsActivity.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
+#include "components/icons/listIcons.h"
 
 namespace fui = freeink::ui;
 

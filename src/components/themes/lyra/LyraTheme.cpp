@@ -19,9 +19,9 @@
 #include "components/TouchRegistry.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
-#include "components/icons/appsIcon.h"
-#include "components/icons/readingStatsIcons.h"
+#include "components/icons/homeIconSet.h"
 #include "fontIds.h"
+#include "components/icons/listIcons.h"
 
 // Internal constants
 namespace {
@@ -61,60 +61,7 @@ int mainMenuIconYOffset(const UIIcon icon) {
 
 }  // namespace
 
-const freeink::Icon* LyraTheme::iconForName(UIIcon icon, uint32_t size) {
-  if (size == 24) {
-    switch (icon) {
-      case UIIcon::Folder:
-        return &icon_folder_24;
-      case UIIcon::Text:
-        return &icon_file_text_24;
-      case UIIcon::Image:
-        return &icon_image_24;
-      case UIIcon::Book:
-        return &icon_book_marked_24;
-      case UIIcon::File:
-        return &icon_file_24;
-      case UIIcon::Library:
-        return &icon_landmark_24;
-      case UIIcon::Opds:
-        return &icon_lyra_library_24;
-      case UIIcon::Apps:
-        return &icon_apps_24;
-      default:
-        return nullptr;
-    }
-  } else if (size == 32) {
-    switch (icon) {
-      case UIIcon::Chart:
-        return &icon_reading_stats_32;
-      case UIIcon::Folder:
-        return &icon_folder_32;
-      case UIIcon::Book:
-        return &icon_book_marked_32;
-      case UIIcon::Recent:
-        return &icon_history_32;
-      case UIIcon::Settings:
-        return &icon_lyra_settings_32;
-      case UIIcon::Transfer:
-        return &icon_lyra_transfer_32;
-      case UIIcon::Library:
-        return &icon_landmark_32;
-      case UIIcon::Opds:
-        return &icon_lyra_library_32;
-      case UIIcon::Wifi:
-        return &icon_wifi_32;
-      case UIIcon::Hotspot:
-        return &icon_radio_tower_32;
-      case UIIcon::Apps:
-        return &icon_apps_32;
-      case UIIcon::BookmarkIcon:
-        return &icon_bookmark_32;
-      default:
-        return nullptr;
-    }
-  }
-  return nullptr;
-}
+const freeink::Icon* LyraTheme::iconForName(const UIIcon icon, const uint32_t size) { return homeIcon(icon, size); }
 
 void LyraTheme::drawSubHeader(const GfxRenderer& renderer, Rect rect, const char* label, const char* rightLabel) const {
   int currentX = rect.x + LyraMetrics::values.contentSidePadding;

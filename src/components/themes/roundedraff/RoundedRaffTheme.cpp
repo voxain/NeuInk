@@ -16,6 +16,7 @@
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "fontIds.h"
+#include "components/icons/listIcons.h"
 
 namespace {
 constexpr int kCoverRadius = 18;

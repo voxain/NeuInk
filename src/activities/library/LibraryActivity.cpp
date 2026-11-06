@@ -32,9 +32,7 @@
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
-#include "components/icons/libraryIcons.h"
 #include "components/icons/homeIcons.h"
-#include "components/icons/listIcons.h"
 
 namespace fui = freeink::ui;
 
@@ -870,6 +868,10 @@ void LibraryActivity::buildSortHeader(UiApp::ScreenType& screen) {
   const int16_t bandHeight = std::max<int16_t>(44, screen.theme().rowHeight);
   const auto band = screen.take(fui::LayoutAnchor::Top, bandHeight);
   const int16_t margin = UITheme::getInstance().getMetrics().contentSidePadding;
+  // The sorting controls sit on a gray pill instead of between two rules.
+  uiTarget.fill(fui::Rect{static_cast<int16_t>(band.x + margin / 2), static_cast<int16_t>(band.y + 2),
+                          static_cast<int16_t>(band.width - margin), static_cast<int16_t>(band.height - 4)},
+                fui::Paint::dither(fui::Color::LightGray), static_cast<uint8_t>(bandHeight / 2));
   auto labelStyle = screen.theme().bodyText;
   labelStyle.bold = true;
   const int16_t labelWidth = std::min<int16_t>(
@@ -897,7 +899,7 @@ void LibraryActivity::buildSortHeader(UiApp::ScreenType& screen) {
       mappedInput.hasTouchHardware() && showSelection && selection == 3 ? fui::StateSelected : fui::StateNormal;
   screen.button(button, method);
   button.label = nullptr;
-  button.icon = fui::bitmapFromIcon(descending ? icon_arrow_down_wide_narrow_32 : icon_arrow_up_narrow_wide_32);
+  button.icon = fui::bitmapFromIcon(descending ? icon_sort_desc_32 : icon_sort_asc_32);
   button.state =
       mappedInput.hasTouchHardware() && showSelection && selection == 4 ? fui::StateSelected : fui::StateNormal;
   screen.button(button, direction);
@@ -908,9 +910,6 @@ void LibraryActivity::buildSortHeader(UiApp::ScreenType& screen) {
     screen.frame().hit(fui::Rect{split, band.y, static_cast<int16_t>(band.right() - split), band.height},
                        ACTION_CONTROL, 4, fui::InputTouch);
   }
-  uiTarget.fill(fui::Rect{band.x, band.y, band.width, 1}, fui::Paint::solid(fui::Color::Black));
-  uiTarget.fill(fui::Rect{band.x, static_cast<int16_t>(band.bottom() - 1), band.width, 1},
-                fui::Paint::solid(fui::Color::Black));
 }
 
 void LibraryActivity::buildListScreen(UiApp::ScreenType& screen) {
@@ -992,7 +991,7 @@ void LibraryActivity::buildListScreen(UiApp::ScreenType& screen) {
   props.selectedIndex = showSelection ? static_cast<int16_t>(selection - CONTROL_COUNT) : -1;
   props.action = ACTION_ROW;
   props.inputMask = fui::InputTouch | fui::InputLongPress;
-  props.iconSize = 28;
+  props.iconPlate = 49;  // the file's icon on a gray squircle (odd size)
   props.labelText = screen.theme().bodyText;
   props.labelText.bold = true;
   props.labelText.maxLines = 1;

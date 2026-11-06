@@ -62,3 +62,14 @@ exit_x = x
 # Trailing icons of the title bars.
 search = search
 more_vertical = ellipsis-vertical
+
+# File types and the rest of the menu icons (one lookup for every list: homeIconSet.h).
+type_book = book
+type_text = file-text
+type_image = image
+type_file = file
+type_recent = history
+type_hotspot = radio-tower
+sort_desc = arrow-down-wide-narrow
+sort_asc = arrow-up-narrow-wide
+book_marked = book-marked

@@ -10,7 +10,6 @@
 
 #include "MappedInputManager.h"
 #include "UITheme.h"
-#include "components/icons/appsIcon.h"
 #include "components/icons/listIcons.h"
 
 namespace fui = freeink::ui;
@@ -257,12 +256,13 @@ void CoverGridHomeUi::drawTabs(UiScreen& screen, fui::Rect rect) {
   tabs.iconPainter = [](fui::DrawTarget&, fui::Rect iconRect, const fui::TabItem& tab, uint8_t, void* user) {
     const auto& self = *static_cast<CoverGridHomeUi*>(user);
     // In the order of the Tab values.
-    static constexpr const freeink::Icon* ICONS[MAX_TABS] = {&icon_folder_32,       &icon_landmark_32,
-                                                             &icon_lyra_library_32, &icon_apps_32,
-                                                             &icon_lyra_settings_32};
+    static constexpr UIIcon ICONS[MAX_TABS] = {UIIcon::Folder, UIIcon::Library, UIIcon::Opds, UIIcon::Apps,
+                                               UIIcon::Settings};
     const int index = tab.value - static_cast<int>(self.books->size());
     if (index < 0 || index >= self.tabKindCount) return true;
-    drawLucideIcon(self.renderer, *ICONS[static_cast<int>(self.tabKinds[index])], iconRect.x, iconRect.y);
+    if (const freeink::Icon* icon = homeIcon(ICONS[static_cast<int>(self.tabKinds[index])], 32)) {
+      drawLucideIcon(self.renderer, *icon, iconRect.x, iconRect.y);
+    }
     return true;
   };
   tabs.tabStyles.normal.background = fui::Paint::solid(fui::Color::White);

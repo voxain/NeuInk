@@ -48,6 +48,11 @@
   too easy to miss). The title bars' trailing icons (File Manager, Library, OPDS) are Lucide and sit
   on the title's line. The quick settings pane has no outline. Vega's Home does a half refresh after
   the pane closes. The games' controls keep a larger gap to the foot of the screen.
+- File Manager and Library: every file type and the menus' icons are Lucide, on gray squircles in the
+  lists; the File Manager's path is a gray pill with a folder icon and its File Transfer button is a
+  gray rounded button; the Library's sorting controls sit on a gray pill instead of between two rules.
+  There is one icon lookup now (homeIconSet.h) instead of three, so Lyra's and the Cover Grid's menu
+  icons are Lucide too; `appsIcon.h` and its generator are gone.
 - Fixed: the quick-settings panel drew a gray bar at the top; the book card's top rows were
   painted over by the Home header.
 - File Transfer is now part of the File Manager (its settings page) and no longer a Home

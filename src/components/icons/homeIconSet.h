@@ -7,7 +7,7 @@
 #include "components/icons/homeIcons.h"
 #include "components/themes/BaseTheme.h"
 
-// The Lucide icon of an app or Home entry, at 24 or 32 px (see homeIcons.manifest);
+// The Lucide icon of an app, a Home entry or a file type, at 24 or 32 px (see homeIcons.manifest);
 // nullptr when there is none of that size.
 inline const freeink::Icon* homeIcon(const UIIcon icon, const uint32_t size) {
 #define HOME_ICON(ui, name)                                       \
@@ -15,6 +15,13 @@ inline const freeink::Icon* homeIcon(const UIIcon icon, const uint32_t size) {
     return size == 24 ? &icon_##name##_24 : (size == 32 ? &icon_##name##_32 : nullptr)
   switch (icon) {
     HOME_ICON(UIIcon::Folder, files);
+    HOME_ICON(UIIcon::Text, type_text);
+    HOME_ICON(UIIcon::Image, type_image);
+    HOME_ICON(UIIcon::Book, type_book);
+    HOME_ICON(UIIcon::File, type_file);
+    HOME_ICON(UIIcon::Recent, type_recent);
+    HOME_ICON(UIIcon::Hotspot, type_hotspot);
+    HOME_ICON(UIIcon::Apps, apps_grid);
     HOME_ICON(UIIcon::Library, library);
     HOME_ICON(UIIcon::Opds, opds);
     HOME_ICON(UIIcon::Chart, stats);

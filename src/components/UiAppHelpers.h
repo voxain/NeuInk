@@ -10,7 +10,7 @@
 #include "components/UIScale.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
-#include "components/icons/listIcons.h"
+#include "components/icons/homeIconSet.h"
 
 // Shared glue for activities hosting a FreeInkApp: the font-bound render
 // target and the touch snapshot FreeInkApp routing consumes.
@@ -84,52 +84,24 @@ inline void applySharedUiTheme(freeink::ui::FreeInkApp<MaxInteractions, MaxHandl
 // the legacy drawIcon assets use a different bit layout). Two crisp sizes:
 // 24 for single-line rows, 32 for label+subtitle rows.
 inline freeink::ui::BitmapRef listIconFor(const UIIcon icon, const int size = 24) {
-  if (size >= 32) {
-    switch (icon) {
-      case UIIcon::Folder:
-        return freeink::ui::bitmapFromIcon(icon_folder_32);
-      case UIIcon::Text:
-        return freeink::ui::bitmapFromIcon(icon_file_text_32);
-      case UIIcon::Image:
-        return freeink::ui::bitmapFromIcon(icon_image_32);
-      case UIIcon::Book:
-        return freeink::ui::bitmapFromIcon(icon_book_32);
-      case UIIcon::File:
-        return freeink::ui::bitmapFromIcon(icon_file_32);
-      case UIIcon::Wifi:
-        return freeink::ui::bitmapFromIcon(icon_wifi_32);
-      case UIIcon::Library:
-        return freeink::ui::bitmapFromIcon(icon_landmark_32);
-      case UIIcon::Opds:
-        return freeink::ui::bitmapFromIcon(icon_lyra_library_32);
-      case UIIcon::Hotspot:
-        return freeink::ui::bitmapFromIcon(icon_radio_tower_32);
-      default:
-        return {};
-    }
-  }
-  switch (icon) {
-    case UIIcon::Folder:
-      return freeink::ui::bitmapFromIcon(icon_folder_24);
-    case UIIcon::Text:
-      return freeink::ui::bitmapFromIcon(icon_file_text_24);
-    case UIIcon::Image:
-      return freeink::ui::bitmapFromIcon(icon_image_24);
-    case UIIcon::Book:
-      return freeink::ui::bitmapFromIcon(icon_book_24);
-    case UIIcon::File:
-      return freeink::ui::bitmapFromIcon(icon_file_24);
-    case UIIcon::Wifi:
-      return freeink::ui::bitmapFromIcon(icon_wifi_24);
-    case UIIcon::Library:
-      return freeink::ui::bitmapFromIcon(icon_landmark_24);
-    case UIIcon::Opds:
-      return freeink::ui::bitmapFromIcon(icon_lyra_library_24);
-    case UIIcon::Hotspot:
-      return freeink::ui::bitmapFromIcon(icon_radio_tower_24);
-    default:
-      return {};
-  }
+  const freeink::Icon* bitmap = homeIcon(icon, static_cast<uint32_t>(size));
+  return bitmap != nullptr ? freeink::ui::bitmapFromIcon(*bitmap) : freeink::ui::BitmapRef{};
+}
+
+// The look of a control on the gray surfaces: a light-gray rounded button, black (white label) when picked or pressed.
+inline freeink::ui::StyleSet grayButtonStyles() {
+  namespace fui = freeink::ui;
+  fui::StyleSet styles;
+  styles.explicitlySet = true;
+  styles.normal.background = fui::Paint::dither(fui::Color::LightGray);
+  styles.normal.radius = 14;
+  styles.selected = styles.normal;
+  styles.selected.background = fui::Paint::solid(fui::Color::Black);
+  styles.selected.foreground = fui::Paint::solid(fui::Color::White);
+  styles.focused = styles.selected;
+  styles.active = styles.selected;
+  styles.disabled = styles.normal;
+  return styles;
 }
 
 // Legacy GfxRenderer icon arrays are pre-rotated. Render SDK Lucide assets through
