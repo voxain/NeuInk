@@ -116,9 +116,9 @@ keyboard layout is included.
 
 ## Install
 
-NeuInk has no releases yet, so the easiest way to start is to build it from source
-(see below). Once a release is published, its firmware files will be on the
-[releases page](https://github.com/voxain/NeuInk/releases).
+Download the latest firmware file for the X4 Pro, `firmware-x4-pro.bin`, from the
+[releases page](https://github.com/voxain/NeuInk/releases). To build it yourself instead,
+see [Build from source](#build-from-source).
 
 To flash a firmware file from an SD card, copy it to the card and use
 **Settings → System → SD Card Firmware Update**. If you are coming from the original
