@@ -1573,6 +1573,7 @@ inline std::vector<SettingInfo> buildGeneralSettingsList(const std::vector<Setti
     settings.push_back(SettingInfo::Action(StrId::STR_CLOCK_SYNC_NOW, SettingAction::ClockSync));
   }
   settings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
+  settings.push_back(SettingInfo::Action(StrId::STR_SWITCH_FIRMWARE, SettingAction::SwitchFirmware));
   settings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
   return settings;
 }

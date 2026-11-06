@@ -61,6 +61,7 @@
 #include "util/DictionaryRegistry.h"
 #include "util/FrontlightSchedule.h"
 #include "util/LanguagePacks.h"
+#include "network/FirmwareTargets.h"
 
 namespace fui = freeink::ui;
 
@@ -657,6 +658,34 @@ void SettingsActivity::openWordSpacingPicker() {
       });
 }
 
+// Cross-grade: pick another project, read the backup warning, then reboot into
+// the OTA activity pointed at that project's releases.
+void SettingsActivity::openSwitchFirmwarePicker() {
+  using firmware_targets::Target;
+  constexpr Target targets[] = {Target::VARAGH, Target::CROSSINK, Target::CROSSPOINT};
+  std::vector<std::string> options;
+  for (const Target target : targets) options.emplace_back(firmware_targets::displayName(target));
+
+  optionPopup.show(StrId::STR_SWITCH_FIRMWARE, options, 0, [this, targets](int selectedIndex) {
+    if (selectedIndex < 0 || selectedIndex >= static_cast<int>(std::size(targets))) {
+      requestUpdate();
+      return;
+    }
+    const Target target = targets[selectedIndex];
+    const std::string heading = std::string(tr(STR_SWITCH_FIRMWARE_TO)) + firmware_targets::displayName(target) + "?";
+    startActivityForResult(
+        std::make_unique<ConfirmationActivity>(renderer, mappedInput, heading, tr(STR_SWITCH_FIRMWARE_BACKUP)),
+        [this, target](const ActivityResult& result) {
+          if (result.isCancelled) {
+            requestUpdate();
+            return;
+          }
+          silentRestartToNetwork(NetworkBootTarget::OTA, firmware_targets::toPayload(target));
+        });
+  });
+  requestUpdate();
+}
+
 void SettingsActivity::openLanguagePicker() {
   // NeuInk: every language; one left out of this firmware is marked for
   // download until its pack is on the SD card (util/LanguagePacks).
@@ -1241,6 +1270,9 @@ void SettingsActivity::toggleCurrentSetting() {
         break;
       case SettingAction::CheckForUpdates:
         silentRestartToNetwork(NetworkBootTarget::OTA);
+        break;
+      case SettingAction::SwitchFirmware:
+        openSwitchFirmwarePicker();
         break;
       case SettingAction::SdFirmwareUpdate:
         startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);

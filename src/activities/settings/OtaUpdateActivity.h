@@ -32,10 +32,13 @@ class OtaUpdateActivity : public Activity {
   void onWifiSelectionComplete(bool success);
   void runUpdateInstall();
   void confirmNeuInkUpdate();
+  void requestInstall();
 
  public:
-  explicit OtaUpdateActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-      : Activity("OtaUpdate", renderer, mappedInput), updater() {}
+  // `target` NEUINK is the normal update; any other is a cross-grade to that project.
+  explicit OtaUpdateActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+                             firmware_targets::Target target = firmware_targets::Target::NEUINK)
+      : Activity("OtaUpdate", renderer, mappedInput), updater(target) {}
   void onEnter() override;
   void onExit() override;
   void loop() override;

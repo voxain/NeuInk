@@ -126,6 +126,22 @@ Xteink firmware, read the [installation guide](docs/installation.md) first.
 
 Optional: a German → English dictionary, see [Dictionaries](docs/neuink/DICTIONARIES.md).
 
+### Leaving NeuInk
+
+If NeuInk is not for you, **Settings → System → Switch to Another Firmware** installs
+the latest release of VARAGH, CrossInk or CrossPoint over WiFi, with no computer. It uses
+the same update mechanism as NeuInk's own updates, pointed at their repositories:
+
+| Choice | Repository |
+|---|---|
+| VARAGH | [PewPewzxc/VARAGH](https://github.com/PewPewzxc/VARAGH) |
+| CrossInk | [uxjulia/crossink](https://github.com/uxjulia/crossink) |
+| CrossPoint | [crosspoint-reader/crosspoint-reader](https://github.com/crosspoint-reader/crosspoint-reader) |
+
+Your SD card files and books should stay safe, since the switch only replaces the
+firmware, but a backup is free and sensible. To come back later, copy NeuInk's
+`firmware-x4-pro.bin` to the card and use **SD Card Firmware Update** in the other firmware.
+
 ### Experimental readers: X4 Classic and X3
 
 **Only the X4 Pro is supported and tested.** The X4 Classic and X3 have no touch screen
@@ -178,7 +194,8 @@ explains how to bring in changes from the projects this one forks.
   refuses it rather than send your sync credentials to an unverified host.
 - **Firmware downloads come only from GitHub**, over https with pinned
   certificates, and the release SHA-256 digest is checked before anything is
-  installed.
+  installed. This holds for switching to another firmware too, which is refused
+  if the release publishes no digest.
 - Plain http sync is not supported.
 
 ## Contributing
