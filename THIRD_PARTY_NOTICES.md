@@ -11,7 +11,7 @@ and what each licence asks of anyone who redistributes them.
 | [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) | MIT, © 2025 Dave Allie | Original firmware. Copyright notice kept in [LICENSE](LICENSE). |
 | [CrossInk](https://github.com/uxjulia/crossink) | MIT (same LICENSE) | The fork VARAGH is based on. |
 | [VARAGH](https://github.com/PewPewzxc/VARAGH) | MIT, © 2026 PewPewzxc (VARAGH changes) | The fork NeuInk is based on. |
-| [FreeInk SDK](https://github.com/Free-Ink/freeink-sdk) | MIT, © 2026 FreeInk | Display, input and UI library (git submodule `freeink-sdk`). Includes code derived from the [OpenX4 community SDK](https://github.com/open-x4-epaper/community-sdk) (MIT); see `freeink-sdk/LICENSE` and `freeink-sdk/NOTICE`. |
+| [FreeInk SDK](https://github.com/Free-Ink/freeink-sdk) | MIT, © 2026 FreeInk | Display, input and UI library, vendored from the VARAGH 1.3.2 release as `freeink-sdk/` (see `freeink-sdk/VENDORED.md`). Includes code derived from the [OpenX4 community SDK](https://github.com/open-x4-epaper/community-sdk) (MIT); see `freeink-sdk/LICENSE` and `freeink-sdk/NOTICE`. |
 | CrossPoint pull requests #3616 and #3633 | MIT | Shared SD-font interval tables and faster glyph drawing, ported into VARAGH. |
 
 ## Libraries compiled into the firmware
@@ -33,9 +33,22 @@ Fetched by PlatformIO at the versions pinned in `platformio.ini`, or vendored in
 **Firmware binaries.** Because `firmware-*.bin` links wolfSSL (GPL-2.0-or-later),
 each released binary is distributed under the terms of the GNU GPL version 3 or
 later as a whole. The complete corresponding source is this repository at the
-release tag, together with the `freeink-sdk` submodule commit it points to; every
+release tag, together with the vendored `freeink-sdk/` directory; every
 release also attaches a `varagh-*-full-source.zip` with both. The MIT licence
 still applies to NeuInk's own source files.
+
+## Code vendored inside the FreeInk SDK
+
+The `freeink-sdk/` directory carries these third-party libraries. Their licence files
+are in the SDK folder.
+
+| Library | Licence | Where |
+|---|---|---|
+| FreeType | FreeType Licence (FTL) or GPL-2.0, your choice | `libs/font/FreeInkFont/third_party/freetype` (compiled into the firmware) |
+| libunibreak | zlib-style (see `LICENCE`) | `libs/book/FreeInkBook/third_party/libunibreak` |
+| pngle | MIT, © 2019 kikuchan | `libs/book/FreeInkBook/third_party/pngle` |
+| miniz | MIT | `libs/book/*/third_party/miniz` |
+| hyphen patterns (en-US) | permissive, © Gerard D.C. Kuiken | `libs/book/FreeInkBook/third_party/hyphen-patterns` |
 
 ## Fonts compiled into the firmware
 

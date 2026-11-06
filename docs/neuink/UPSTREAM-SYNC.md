@@ -15,9 +15,9 @@ The repository has these remotes:
 
 Add the last one once with `git remote add crosspoint https://github.com/crosspoint-reader/crosspoint-reader.git`.
 
-The display/UI library is a submodule pointing at
-github.com/Free-Ink/freeink-sdk, pinned to one commit. To move it, change the
-commit in `freeink-sdk` and commit the new gitlink.
+The display/UI library, `freeink-sdk/`, is vendored as plain files from the VARAGH
+1.3.2 release. Its origin, checksum and audit are in `freeink-sdk/VENDORED.md`. Update it
+only by a reviewed copy in a commit of its own, and record the new checksum there.
 
 ## Merge a new VARAGH release
 

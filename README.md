@@ -150,19 +150,17 @@ and the reader warns you first.
 
 ## Build from source
 
-You need [PlatformIO](https://platformio.org). The display library is a git submodule,
-so clone with submodules:
+You need [PlatformIO](https://platformio.org). The display library (`freeink-sdk`)
+is vendored in this repository, so a plain clone is enough:
 
 ```bash
-git clone --recurse-submodules https://github.com/voxain/NeuInk.git
+git clone https://github.com/voxain/NeuInk.git
 cd NeuInk
 pio run -e x4-pro       # X4 Pro (supported)
 ```
 
 Experimental, not tested on hardware: `pio run -e x4-classic` (X4 Classic) and
 `pio run -e default` (X3 and the original X4).
-
-If you cloned without submodules, run `git submodule update --init` first.
 
 The firmware is written to `.pio/build/<env>/` (`firmware-x4-pro.bin`, and for the
 experimental builds `firmware-x4-classic.bin` and `firmware-x3-x4.bin`). The `default`
