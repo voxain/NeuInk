@@ -15,6 +15,7 @@
 #include "components/TouchRegistry.h"
 #include "components/LevelBox.h"
 #include "components/UITheme.h"
+#include "CrossPointSettings.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/homeIconSet.h"
 #include "fontIds.h"
@@ -26,8 +27,6 @@ constexpr int kCardRadius = 16;
 constexpr int kCoverRadius = 10;
 constexpr int kCardTextGap = 16;
 constexpr int kBarHeight = 10;
-constexpr int kSquircleSize = 69;  // odd: see fillSquircle
-constexpr int kIconSize = 32;
 constexpr int kDotsHeight = 28;
 constexpr int kHeaderIconSize = 24;
 constexpr int kSideMargin = 16;
@@ -116,58 +115,59 @@ void VegaTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
   }
 }
 
+int VegaTheme::columns() { return SETTINGS.homeGrid >= 2 ? 3 : 4; }
+int VegaTheme::rows() { return SETTINGS.homeGrid == 1 || SETTINGS.homeGrid == 2 ? 4 : 3; }
+
 void VegaTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount, int selectedIndex,
                                 const std::function<const char*(int index)>& buttonLabel,
                                 const std::function<UIIcon(int index)>& rowIcon) const {
   const int pages = std::max(1, pageCount(buttonCount));
   const int page = std::clamp(homePage, 0, pages - 1);
-  const int cellW = (rect.width - 2 * kSideMargin) / kColumns;
-  const int cellH = (rect.height - kDotsHeight) / kRows;
+  const int columnCount = columns();
+  const int cellW = (rect.width - 2 * kSideMargin) / columnCount;
+  const int cellH = (rect.height - kDotsHeight) / rows();
   const int labelH = renderer.getLineHeight(UI_10_FONT_ID);
-  const int contentH = kSquircleSize + 6 + 2 * labelH;  // room for a two-line name
+  const bool showNames = SETTINGS.homeShowNames != 0;
+  const int namesH = showNames ? 6 + 2 * labelH : 0;  // room for a two-line name
+  // The icon sizes are 32, 42 or 48 px on a squircle about twice as big (odd: see fillSquircle), kept inside
+  // its cell.
+  const int iconSize = SETTINGS.homeIconSize == 2 ? 48 : (SETTINGS.homeIconSize == 1 ? 42 : 32);
+  const int squircleSize =
+      std::max(iconSize + 15, std::min(2 * iconSize + 5, std::min(cellW - 8, cellH - namesH - 4))) | 1;
+  const int contentH = squircleSize + namesH;
 
-  const int first = page * kPageSize;
-  for (int i = first; i < buttonCount && i < first + kPageSize; ++i) {
+  const int pageSlots = pageSize();
+  const int first = page * pageSlots;
+  for (int i = first; i < buttonCount && i < first + pageSlots; ++i) {
     const int slot = i - first;
-    const Rect cell{rect.x + kSideMargin + (slot % kColumns) * cellW, rect.y + (slot / kColumns) * cellH, cellW, cellH};
+    const Rect cell{rect.x + kSideMargin + (slot % columnCount) * cellW, rect.y + (slot / columnCount) * cellH, cellW, cellH};
     TouchRegistry::getInstance().add(cell, i, TouchRegistry::Item);
 
     const int cx = cell.x + cell.width / 2;
     const int top = cell.y + std::max(0, cell.height - contentH) / 2;
     const bool selected = selectedIndex == i;
     freeink::ui::GfxRendererTarget target(renderer);
-    freeink::ui::fillSquircle(target, freeink::ui::Rect{static_cast<int16_t>(cx - kSquircleSize / 2), static_cast<int16_t>(top),
-                                                         kSquircleSize, kSquircleSize},
+    freeink::ui::fillSquircle(target, freeink::ui::Rect{static_cast<int16_t>(cx - squircleSize / 2), static_cast<int16_t>(top),
+                                                         squircleSize, squircleSize},
                               selected ? freeink::ui::Paint::solid(freeink::ui::Color::Black)
                                        : freeink::ui::Paint::dither(freeink::ui::Color::LightGray));
     if (rowIcon != nullptr) {
-      if (const freeink::Icon* icon = homeIcon(rowIcon(i), kIconSize)) {
-        drawLucideIcon(renderer, *icon, cx - kIconSize / 2, top + (kSquircleSize - kIconSize) / 2, !selected);
+      if (const freeink::Icon* icon = homeIcon(rowIcon(i), iconSize)) {
+        drawLucideIcon(renderer, *icon, cx - iconSize / 2, top + (squircleSize - iconSize) / 2, !selected);
       }
     }
     const char* label = buttonLabel != nullptr ? buttonLabel(i) : "";
     // A name that does not fit under its icon wraps to a second line.
-    int lineY = top + kSquircleSize + 6;
-    for (const auto& line : renderer.wrappedText(UI_10_FONT_ID, label ? label : "", cell.width - 4, 2)) {
+    int lineY = top + squircleSize + 6;
+    for (const auto& line : renderer.wrappedText(UI_10_FONT_ID, showNames && label ? label : "", cell.width - 4, 2)) {
       renderer.drawText(UI_10_FONT_ID, cx - renderer.getTextWidth(UI_10_FONT_ID, line.c_str()) / 2, lineY,
                         line.c_str(), true);
       lineY += labelH;
     }
   }
 
-  // Page dots: the current page is a pill.
   if (pages > 1) {
-    constexpr int dot = 8;
-    constexpr int pill = 22;
-    constexpr int gap = 8;
-    const int total = (pages - 1) * dot + pill + (pages - 1) * gap;
-    int x = rect.x + (rect.width - total) / 2;
-    const int y = rect.y + rect.height - kDotsHeight + (kDotsHeight - dot) / 2;
-    for (int p = 0; p < pages; ++p) {
-      const bool current = p == page;
-      renderer.fillRoundedRect(x, y, current ? pill : dot, dot, dot / 2, current ? Color::Black : Color::LightGray);
-      x += (current ? pill : dot) + gap;
-    }
+    drawPageDots(renderer, rect.x, rect.y + rect.height - kDotsHeight + (kDotsHeight - 8) / 2, rect.width, pages, page);
   }
 }
 

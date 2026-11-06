@@ -50,6 +50,7 @@
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
 #include "components/themes/vega/VegaTheme.h"
+#include "HomeLayoutActivity.h"
 #include "fontIds.h"
 
 namespace {
@@ -1960,6 +1961,12 @@ void HomeActivity::loop() {
   }
 
   if (homeListsApps() && mappedInput.hasTouch()) {
+    // Swipe up from the bottom edge, as in the reader: the grid's layout.
+    if (mappedInput.wasBottomEdgeUpSwipe()) {
+      startActivityForResult(std::make_unique<HomeLayoutActivity>(renderer, mappedInput),
+                             [this](const ActivityResult&) { requestUpdate(); });
+      return;
+    }
     // Swipe the grid to the next or previous page, like a phone's home screen.
     const auto swipe = mappedInput.wasSwipe();
     if (swipe == MappedInputManager::SwipeDir::Left || swipe == MappedInputManager::SwipeDir::Right) {
@@ -1969,7 +1976,7 @@ void HomeActivity::loop() {
       if (page != homePage) {
         homePage = page;
         // A selected app moves along, so Confirm never opens one that is off screen.
-        if (selectorIndex >= offset) selectorIndex = offset + page * VegaTheme::kPageSize;
+        if (selectorIndex >= offset) selectorIndex = offset + page * VegaTheme::pageSize();
         requestUpdate();
       }
       return;
@@ -2497,6 +2504,7 @@ void HomeActivity::render(RenderLock&&) {
     // The grid shows the page of the selected app; with the book selected it stays where it is.
     const int pageIndex = selectorIndex - getHomeMenuSelectionOffset(recentBooks);
     if (pageIndex >= 0) homePage = VegaTheme::pageOf(pageIndex);
+    homePage = std::clamp(homePage, 0, std::max(0, VegaTheme::pageCount(getMenuItemCount() - getHomeMenuSelectionOffset(recentBooks)) - 1));
     VegaTheme::setHomePage(homePage);
   }
   GUI.drawButtonMenu(

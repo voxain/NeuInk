@@ -1654,6 +1654,7 @@ void SettingsActivity::buildGroupList(UiApp::ScreenType& screen) {
   props.labelText.bold = true;
   props.subtitleText = screen.theme().smallText;
   props.iconPlate = 53;  // each icon on a light-gray squircle
+  props.textGap = 14;    // a little more air between the icon and the text
   const fui::Rect body = screen.body();
   configureUiList(props, screen.theme(), body, UiListRowType::WithSubtitle);
   // The groups share the whole screen: bigger rows read and tap more easily.

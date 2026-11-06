@@ -23,14 +23,15 @@ constexpr ThemeMetrics values = makeValues();
 
 class VegaTheme : public LyraTheme {
  public:
-  static constexpr int kColumns = 4;
-  static constexpr int kRows = 3;
-  static constexpr int kPageSize = kColumns * kRows;
+  // The grid's shape comes from the Home layout pane (columns x rows: 4x3, 4x4, 3x4, 3x3).
+  static int columns();
+  static int rows();
+  static int pageSize() { return columns() * rows(); }
 
   // The page the grid shows. Home sets it before drawing, from the selection or a swipe.
   static void setHomePage(int page) { homePage = page; }
-  static int pageOf(int index) { return index / kPageSize; }
-  static int pageCount(int itemCount) { return (itemCount + kPageSize - 1) / kPageSize; }
+  static int pageOf(int index) { return index / pageSize(); }
+  static int pageCount(int itemCount) { return (itemCount + pageSize() - 1) / pageSize(); }
 
   void drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
                            int selectorIndex, bool& coverRendered, bool& coverBufferStored, bool& bufferRestored,

@@ -50,7 +50,7 @@ constexpr int GRID_GAP = 8;
 constexpr int GRID_SELECTION_PADDING = 4;
 constexpr int GRID_SELECTION_OUTLINE_GAP = 2;
 constexpr int GRID_SELECTION_OUTER_INSET = GRID_SELECTION_PADDING + GRID_SELECTION_OUTLINE_GAP;
-constexpr int GRID_COVER_CORNER_RADIUS = 2;
+constexpr int GRID_COVER_CORNER_RADIUS = 10;  // as the Home card's cover
 
 const RecentBook* recentBookForPath(const std::string& path) {
   const auto& books = RECENT_BOOKS.getBooks();
@@ -174,6 +174,8 @@ bool LibraryActivity::rebuildIndex(const bool showScanning) {
 
 void LibraryActivity::resolveRecents() {
   recentCount = 0;
+  unopened.reset();
+  unopenedCount = 0;
   if (!index.isOpen()) return;
   const auto& books = RECENT_BOOKS.getBooks();
   // Index lookup accepts up to 16 entries per pass; the history holds 18.
@@ -197,6 +199,18 @@ void LibraryActivity::resolveRecents() {
       if (rows[i] == UINT16_MAX || std::find(recentRows, recentRows + recentCount, rows[i]) != recentRows + recentCount)
         continue;
       recentRows[recentCount++] = rows[i];
+    }
+  }
+  // The rest of the library follows, by title. Without the memory for the list, only the recent books show.
+  const uint16_t total = index.bookCount();
+  unopened = makeUniqueNoThrow<uint16_t[]>(total);
+  if (!unopened) return;
+  uint16_t opened[RecentBooksStore::MAX_RECENT_BOOKS];
+  for (size_t i = 0; i < recentCount; ++i) opened[i] = index.ordinalForRow(library::SortOrder::RecentAsc, recentRows[i]);
+  for (uint16_t row = 0; row < total; ++row) {
+    const uint16_t ordinal = index.ordinalForRow(library::SortOrder::TitleAsc, row);
+    if (ordinal != UINT16_MAX && std::find(opened, opened + recentCount, ordinal) == opened + recentCount) {
+      unopened[unopenedCount++] = ordinal;
     }
   }
 }
@@ -248,7 +262,7 @@ bool LibraryActivity::hasActiveFilter() const {
 
 int LibraryActivity::rowCount() const {
   if (hasActiveFilter()) return filteredCount;
-  if (sort == Sort::RecentlyRead) return static_cast<int>(recentCount);
+  if (sort == Sort::RecentlyRead) return static_cast<int>(recentCount + unopenedCount);
   return index.bookCount();
 }
 
@@ -276,11 +290,15 @@ void LibraryActivity::loadGridProgress() {
 uint16_t LibraryActivity::ordinalForRow(const int row) {
   if (row < 0 || row >= rowCount()) return UINT16_MAX;
   if (hasActiveFilter()) return filtered ? filtered[row] : UINT16_MAX;
-  uint16_t indexRow = static_cast<uint16_t>(row);
-  if (sort == Sort::RecentlyRead) {
-    indexRow = library::recentHistoryRow(indexRow, index.bookCount(), recentRows, recentCount, descending);
-  }
-  return index.ordinalForRow(indexOrder(), indexRow);
+  return sourceOrdinal(static_cast<uint16_t>(row));
+}
+
+// The book of a row before any filter: in Recently Opened the recent ones, then the unopened ones.
+uint16_t LibraryActivity::sourceOrdinal(const uint16_t row) {
+  if (sort != Sort::RecentlyRead) return index.ordinalForRow(indexOrder(), row);
+  if (row >= recentCount) return row - recentCount < unopenedCount ? unopened[row - recentCount] : UINT16_MAX;
+  return index.ordinalForRow(indexOrder(),
+                             library::recentHistoryRow(row, index.bookCount(), recentRows, recentCount, descending));
 }
 
 bool LibraryActivity::readBook(const int row, RecentBook& book, const bool fullPath) {
@@ -300,7 +318,7 @@ void LibraryActivity::applyFilter() {
   filterFailed = false;
   filtered.reset();
   if (!hasActiveFilter() || !index.isOpen() || index.bookCount() == 0) return;
-  const uint16_t sourceCount = sort == Sort::RecentlyRead ? static_cast<uint16_t>(recentCount) : index.bookCount();
+  const uint16_t sourceCount = sort == Sort::RecentlyRead ? static_cast<uint16_t>(recentCount + unopenedCount) : index.bookCount();
   if (sourceCount == 0) return;
   filtered = makeUniqueNoThrow<uint16_t[]>(sourceCount);
   if (!filtered) {
@@ -345,10 +363,7 @@ void LibraryActivity::applyFilter() {
     return true;
   };
   for (uint16_t row = 0; row < sourceCount; ++row) {
-    const uint16_t indexRow = sort == Sort::RecentlyRead ? library::recentHistoryRow(row, index.bookCount(), recentRows,
-                                                                                     recentCount, descending)
-                                                         : row;
-    const uint16_t ordinal = index.ordinalForRow(indexOrder(), indexRow);
+    const uint16_t ordinal = sourceOrdinal(row);
     library::ClixRecord record{};
     if (ordinal == UINT16_MAX || !index.readRecord(ordinal, record) || !index.readName(record, name)) {
       LOG_ERR("LIB", "Cannot read Library search data");
@@ -1087,7 +1102,7 @@ void LibraryActivity::buildGrid(UiApp::ScreenType& screen) {
       }
     }
     if (!drawn) {
-      renderer.fillRoundedRect(x, y, coverWidth, coverHeight, GRID_COVER_CORNER_RADIUS, Color::White);
+      renderer.fillRoundedRect(x, y, coverWidth, coverHeight, GRID_COVER_CORNER_RADIUS, Color::LightGray);
       if (coverWidth >= 36 && coverHeight >= 36)
         drawLucideIcon(renderer, icon_book_marked_32, x + (coverWidth - 32) / 2, y + (coverHeight - 32) / 2);
     }
@@ -1106,17 +1121,8 @@ void LibraryActivity::buildGrid(UiApp::ScreenType& screen) {
   }
 
   if (pageCount > 1) {
-    constexpr int dotSize = 6;
-    constexpr int dotGap = 8;
-    const int dotsWidth = pageCount * dotSize + (pageCount - 1) * dotGap;
-    const int startX = pageIndicator.x + (pageIndicator.width - dotsWidth) / 2;
-    for (int page = 0; page < pageCount; ++page) {
-      const int x = startX + page * (dotSize + dotGap);
-      if (page == gridPageStart / GRID_PAGE_SIZE)
-        renderer.fillRect(x, pageIndicator.y + 4, dotSize, dotSize, true);
-      else
-        renderer.drawRect(x, pageIndicator.y + 4, dotSize, dotSize, true);
-    }
+    drawPageDots(renderer, pageIndicator.x, pageIndicator.y + 4, pageIndicator.width, pageCount,
+                 gridPageStart / GRID_PAGE_SIZE);
   }
 }
 
@@ -1242,8 +1248,9 @@ void LibraryActivity::swipeDelete(const int row) {
   if (row < 0 || row >= rowCount()) return;
   RecentBook book;
   if (!readBook(row, book)) return;
-  if (sort == Sort::RecentlyRead) {
-    if (RECENT_BOOKS.removeByPath(book.path)) reloadAfterBookAction();
+  // A recent book leaves the history; one that was never opened is deleted like in the other lists.
+  if (sort == Sort::RecentlyRead && RECENT_BOOKS.removeByPath(book.path)) {
+    reloadAfterBookAction();
     return;
   }
   promptDeleteBook(book);

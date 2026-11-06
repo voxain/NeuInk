@@ -119,6 +119,20 @@ inline void drawLucideIcon(const GfxRenderer& renderer, const freeink::Icon& ico
 // viewport (topIndex) without touching the selection; button navigation moves
 // the selection and pulls the viewport along just enough to keep it visible.
 
+// Page dots: the current page is a black pill, the others light-gray dots, centred in the band at y (height 8).
+inline void drawPageDots(const GfxRenderer& renderer, const int x, const int y, const int width, const int pages,
+                         const int page) {
+  constexpr int dot = 8;
+  constexpr int pill = 22;
+  constexpr int gap = 8;
+  int px = x + (width - ((pages - 1) * (dot + gap) + pill)) / 2;
+  for (int p = 0; p < pages; ++p) {
+    const bool current = p == page;
+    renderer.fillRoundedRect(px, y, current ? pill : dot, dot, dot / 2, current ? Color::Black : Color::LightGray);
+    px += (current ? pill : dot) + gap;
+  }
+}
+
 inline int scrollListBy(const int topIndex, const int delta, const int visibleRows, const int count) {
   int maxTop = count - visibleRows;
   if (maxTop < 0) maxTop = 0;
