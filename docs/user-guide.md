@@ -177,7 +177,8 @@ book or image directly from another nearby CrossInk reader without joining a
 Wi-Fi network. See [Nearby File Transfer](./nearby-file-transfer.md) for the
 complete sender and receiver workflow.
 
-On X4 Pro, the screen also includes **USB Drive**. This exposes the reader's SD
+On X4 Pro, plugging the reader into a computer asks whether to open the SD card as a drive (it asks once per
+connection; a charger does not trigger it). The screen also includes **USB Drive**. This exposes the reader's SD
 card to a computer over USB for direct file management. See the
 [USB Drive instructions](./installation.md#usb-drive) for the safe-eject and
 disconnect behavior.
@@ -640,6 +641,22 @@ Once any of the options above is set up, press **Confirm** while reading to open
 - With **Sync Behavior** set to **Ask every time**, choose **Apply Remote** to jump to remote progress or **Upload Local** to push current progress.
 - With **Sync Behavior** set to **Smart sync**, CrossInk auto-resolves simple cases: upload when no remote progress exists, confirm and leave both unchanged when local and remote progress are already synchronized, upload when local progress is further ahead, or apply remote when remote progress is further ahead.
 
+#### 3.6.8 Battery (X4 Pro)
+
+**Settings > Battery** shows the charge in large type, a graph of the last 24 hours (a point every five
+minutes while the reader is awake; a gap means it was asleep) with a dashed estimate for the next 24, and two
+runtime estimates: how long the charge lasts with the screen on and asleep, worked out from the drain in the last
+24 hours. Below, the time spent in the reader and in each app (today and over the last week) and the percent of
+charge each costs per hour. Nothing extra is read from the battery for this, and the figures survive sleep,
+restarts and updates.
+
+#### 3.6.9 Storage
+
+**Settings > Storage** shows how much of the SD card is used and what fills it: one segmented bar and a row each
+for Books, Images and screenshots, Fonts and dictionaries, App data and caches, Other and Free. The page opens at
+once and shows `--` with a spinner until the card has been scanned in the background, which takes longer the fuller
+the card is.
+
 ### 3.7 Sleep Screen
 
 The **Sleep Screen** setting controls what is displayed when the device goes to sleep:
@@ -918,6 +935,11 @@ TXT and XTC books have their own menus and a smaller set of options; the
 five-tab layout above is for EPUBs. For stats tracking, use **Track Reading
 Stats** in the EPUB **Settings** tab or the XTC Reader Menu. For format-specific
 features, see [Reader Features](./reader-features.md).
+
+On touch screens the menu is a floating gray card at the bottom of the page: the five tabs along its bottom
+edge, white rows with switches, and sliders with round **−** and **+** buttons for exact steps. Orientation and
+Alignment are rows of picture buttons in the Layout tab (the page above previews alignment as you tap); other short
+choices that fit become a row of buttons too, longer ones open a list with the picked entry in black.
 
 Press **Back** at any time to close the menu and return to your current page.
 
