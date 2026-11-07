@@ -44,6 +44,8 @@ inline const freeink::Icon* homeIcon(const UIIcon icon, const uint32_t size) {
     HOME_GRID_ICON(UIIcon::Go, go);
     HOME_GRID_ICON(UIIcon::TicTacToe, tictactoe);
     HOME_GRID_ICON(UIIcon::Clock, clock);
+    HOME_ICON(UIIcon::Battery, battery);
+    HOME_ICON(UIIcon::StorageIcon, storage);
     default:
       return nullptr;
   }

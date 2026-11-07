@@ -76,8 +76,7 @@ Rect compactHeaderRect(const GfxRenderer& renderer) {
 Rect drawPageHeader(GfxRenderer& renderer, const MappedInputManager& input, const char* title) {
   const Rect header = headerRect(renderer, input);
   if (input.hasTouchHardware()) {
-    fui::GfxRendererTarget target(renderer);
-    draw(renderer, target, header, title, false);
+    draw(renderer, header, title, false);  // binds the UI fonts: a bare target draws no text
   } else {
     GUI.drawHeader(renderer, header, title);
   }

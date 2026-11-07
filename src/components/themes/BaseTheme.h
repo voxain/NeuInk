@@ -183,7 +183,10 @@ enum UIIcon {
   Checkers,
   Go,
   TicTacToe,
-  Clock
+  Clock,
+  // Settings pages with their own screens.
+  Battery,
+  StorageIcon
 };
 
 // Default theme implementation (Classic Theme)
