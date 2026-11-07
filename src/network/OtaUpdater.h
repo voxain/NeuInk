@@ -46,6 +46,8 @@ class OtaUpdater {
   firmware_targets::Target getTarget() const { return target; }
   bool isCrossGrade() const { return firmware_targets::isCrossGrade(target); }
   bool isUpdateNewer() const;
+  // Whether `version` (a NeuInk release number) is newer than the firmware running.
+  static bool isNewerThanInstalled(const char* version);
   const std::string& getLatestVersion() const;
   OtaUpdaterError checkForUpdate();
   OtaUpdaterError installUpdate(ProgressCallback onProgress = nullptr, void* ctx = nullptr,

@@ -55,13 +55,8 @@
 #endif
 
 // UI fonts - no emoji or PHM variants.
-#include <builtinFonts/inter_10_bold.h>
-#include <builtinFonts/inter_10_regular.h>
-#include <builtinFonts/inter_12_bold.h>
-#include <builtinFonts/inter_12_regular.h>
-#include <builtinFonts/inter_8_regular.h>
-#include <builtinFonts/inter_ipa_10_bold.h>
-#include <builtinFonts/inter_ipa_10_regular.h>
-#include <builtinFonts/inter_ipa_12_bold.h>
-#include <builtinFonts/inter_ipa_12_regular.h>
-#include <builtinFonts/inter_ipa_8_regular.h>
+#include <builtinFonts/lexend_ui_10_bold.h>
+#include <builtinFonts/lexend_ui_10_regular.h>
+#include <builtinFonts/lexend_ui_12_bold.h>
+#include <builtinFonts/lexend_ui_12_regular.h>
+#include <builtinFonts/lexend_ui_8_regular.h>

@@ -1636,13 +1636,6 @@ inline std::vector<SettingInfo> buildGeneralDateTimeSettingsList(const std::vect
   return settings;
 }
 
-// General > Software updates.
-inline std::vector<SettingInfo> buildGeneralUpdatesSettingsList() {
-  return {SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates),
-          SettingInfo::Action(StrId::STR_SWITCH_FIRMWARE, SettingAction::SwitchFirmware),
-          SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate)};
-}
-
 inline std::vector<SettingInfo> buildSystemFilesCacheSettingsList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> settings;
   settings.reserve(6);

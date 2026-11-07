@@ -4,6 +4,7 @@
 #include <Logging.h>
 #include <esp_mac.h>
 
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <limits>
@@ -51,6 +52,43 @@ static constexpr int GLOBAL_STATS_FILE_SIZE = static_cast<int>(GlobalReadingStat
 static constexpr char GLOBAL_STATS_PATH[] = "/.crosspoint/global_stats.bin";
 static constexpr char GLOBAL_STATS_BAK_PATH[] = "/.crosspoint/global_stats.bin.bak";
 static constexpr char SYNCED_STATS_DIR[] = "/.crosspoint/synced_stats";
+static constexpr char DAILY_READING_PATH[] = "/.crosspoint/daily_reading.bin";
+
+// daily_reading.bin: dailyAnchorDay (uint32_t LE), then READING_DAILY_DAYS uint16_t LE seconds, newest first.
+static void loadDailyReading(GlobalReadingStats& stats) {
+  FsFile f;
+  if (!Storage.openFileForRead("GSTATS", DAILY_READING_PATH, f)) return;
+  uint8_t data[4 + 2 * READING_DAILY_DAYS];
+  if (f.read(data, sizeof(data)) == static_cast<int>(sizeof(data))) {
+    stats.dailyAnchorDay = data[0] | data[1] << 8 | data[2] << 16 | static_cast<uint32_t>(data[3]) << 24;
+    for (size_t i = 0; i < READING_DAILY_DAYS; ++i) stats.dailySeconds[i] = data[4 + 2 * i] | data[5 + 2 * i] << 8;
+  }
+  f.close();
+}
+
+static void saveDailyReading(const GlobalReadingStats& stats) {
+  uint8_t data[4 + 2 * READING_DAILY_DAYS];
+  for (int b = 0; b < 4; ++b) data[b] = static_cast<uint8_t>(stats.dailyAnchorDay >> (8 * b));
+  for (size_t i = 0; i < READING_DAILY_DAYS; ++i) {
+    data[4 + 2 * i] = static_cast<uint8_t>(stats.dailySeconds[i]);
+    data[5 + 2 * i] = static_cast<uint8_t>(stats.dailySeconds[i] >> 8);
+  }
+  FsFile f;
+  if (!Storage.openFileForWrite("GSTATS", DAILY_READING_PATH, f)) return;
+  f.write(data, sizeof(data));
+  f.close();
+}
+
+static void addDailySeconds(GlobalReadingStats& stats, const uint32_t day, const uint32_t seconds) {
+  auto& days = stats.dailySeconds;
+  if (day > stats.dailyAnchorDay) {
+    const uint32_t shift = day - stats.dailyAnchorDay;
+    for (size_t i = days.size(); i-- > 0;) days[i] = i >= shift ? days[i - shift] : 0;
+    stats.dailyAnchorDay = day;
+  }
+  const uint32_t age = stats.dailyAnchorDay - day;
+  if (age < days.size()) days[age] = static_cast<uint16_t>(std::min<uint32_t>(UINT16_MAX, days[age] + seconds));
+}
 static bool s_blockDestructiveSave = false;
 
 uint32_t readLe32(const uint8_t* data, const int offset) {
@@ -276,7 +314,15 @@ static StatsLoadOutcome loadFromFile(const char* path, GlobalReadingStats& out) 
   return outcome;
 }
 
+static GlobalReadingStats loadMain();
+
 GlobalReadingStats GlobalReadingStats::load() {
+  GlobalReadingStats stats = loadMain();
+  loadDailyReading(stats);
+  return stats;
+}
+
+static GlobalReadingStats loadMain() {
   GlobalReadingStats stats;
   const StatsLoadOutcome primary = loadFromFile(GLOBAL_STATS_PATH, stats);
   if (primary.result == StatsLoadResult::Ok) return stats;
@@ -367,13 +413,28 @@ void GlobalReadingStats::save() const {
     return;
   }
   saveToFile(*this, GLOBAL_STATS_PATH, GLOBAL_STATS_BAK_PATH);
+  saveDailyReading(*this);
 }
 
-bool GlobalReadingStats::resetLocal() { return saveToFile(GlobalReadingStats{}, GLOBAL_STATS_PATH, nullptr); }
+bool GlobalReadingStats::resetLocal() {
+  if (Storage.exists(DAILY_READING_PATH)) Storage.remove(DAILY_READING_PATH);
+  return saveToFile(GlobalReadingStats{}, GLOBAL_STATS_PATH, nullptr);
+}
 
 void GlobalReadingStats::recordReadingSpan(const ReadingStatsDateTime& localStart, const uint32_t seconds) {
   recordReadingSpanIntoBuckets(timeOfDaySeconds, dayOfWeekSeconds, localStart, seconds);
   recordReadingSpanIntoHistory(readingHistoryAnchorDay, readingHistoryBits, localStart, seconds);
+  if (localStart.isValid()) {
+    // Split at midnight, as the history does.
+    ReadingStatsDateTime cursor = localStart;
+    for (uint32_t remaining = seconds; remaining > 0;) {
+      const uint32_t untilMidnight = 86400u - (cursor.hour * 3600u + cursor.minute * 60u + cursor.second);
+      const uint32_t part = std::min(remaining, untilMidnight);
+      addDailySeconds(*this, readingStatsDayIndex(cursor.date), part);
+      remaining -= part;
+      addSecondsToReadingStatsDateTime(cursor, part);
+    }
+  }
 
   const uint16_t historyLongest = computeReadingHistoryLongestStreak(readingHistoryAnchorDay, readingHistoryBits);
   if (historyLongest > longestReadingStreak) {
@@ -383,6 +444,11 @@ void GlobalReadingStats::recordReadingSpan(const ReadingStatsDateTime& localStar
 
 uint16_t GlobalReadingStats::currentReadingStreak(const ReadingStatsDate* today) const {
   return computeReadingHistoryCurrentStreak(readingHistoryAnchorDay, readingHistoryBits, today);
+}
+
+uint32_t GlobalReadingStats::secondsReadOn(const uint32_t dayIndex) const {
+  if (dayIndex > dailyAnchorDay || dailyAnchorDay - dayIndex >= dailySeconds.size()) return 0;
+  return dailySeconds[dailyAnchorDay - dayIndex];
 }
 
 uint16_t GlobalReadingStats::displayLongestReadingStreak() const {

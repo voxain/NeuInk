@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "./FileBrowserActivity.h"
+#include "HomeWidgetActivity.h"
 #include "QuickActions.h"
 #include "activities/Activity.h"
 #include "activities/reader/BookReadingStats.h"
@@ -40,8 +41,29 @@ class HomeActivity final : public Activity {
   // Vega: the selection shows only while buttons are used (MappedInputManager::buttonsInUse); a touch
   // lights the pressed item instead, which is pressedSelector (-1: none).
   int pressedSelector = -1;
-  int homePage = 0;
-  int fastRefreshesSinceClean = 0;  // Vega: fast refreshes since the last half refresh  // the page of the Vega theme's app grid
+  int homePage = 0;                 // Vega: the page of the app grid
+  int fastRefreshesSinceClean = 0;  // Vega: fast refreshes since the last half refresh
+  // Vega's edit mode: widgets and entries are moved by dragging them (a press, then a release somewhere else; the
+  // panel cannot follow a finger), a tap on a widget opens its options. editHeld is what the press landed on.
+  bool editMode = false;
+  bool editTouchActive = false;
+  uint8_t editHeldKind = 0;  // vegahome::Hit::Kind
+  int editHeldIndex = -1;
+  int editStartX = 0;
+  int editStartY = 0;
+  int editLastX = 0;
+  int editLastY = 0;
+  uint8_t clockWeekStart = 0;  // the Clock app's first weekday, for the calendar widget
+  bool clockOptionsLoaded = false;
+  // What the Up next and Highlight widgets show, looked up once a visit (loadVegaWidgetData).
+  bool upNextLoaded = false;
+  bool highlightLoaded = false;
+  std::string upNextPath;
+  std::string upNextTitle;
+  std::string upNextDetail;
+  std::string highlightText;
+  std::string highlightSource;
+  uint32_t coverLayoutKey = 0;  // the widget layout the cover snapshot was taken with (Vega)
   int lastCarouselBookIndex = 0;  // remembered position when leaving carousel row
   // Finger travel on Carousel, so a drag slower than the SDK's flick window
   // still counts as a swipe.
@@ -131,6 +153,13 @@ class HomeActivity final : public Activity {
   void onAppOpen(uint8_t appId);
 
   int getMenuItemCount() const;
+  // Vega.
+  void renderVega(const std::function<void()>& display);
+  bool loopVegaEdit();
+  void openWidgetPanel(HomeWidgetActivity::Target target, const Rect& edited);
+  uint8_t pendingIntro() const;  // the vegahome::Intro to show first, 0 for none
+  void setEditMode(bool on);
+  void loadVegaWidgetData();
   bool storeCoverBuffer();    // Store frame buffer for cover image
   bool restoreCoverBuffer();  // Restore frame buffer from stored cover
   void freeCoverBuffer();     // Free the stored cover buffer

@@ -174,10 +174,17 @@ generate_reading_fonts
 # Shared fixed-size UI symbols
 bash ./generate-ui-symbols.sh
 
-# UI Font - Inter
-
+# UI Font - LexendDeca (the reader's default family, so its 10/12 px faces
+# match the reading text). Hebrew and Arabic come from fallback faces, and the
+# IPA letters from Noto Sans, since Lexend has no IPA block. The menus need
+# Hebrew for the Hebrew translation and Arabic for shaped UI text.
 UI_FONT_SIZES=(10 12)
 UI_FONT_STYLES=("Regular" "Bold")
+UI_HEBREW_DIR="../builtinFonts/source/IBMPlexSansHebrew"
+UI_IPA_RANGES=(
+  0x0250,0x02FF 0x0300,0x036F 0x03B2,0x03B2 0x03B8,0x03B8 0x03C7,0x03C7
+  0x1D4A,0x1D4B 0x1D51,0x1D51 0x1D5D,0x1D5E 0x1D7B,0x1D7B 0x1D7F,0x1D7F
+)
 
 # Arabic glyphs for UI text (menus, file browser titles). The built-in fonts
 # must cover the *output* of MiniBidi's do_shape() — contextual presentation
@@ -207,16 +214,32 @@ ARABIC_INTERVALS=(
   --additional-intervals 0xFE80,0xFEFC  # Presentation Forms-B: core Arabic + Lam-Alef
 )
 
+# generate_lexend_ui <size> <Regular|Bold>: one UI face as a font stack of
+# LexendDeca, Hebrew, Arabic and (for IPA letters only) Noto Sans.
+generate_lexend_ui() {
+  local size="$1"
+  local style="$2"
+  local style_lower
+  style_lower="$(echo $style | tr '[:upper:]' '[:lower:]')"
+  local font_name="lexend_ui_${size}_${style_lower}"
+  local ipa_args=()
+  local range
+  for range in "${UI_IPA_RANGES[@]}"; do
+    ipa_args+=(--additional-intervals "$range" --font-include-intervals "3:$range")
+  done
+  python fontconvert.py $font_name $size \
+    ../builtinFonts/source/LexendDeca/LexendDeca-${style}.ttf \
+    "${UI_HEBREW_DIR}/IBMPlexSansHebrew-${style}.ttf" \
+    ../builtinFonts/source/NotoSansArabic/NotoSansArabic-${style}.ttf \
+    ../builtinFonts/source/NotoSans/NotoSans-Regular.ttf \
+    --additional-intervals 0x05D0,0x05EA "${ARABIC_INTERVALS[@]}" "${ipa_args[@]}" \
+    > ../builtinFonts/${font_name}.h
+  echo "Generated ../builtinFonts/${font_name}.h"
+}
+
 for size in ${UI_FONT_SIZES[@]}; do
   for style in ${UI_FONT_STYLES[@]}; do
-    font_name="inter_${size}_$(echo $style | tr '[:upper:]' '[:lower:]')"
-    font_path="../builtinFonts/source/Inter/Inter-${style}.ttf"
-    hebrew_path="../builtinFonts/source/IBMPlexSansHebrew/IBMPlexSansHebrew-${style}.ttf"
-    arabic_path="../builtinFonts/source/NotoSansArabic/NotoSansArabic-${style}.ttf"
-    output_path="../builtinFonts/${font_name}.h"
-    python fontconvert.py $font_name $size $font_path $hebrew_path $arabic_path \
-      --additional-intervals 0x05D0,0x05EA "${ARABIC_INTERVALS[@]}" > $output_path
-    echo "Generated $output_path"
+    generate_lexend_ui $size $style
   done
 done
 
@@ -253,13 +276,9 @@ for size in ${READING_FONT_SIZES[@]}; do
 done
 python subset-reader-supplements.py ../builtinFonts/source/Vazirmatn/Vazirmatn-Medium.ttf   ../builtinFonts/source/NotoSans/NotoSans-Regular.ttf
 
-# Small UI Font - Inter
+# Small UI Font - LexendDeca (secondary text)
 
-python fontconvert.py inter_8_regular 8 \
-  ../builtinFonts/source/Inter/Inter-Regular.ttf \
-  ../builtinFonts/source/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf \
-  ../builtinFonts/source/NotoSansArabic/NotoSansArabic-Regular.ttf \
-  --additional-intervals 0x05D0,0x05EA "${ARABIC_INTERVALS[@]}" > ../builtinFonts/inter_8_regular.h
+generate_lexend_ui 8 Regular
 
 echo ""
 echo "Running compression verification..."

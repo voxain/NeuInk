@@ -744,13 +744,15 @@ void EpubReaderDrawerActivity::drawerScreen(UiApp::ScreenType& screen, void* use
 int16_t EpubReaderDrawerActivity::drawerHeight() const {
   if (CROSSINK_APP_READER_SAMPLE_PREVIEW) return renderer.getScreenHeight();
   const auto& theme = app.theme();
-  // A row of choice buttons needs little room: the card shrinks and the page shows (and previews) more.
+  const int16_t tabBarHeight = static_cast<int16_t>(TAB_BAR_HEIGHT + TAB_BAR_VERTICAL_PADDING * 2);
+  // A row of choice buttons needs little room: the card shrinks and the page shows (and previews) more. The tab bar
+  // stays at the card's foot, so it is counted too: without it the buttons got no height and were not drawn, while
+  // their touch areas still worked (a font with few sizes, such as an SD-card bitmap font).
   if (state.pane == ReaderDrawerPane::EnumOptions && enumChoiceGroup) {
-    return static_cast<int16_t>(PANEL_CHROME + theme.headerHeight + theme.rowHeight + theme.spaceSm);
+    return static_cast<int16_t>(PANEL_CHROME + tabBarHeight + theme.headerHeight + theme.rowHeight + 2 * theme.spaceSm);
   }
   // Size landscape root menus from their real row cadence so the tab chrome
   // and grabber do not consume one of the intended visible rows.
-  const int16_t tabBarHeight = static_cast<int16_t>(TAB_BAR_HEIGHT + TAB_BAR_VERTICAL_PADDING * 2);
   int16_t drawerHeight = static_cast<int16_t>(readerDrawerHeight(renderer, state.pane) + PANEL_CHROME);
   if (state.pane == ReaderDrawerPane::Root && isLandscapeOrientation(renderer.getOrientation())) {
     drawerHeight = static_cast<int16_t>(PANEL_CHROME + tabBarHeight + DRAWER_LIST_TOP_PADDING +
@@ -866,7 +868,7 @@ void EpubReaderDrawerActivity::drawButtonBookHeader() {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect header{safe.x, safe.y + metrics.topPadding, safe.width,
                     TouchHeaderBackButton::height(metrics, mappedInput)};
-  GUI.drawHeader(renderer, header, epub ? epub->getTitle().c_str() : "", nullptr, false, true);
+  GUI.drawHeader(renderer, header, epub ? epub->getTitle().c_str() : "", nullptr, true, true);
 
   const Rect summary{safe.x, header.y + header.height, safe.width, metrics.tabBarHeight};
   char progress[96];

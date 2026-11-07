@@ -51,6 +51,7 @@ constexpr fui::ActionId ACTION_WARMTH_STEP = 5;
 constexpr fui::ActionId ACTION_QUICK = 6;
 constexpr fui::ActionId ACTION_DISMISS = 7;
 constexpr fui::ActionId ACTION_CC_BUTTON = 8;
+constexpr fui::ActionId ACTION_SETTINGS = 9;
 
 // Control Center layout (design C). The card starts below the battery row,
 // which ends at y 26 in every theme.
@@ -71,6 +72,10 @@ constexpr int CC_BUTTONS_GAP = 26;
 constexpr int CC_BUTTON_D = 60;  // round quick buttons
 constexpr int CC_ROW_PITCH = 104;  // pill + label + gap
 constexpr int CC_GRABBER_BAND = 24;
+// A strip above the light with the round Settings button at its right end, so Settings is always one swipe away
+// (Home can hide every icon, its own included).
+constexpr int CC_HEADER_H = 44;
+constexpr int CC_HEADER_BUTTON_D = 40;
 
 const freeink::Icon* controlButtonIcon(const uint8_t button, const bool on) {
   switch (button) {
@@ -156,6 +161,7 @@ void FrontlightPanelActivity::onEnter() {
   app.on(ACTION_QUICK, &FrontlightPanelActivity::onQuickActionEvent, this);
   app.on(ACTION_DISMISS, &FrontlightPanelActivity::onDismissEvent, this);
   app.on(ACTION_CC_BUTTON, &FrontlightPanelActivity::onControlButtonEvent, this);
+  app.on(ACTION_SETTINGS, &FrontlightPanelActivity::onSettingsEvent, this);
   app.setScreen(&FrontlightPanelActivity::panelScreen, this);
   prepareReaderDetailsLayout();
   requestUpdate();
@@ -249,6 +255,10 @@ void FrontlightPanelActivity::onQuickActionEvent(const fui::ActionEvent& event, 
 
 void FrontlightPanelActivity::onDismissEvent(const fui::ActionEvent&, void* user) {
   static_cast<FrontlightPanelActivity*>(user)->close();
+}
+
+void FrontlightPanelActivity::onSettingsEvent(const fui::ActionEvent&, void* user) {
+  static_cast<FrontlightPanelActivity*>(user)->openGlobalSettings();
 }
 
 void FrontlightPanelActivity::adjustBrightness(const int delta) {
@@ -775,7 +785,7 @@ int FrontlightPanelActivity::controlButtonCount() const {
 }
 
 int FrontlightPanelActivity::controlCenterBottom() const {
-  int y = CC_CARD_TOP + CC_CARD_PAD + CC_LIGHT_H;
+  int y = CC_CARD_TOP + CC_HEADER_H + CC_CARD_PAD + CC_LIGHT_H;
   if (Frontlight.hasColorTemperature()) y += CC_WARMTH_GAP + CC_WARMTH_H;
   // The card is only as tall as the rows of buttons it shows (none, one or two).
   const int rows = (controlButtonCount() + 3) / 4;
@@ -835,7 +845,9 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   const bool steps = mappedInput.buttonsInUse();
   const int left = x0 + CC_CARD_PAD;
   const int right = x1 - CC_CARD_PAD;
-  int y = CC_CARD_TOP + CC_CARD_PAD;
+  panel::stepButton(renderer, screen.frame(), right - CC_HEADER_BUTTON_D + 8, CC_CARD_TOP + 14, CC_HEADER_BUTTON_D,
+                    icon_settings_24, ACTION_SETTINGS, 0, 10, 10);
+  int y = CC_CARD_TOP + CC_HEADER_H + CC_CARD_PAD;
   const int stepCy = y + CC_LIGHT_H / 2;
   if (steps) {
     for (const int side : {-1, +1}) {

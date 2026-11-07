@@ -419,7 +419,8 @@ void MinimalTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char
   const bool showBatteryPercentage =
       SETTINGS.hideBatteryPercentage != CrossPointSettings::HIDE_BATTERY_PERCENTAGE::HIDE_ALWAYS;
   const int batteryX = rect.x + rect.width - StatusBarMetrics::sideInset - MinimalMetrics::values.batteryWidth;
-  const int batteryY = rect.y + UITheme::getTopStatusBarInset(renderer) + homeHeaderTopInset;
+  const int batteryY = rect.y + UITheme::getTopStatusBarInset(renderer) +
+                       (headerStatusRowHeight - MinimalMetrics::values.batteryHeight) / 2;
   if (showStatus) {
     drawBatteryRight(
         renderer, Rect{batteryX, batteryY, MinimalMetrics::values.batteryWidth, MinimalMetrics::values.batteryHeight},
@@ -437,7 +438,7 @@ void MinimalTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char
   }
 
   if (showStatus) {
-    drawTopStatusBarClock(renderer, rect.y, nullptr, false, homeHeaderClockTextYOffset(renderer));
+    drawTopStatusBarClock(renderer, rect.y, nullptr, false, 0);
   }
 }
 

@@ -11,3 +11,10 @@ void ReadingStatsDate::clear() {
 void recordReadingSpanIntoBuckets(std::array<uint32_t, READING_TIME_BUCKET_COUNT>&,
                                   std::array<uint32_t, READING_DAY_OF_WEEK_COUNT>&, const ReadingStatsDateTime&,
                                   uint32_t) {}
+
+// The time-left and finish-date estimates are not what this test covers.
+bool ReadingStatsDateTime::isValid() const { return date.isValid(); }
+
+void addSecondsToReadingStatsDateTime(ReadingStatsDateTime&, uint32_t) {}
+
+uint16_t readingSpanDaysElapsed(const ReadingStatsDate&, const ReadingStatsDate&) { return 0; }

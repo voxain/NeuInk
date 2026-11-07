@@ -23,3 +23,8 @@ commit in this repository.
   certificate verification. NeuInk calls it for KOReader sync (which sends
   credentials) and for downloads (`lib/KOReaderSync/`, `src/network/HttpDownloader.cpp`).
   The SDK offers `setCACert()`, but no CA bundle is shipped.
+
+## NeuInk changes to the SDK
+
+- `libs/assets/Icons/tools/gen_icons.py` writes `inline constexpr` icon arrays and `Icon` structs instead of
+  `static const`, so an icon used in several files is in the firmware once (0.4.0; it was in it once per file).

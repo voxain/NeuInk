@@ -36,7 +36,7 @@ PIECE = 48
 SMALL_PIECE = 24
 # King, queen, rook, bishop, knight, pawn.
 PIECE_NAMES = ["King", "Queen", "Rook", "Bishop", "Knight", "Pawn"]
-CLOCK_SETS = [("ClockLarge", 106), ("ClockMedium", 74), ("ClockSmall", 38)]
+CLOCK_SETS = [("ClockLarge", 106), ("ClockMedium", 74), ("ClockSmall", 38), ("ClockRegular", 56)]
 CLOCK_CHARACTERS = "0123456789:"
 
 

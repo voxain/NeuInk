@@ -8,7 +8,8 @@
 #if NEUINK_BATTERY_HISTORY
 #include "activities/apps/AppRegistry.h"
 
-// How long each app (the games and the Clock) and the book reader was in front, today and over the last week, for
+// How long each app (everything with an icon on Home, Home itself and the book reader) was in front, today and over
+// the last week, for
 // the Battery page. Nothing polls: the activity manager calls enter() when a screen starts and exit() when it ends,
 // and the time between is added up. The reader's own screens (chapters, the menu, a dictionary) are sub-screens
 // of its visit, which lasts as long as a book screen is open. Putting the reader to sleep ends the screen first,
@@ -16,8 +17,8 @@
 // It also learns what each costs in charge. Every gauge read the battery graph takes (chargeSample) adds the percent
 // lost since the previous read, and the seconds between the two, to whatever was in front; an interval that spans a
 // change of screen, a charge or a long gap is dropped, so sleep and charging never count. The percent lost per hour
-// of each is then the week's loss over the week's measured time. Slot 0 is everything that is not an app (Home,
-// Settings, the Library...).
+// of each is then the week's loss over the week's measured time. A screen of no slot of its own (a Settings page, a
+// panel over Home) counts toward the one it opened over; slot 0 is what runs outside all of them (sleep, boot).
 // The totals sit in RTC memory (a few numbers per slot and day: about 0.5 KB, no timestamps, like the battery graph).
 namespace AppUsage {
 
@@ -26,9 +27,16 @@ void exit(const std::string& activityName);
 
 constexpr int kDays = 7;
 
-// What is timed: an app's id, or the reader, which is not one of the apps.
+// What is timed: a game's or the Clock's id, then the reader, Home and the other Home entries.
 constexpr uint8_t kReader = apps::kIdCount;
-constexpr uint8_t kSlots = kReader + 1;
+constexpr uint8_t kHome = kReader + 1;
+constexpr uint8_t kSettings = kReader + 2;
+constexpr uint8_t kFiles = kReader + 3;
+constexpr uint8_t kLibrary = kReader + 4;
+constexpr uint8_t kOpds = kReader + 5;
+constexpr uint8_t kStats = kReader + 6;
+constexpr uint8_t kSaved = kReader + 7;
+constexpr uint8_t kSlots = kReader + 8;
 
 // The totals as bytes, for UsageSnapshot's file (see BatteryHistory::saveState).
 size_t stateSize();

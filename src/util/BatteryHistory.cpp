@@ -2,6 +2,7 @@
 
 #if NEUINK_BATTERY_HISTORY
 
+#include <algorithm>
 #include <cstring>
 
 #include "activities/reader/ReadingStatsUtils.h"
@@ -87,7 +88,7 @@ Rates rates(const uint8_t (&levels)[kBuckets]) {
   int previous = -1;
   for (int i = 0; i < kBuckets; ++i) {
     if (levels[i] == kNone) continue;
-    if (previous >= 0 && levels[i] <= levels[previous] + 1) {  // a rise is a recharge, not a drain
+    if (previous >= 0 && levels[i] <= levels[previous]) {  // any rise is a charge, not a drain
       const int drop = levels[i] < levels[previous] ? levels[previous] - levels[i] : 0;
       const int gap = i - previous;
       if (gap == 1) {
@@ -106,6 +107,10 @@ Rates rates(const uint8_t (&levels)[kBuckets]) {
   if (sleepBuckets >= kSleepMinBuckets) {
     result.sleepTenths = (sleepDrop > 0 ? sleepDrop : 1) * 10 * perHour / sleepBuckets;
     if (result.sleepTenths == 0) result.sleepTenths = 1;
+  }
+  const int measured = awakeBuckets + sleepBuckets;
+  if (measured >= kAwakeMinBuckets && awakeDrop + sleepDrop > 0) {
+    result.overallTenths = std::max(1, (awakeDrop + sleepDrop) * 10 * perHour / measured);
   }
   return result;
 }

@@ -16,6 +16,10 @@ struct GlobalReadingStats {
   uint32_t readingHistoryAnchorDay = 0;
   std::array<uint8_t, READING_HISTORY_BYTES> readingHistoryBits{};
   uint16_t longestReadingStreak = 0;
+  // Seconds read on each of the last READING_DAILY_DAYS days, [i] being i days before dailyAnchorDay (a
+  // readingStatsDayIndex). This device only, in a file of its own, so the stats format and the synced stats stay.
+  uint32_t dailyAnchorDay = 0;
+  std::array<uint16_t, READING_DAILY_DAYS> dailySeconds{};
 
   static constexpr uint8_t CURRENT_FILE_VERSION = 3;
   static constexpr size_t CURRENT_FILE_SIZE = 159;
@@ -47,4 +51,6 @@ struct GlobalReadingStats {
   void recordReadingSpan(const ReadingStatsDateTime& localStart, uint32_t seconds);
   uint16_t currentReadingStreak(const ReadingStatsDate* today) const;
   uint16_t displayLongestReadingStreak() const;
+  // Seconds read on that day (a readingStatsDayIndex); 0 for days out of the kept range.
+  uint32_t secondsReadOn(uint32_t dayIndex) const;
 };

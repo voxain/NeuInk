@@ -36,7 +36,7 @@ no touch screen or front light, so their code path works with the buttons only (
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/vega-homescreen.png" width="230" alt="Home: the last book and a grid of rounded icons"><br><b>Home</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.4.0/vega-homescreen.png" width="230" alt="Home: the greeting, widgets for the current book, the date and the reading streak, and app icons"><br><b>Home</b></td>
     <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/library.png" width="230" alt="Library with book covers in a grid"><br><b>Library</b></td>
     <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/reader.png" width="230" alt="A book page in the reader"><br><b>Reader</b></td>
   </tr>
@@ -46,9 +46,14 @@ no touch screen or front light, so their code path works with the buttons only (
     <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/control-center.png" width="230" alt="The Control Center with light and warmth sliders and round buttons"><br><b>Control Center</b></td>
   </tr>
   <tr>
-    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/battery-stats.png" width="230" alt="Battery: the charge in large type, a 24-hour graph and time per app"><br><b>Battery</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.4.0/battery-stats.png" width="230" alt="Battery: the charge in large type, a 24-hour graph and time per app"><br><b>Battery</b></td>
     <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/settings-storage.png" width="230" alt="Storage: a segmented bar for books, images, fonts and data"><br><b>Storage</b></td>
-    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/vega-customization-pane.png" width="230" alt="The Home layout panel with icon size, shape and grid"><br><b>Home layout</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.4.0/vega-customization-pane.png" width="230" alt="The Home layout panel with icon size, shape, columns and rows"><br><b>Home layout</b></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.4.0/vega-edit-mode.png" width="230" alt="Home in edit mode with Add widget and Done at the top"><br><b>Edit mode</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.4.0/vega-widget-options.png" width="230" alt="A widget's options: its size and the data it shows"><br><b>Widget options</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.4.0/settings-app-page.png" width="230" alt="An app's page in Settings: its icon, Open and Disable, and its settings"><br><b>An app's settings</b></td>
   </tr>
 </table>
 
@@ -64,11 +69,19 @@ top of CrossInk. The full list, with photos and how to use each one, is in
 
 ### The NeuInk interface
 
-NeuInk's own redesign, 0.3.0, on the X4 Pro. Details are in [FEATURES.md](FEATURES.md#23-the-neuink-interface-030).
+NeuInk's own redesign (0.3.0, widgets in 0.4.0), on the X4 Pro. Details are in
+[FEATURES.md](FEATURES.md#23-the-neuink-interface-030).
 
-- **Vega theme (the default):** the last book as a card over a paged grid of rounded icons for every
-  action and app; light-gray title bars with the app's icon. A swipe up from the bottom edge opens a
-  panel for icon size, shape and grid.
+- **Vega theme (the default):** widgets over a paged grid of rounded icons for every action and app;
+  light-gray title bars with the app's icon. A swipe up from the bottom edge opens a panel for icon
+  size, shape, the grid's columns and rows, and the pencil that starts edit mode.
+- **Home widgets:** the current book (with pace, time left and finish date), recent covers, a
+  calendar that marks the days you read, the date, a clock, your reading streak, a daily reading
+  goal, the book that comes next, a highlight of the day and the battery, in up to three sizes. In
+  edit mode, drag widgets and icons into place, tap a widget for its options, hide any icon.
+- **Everything is an app:** Settings > Apps lists everything on Home with its own page (Open,
+  Enable / Disable, its settings), and the Battery page shows the time and charge of each, Home and
+  Settings included.
 - **Reader menu:** a floating gray card with tabs, white rows and switches, sliders like the Control
   Center's, and orientation and paragraph alignment as picture buttons in the list. All icons are
   [Lucide](https://lucide.dev).
@@ -77,7 +90,8 @@ NeuInk's own redesign, 0.3.0, on the X4 Pro. Details are in [FEATURES.md](FEATUR
   and charge per app and for the reader. It survives restarts and updates.
 - **Storage:** what fills the SD card as one segmented bar (books, images, fonts and dictionaries,
   app data, other), scanned in the background.
-- **USB:** plug into a computer and the reader offers to open the SD card as a drive.
+- **USB:** plug into a computer and the reader offers to open the SD card as a drive (a switch on
+  the File Manager's page turns that off).
 - **Apps:** Sudoku, Chess, Checkers, Go, Tic Tac Toe and a Clock with a calendar.
 
 ### Words and dictionaries
@@ -115,12 +129,12 @@ NeuInk's own redesign, 0.3.0, on the X4 Pro. Details are in [FEATURES.md](FEATUR
 
 ### Screen, light and controls
 
-- **Vega, the new default theme:** the last book as a card above a grid of gray squircles
-  for every action and app, Lucide icons, light-gray title bars, and a selection that shows
-  only while you use the buttons.
+- **Vega, the new default theme:** widgets above a grid of gray squircles for every action
+  and app, Lucide icons, light-gray title bars, and a selection that shows only while you use
+  the buttons.
 - **Settings in eight groups**, each with an icon and a short description.
 - **Control Center:** swipe down for light and warmth in 1 % steps, with eight buttons
-  you choose (X4 Pro).
+  you choose and a Settings button in its corner (X4 Pro).
 - **Night light:** a second brightness and warmth from evening to morning (X4 Pro).
 - **Rotation** that turns the buttons and the touch screen with the page.
 - **Bluetooth page turner:** pair a remote and map its buttons.
@@ -129,7 +143,7 @@ NeuInk's own redesign, 0.3.0, on the X4 Pro. Details are in [FEATURES.md](FEATUR
 
 - **Games:** Sudoku with five levels, a daily puzzle and explaining hints,
   Chess, Checkers, Go and Tic Tac Toe. Apps stay open across sleep, and you can hide
-  the ones you do not use.
+  any of them, or anything else on Home.
 - **Clock & Calendar**, also as a sleep screen.
 - **A clock that stays right:** set on every Wi-Fi connect, with a manual time zone,
   Summer Time and an optional Live Clock. NeuInk does not look up your location.
@@ -152,7 +166,7 @@ keyboard layout is included.
 <table>
   <tr>
     <td align="center" width="50%"><img src="docs/images/neuink/v1.3.1/flashcards.png" width="280" alt="A flashcard deck with German words and the Practice button"><br><b>Flashcards</b></td>
-    <td align="center" width="50%"><img src="docs/images/neuink/v0.3.0/vega-homescreen.png" width="280" alt="Home with the last book and a grid of icons"><br><b>Home</b></td>
+    <td align="center" width="50%"><img src="docs/images/neuink/v0.4.0/vega-homescreen-widgets.png" width="280" alt="Home with four widgets: current book, date, streak and reading goal"><br><b>Home</b></td>
   </tr>
 </table>
 

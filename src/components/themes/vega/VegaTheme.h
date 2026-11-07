@@ -2,9 +2,9 @@
 
 #include "components/themes/lyra/LyraTheme.h"
 
-// Vega theme: the last opened book as a card on top (cover, title, author and a
-// pill progress bar), under it every Home action and app as a light-gray squircle (black when selected) with its
-// icon, paged like a phone's home screen. Everything else is Lyra's.
+// Vega theme: Home with widgets (the current book's card by default) over every Home action and app as a light-gray
+// squircle (black when selected) with its icon, paged like a phone's home screen (see VegaHome.h). Gray title bars
+// with the app's icon; everything else is Lyra's.
 namespace VegaMetrics {
 constexpr ThemeMetrics makeValues() {
   ThemeMetrics v = LyraMetrics::values;
@@ -23,26 +23,12 @@ constexpr ThemeMetrics values = makeValues();
 
 class VegaTheme : public LyraTheme {
  public:
-  // The grid's shape comes from the Home layout pane (columns x rows: 4x3, 4x4, 3x4, 3x3).
-  static int columns();
-  static int rows();
-  static int pageSize() { return columns() * rows(); }
+  // Home itself (the widgets and the app grid) is components/themes/vega/VegaHome; the theme gives it the greeting.
+  int homeGreetingHeight(GfxRenderer& renderer) const;
+  // "Good morning" and so on, under Home's status bar (rect.y: Home's top padding).
+  void drawGreeting(GfxRenderer& renderer, Rect rect) const;
 
-  // The page the grid shows. Home sets it before drawing, from the selection or a swipe.
-  static void setHomePage(int page) { homePage = page; }
-  static int pageOf(int index) { return index / pageSize(); }
-  static int pageCount(int itemCount) { return (itemCount + pageSize() - 1) / pageSize(); }
-
-  void drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
-                           int selectorIndex, bool& coverRendered, bool& coverBufferStored, bool& bufferRestored,
-                           const std::function<bool()>& storeCoverBuffer, const BookReadingStats* stats = nullptr,
-                           float progressPercent = -1.0f, const GlobalReadingStats* globalStats = nullptr,
-                           const char* currentChapterTitle = nullptr) const override;
-  void drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount, int selectedIndex,
-                      const std::function<const char*(int index)>& buttonLabel,
-                      const std::function<UIIcon(int index)>& rowIcon) const override;
-
- // Title bars of the apps: light-gray band, the app's icon before its title, a little taller.
+  // Title bars of the apps: light-gray band, the app's icon before its title, a little taller.
   bool headerBand() const override { return true; }
   const freeink::Icon* headerIcon() const override;
   int headerExtraHeight() const override { return 14; }
@@ -50,7 +36,4 @@ class VegaTheme : public LyraTheme {
   void drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, bool batteryLeft, bool showPercentage,
                         bool onBand) const override;
   int statusClockFontId() const override;
-
- private:
-  static inline int homePage = 0;
 };

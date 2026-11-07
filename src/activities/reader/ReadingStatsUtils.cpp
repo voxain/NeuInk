@@ -445,6 +445,11 @@ uint16_t computeReadingHistoryLongestStreak(const uint32_t anchorDay,
   return best;
 }
 
+bool readingHistoryHasDay(const uint32_t anchorDay, const std::array<uint8_t, READING_HISTORY_BYTES>& bits,
+                          const uint32_t dayIndex) {
+  return dayIndex <= anchorDay && isBitSet(bits, anchorDay - dayIndex);
+}
+
 uint16_t computeReadingHistoryCurrentStreak(uint32_t anchorDay, const std::array<uint8_t, READING_HISTORY_BYTES>& bits,
                                             const ReadingStatsDate* today) {
   if (anchorDay == 0 && !isBitSet(bits, 0)) {

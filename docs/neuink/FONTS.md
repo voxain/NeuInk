@@ -63,15 +63,8 @@ so the merged font may keep the name NotoVazir.
 
 ## Built-in menu font
 
-The menu font (Inter) is compiled into the firmware. NeuInk adds IPA letters
-(U+0250–U+02FF) from Inter as small supplement fonts
-(`lib/EpdFont/builtinFonts/inter_ipa_*.h`), generated with:
-
-```bash
-cd lib/EpdFont/scripts
-python fontconvert.py inter_ipa_10_regular 10 ../builtinFonts/source/Inter/Inter-Regular.ttf \
-  ../builtinFonts/source/NotoSans/NotoSans-Regular.ttf --no-default-intervals \
-  --additional-intervals 0x0250,0x02FF > ../builtinFonts/inter_ipa_10_regular.h
-```
-
-(repeat for 8 regular, 10 bold, 12 regular and 12 bold).
+The menu font is LexendDeca, the same family as the default reader font, at
+8, 10 and 12 px (`lib/EpdFont/builtinFonts/lexend_ui_*.h`). Each face carries
+its own Hebrew (IBM Plex Sans Hebrew), Arabic (Noto Sans Arabic) and IPA
+(Noto Sans) fallbacks, so no supplement fonts are needed. They are generated
+by the UI section of `lib/EpdFont/scripts/convert-builtin-fonts.sh`.

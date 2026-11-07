@@ -11,8 +11,8 @@
 // per built-in app with its icon, its name and a short line about what is going
 // on in it. Which apps show, and the Clock's and Sudoku's options, are in
 // Settings > Apps (makeSettingsPage): an app that is switched off is only hidden
-// from the tiles - it stays in the firmware and costs no memory or battery while
-// it is not open.
+// from the tiles and from Vega's Home - it stays in the firmware and costs no
+// memory or battery while it is not open.
 class AppsActivity final : public Activity {
  public:
   // What sleep notes about the screen it began on, so that waking returns there
@@ -24,7 +24,8 @@ class AppsActivity final : public Activity {
   // is neither the list nor an app.
   static uint8_t resumeIdFor(const std::string& activityName);
 
-  // Settings > Apps: switches for the apps, and the pages of the apps' own options.
+  // Settings > Apps: everything with an icon on Home, each with a page: whether it shows on Home, and the app's
+  // own options (the Clock's, Sudoku's).
   static std::unique_ptr<Activity> makeSettingsPage(GfxRenderer& renderer, MappedInputManager& mappedInput);
 
   // resumeId: one app's resume number opens that app on top of the list.

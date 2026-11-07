@@ -45,9 +45,6 @@ enum class SettingAction {
   BackupStats,
   ResetGlobalStats,
   ClearCache,
-  CheckForUpdates,
-  SwitchFirmware,
-  SdFirmwareUpdate,
   Language,
   KeyboardLayouts,
   DownloadFonts,
@@ -261,7 +258,6 @@ class SettingsActivity final : public Activity {
   std::vector<SettingInfo> controlsEdgeGestureSettings;
   std::vector<SettingInfo> generalSettings;
   std::vector<SettingInfo> generalDateTimeSettings;
-  std::vector<SettingInfo> generalUpdatesSettings;
   std::vector<SettingInfo> readerContentSettings;
   std::vector<SettingInfo> readerAidsSettings;
   std::vector<SettingInfo> readerLookupSettings;
@@ -324,7 +320,6 @@ class SettingsActivity final : public Activity {
   void openScreenMarginPicker(const SettingInfo& setting);
   void openWordSpacingPicker();
   void openLanguagePicker();
-  void openSwitchFirmwarePicker();
   void applyLanguage(uint8_t langIndex);
   void openIdleTimeThresholdPicker();
   void toggleCurrentSetting();

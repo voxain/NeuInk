@@ -50,6 +50,38 @@ int scalableBuiltinReaderFontId(unsigned family, unsigned points) {
     if (points == 10 + s * 2) return scalableBuiltinFontId(ids[family][s]);
   return scalableBuiltinFontId(0x54540000 | (family << 8) | points);
 }
+int scalableBuiltinDisplayFontId(GfxRenderer& renderer, const unsigned family, const unsigned style,
+                                 const unsigned points) {
+  static std::optional<HalScalableFont> face;
+  static unsigned openIndex = ~0u;
+  static int fontId = 0;
+  const unsigned index = family * 4 + style;
+  if (family >= 2 || style >= 4) return UI_12_FONT_ID;
+  const int id = scalableBuiltinFontId(int(0x44530000u | (index << 8) | points));
+  if (index == openIndex && fontId == id) return id;
+  ScalableFontAccess access;
+  if (index != openIndex) {
+    if (fontId != 0) renderer.removeFont(fontId);
+    fontId = 0;
+    face.reset();
+    face.emplace();
+    if (!face->openMemory(assets[index], lengths[index])) {
+      face.reset();
+      openIndex = ~0u;
+      LOG_ERR("TTF", "Built-in display face unavailable");
+      return UI_12_FONT_ID;
+    }
+    openIndex = index;
+  }
+  const EpdFont* sized = face->atSize(static_cast<uint8_t>(points));
+  if (sized == nullptr) return UI_12_FONT_ID;
+  if (fontId != 0 && fontId != id) renderer.removeFont(fontId);
+  // The one face stands in for every style: the line is drawn in the style it was opened for.
+  renderer.insertFont(id, EpdFontFamily(sized, sized, sized, sized));
+  fontId = id;
+  return id;
+}
+
 void ensureScalableBuiltinFamily(GfxRenderer& renderer, unsigned family) {
   ScalableFontAccess access;
   if (family >= 2 || ready[family]) return;

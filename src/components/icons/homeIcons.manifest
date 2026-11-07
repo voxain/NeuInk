@@ -97,3 +97,14 @@ arrow_up = arrow-up
 storage = hard-drive
 loader = loader-circle
 database = database
+# Home widgets (Vega): the calendar and date widgets in the widget picker, and the remove button of a widget.
+calendar = calendar
+calendar_date = calendar-1
+trash = trash-2
+# Home widgets: reading goal, highlight, up next; Settings > Apps: an app's Open and Enable / Disable buttons.
+target = target
+quote = quote
+skip_forward = skip-forward
+external_link = external-link
+eye = eye
+eye_off = eye-off

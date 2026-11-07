@@ -2,6 +2,52 @@
 
 ## [Unreleased]
 
+## [NeuInk 0.4.0] - 2026-11-07
+
+Widgets on Home, and everything on it is an app. The new screens are in
+[FEATURES.md](FEATURES.md#home-widgets-and-edit-mode-040). Settings, books and reading stats carry over; the time per
+app on the Battery page starts empty once (the battery graph is kept).
+
+- Vega Home widgets on a two-by-three grid at the top of the first page, in 1x1, 2x1 and 2x2: current book (author,
+  pace, time left, estimated finish; stat tiles in 2x2), recent books (covers with progress), calendar (styled as
+  the Clock app's month, a dot on the days read, optionally from a number of minutes), date, clock (digital in five
+  digit sizes or analog, with or without the date), streak (this week's bars, Monday or Sunday first; totals in
+  2x2), reading goal (minutes a day against a goal), up next (the series' next book, else the folder's), highlight
+  (a saved one, a new one each day) and battery (with the Battery page's graph). A widget takes the first free place
+  it fits in; the app icons shrink to make room and rows that do not fit move to the next page. The default layout
+  is the one before: the greeting, the current book, the icons.
+- Edit mode, from the pencil in the layout panel: drag widgets and icons into place (bars at the screen's sides take
+  an icon to another page), tap a widget for its size and data (shown live behind the panel, which hangs from the
+  top for widgets in the lower half), tap an icon to hide it, Add widget and Done at the top. Edit mode only
+  refreshes fast and cleans the screen once when it ends. One-time introductions explain Home's gestures and edit
+  mode.
+- Layout panel: columns (2-6) and rows (1-8) as numbers side by side, about two thirds of the screen high, scrolls a
+  page at a time, and shows its changes on Home behind it.
+- Settings > Apps lists everything with an icon on Home, Settings and Library included, on gray squircles. An app's
+  page shows its icon large, Open and Enable / Disable (whether it shows on Home), then its settings (the Clock's,
+  Sudoku's, the File Manager's) or a note that it has none. Home can be left empty.
+- The File Manager's page has Ask to open as USB drive: off, plugging into a computer no longer offers the SD card.
+- Control Center: a Settings button in its top right corner; the eighth button now defaults to Night light.
+- Battery page: one line through the whole day, the time the reader was awake shaded under it; time and charge for
+  every app, Home, Settings, Files, Library, the OPDS browser, Reading stats and Saved included, the most used first.
+  The runtimes and the graph's estimate come from one drain figure that leaves out every rise (a slow charge climbs
+  one percent at a time and counted as no loss before), so the estimate can no longer climb and the runtimes follow
+  the drain. The graph is a shared component (components/BatteryGraph).
+- General > Software updates: the NeuInk logo large and the installed version; after an update check, the version
+  it found, and when that one is newer but was not installed, "New version available" with an Update now button.
+- Fixed: the reader menu's Font size for a font with five sizes or fewer (an SD-card bitmap font) opened an empty
+  card whose invisible buttons jumped to the smallest or largest size; its row of size buttons now shows.
+- Fixed: the Battery page's list of apps ran off the screen; it scrolls a page at a time now.
+- Fixed: installed SD-card reader fonts fell back to Lexend Deca. The Vega greeting opened the whole Bitter family in
+  every reader size in the font arena the reader shares; it now opens one face at one size.
+- Reading time per day for the last 64 days, in /.crosspoint/daily_reading.bin (the stats format and the stats sync
+  are unchanged). The time-left, finish-date and pace estimates, the stats tile and the level bar are one shared copy
+  each.
+- Icons and the boot logo are `inline constexpr`: each is in the firmware once instead of once per file that uses
+  it (22 KB less).
+- New Lucide icons (calendar, calendar-1, trash-2, target, quote, skip-forward, external-link, eye, eye-off) and a
+  55 px set of clock digits.
+
 ## [NeuInk 0.3.0] - 2026-11-07
 
 The NeuInk interface: the Vega theme, a rebuilt reader menu, Battery and Storage pages, apps, and a USB prompt. The

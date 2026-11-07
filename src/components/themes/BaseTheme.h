@@ -368,6 +368,8 @@ class BaseTheme {
   // Shared constants and helpers for battery drawing (used by all themes)
   static constexpr int batteryPercentSpacing = 4;
   static constexpr int homeHeaderTopInset = ReaderStatusBarConfig::TOP_TEXT_INSET;
+  // The status row of the app and Home headers (a few pixels taller than the reader's, which keeps statusBarVerticalMargin).
+  static constexpr int headerStatusRowHeight = 24;
   static int homeHeaderClockTextYOffset(const GfxRenderer& renderer);
   static Rect buttonMenuTouchTarget(Rect rowRect, Rect menuRect, bool isLastItem, int rowSpacing);
   static void drawBatteryOutline(const GfxRenderer& renderer, int x, int y, int battWidth, int rectHeight,

@@ -49,8 +49,13 @@
 #include "components/themes/dashboard/DashboardTheme.h"
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
+#include "components/themes/vega/VegaHome.h"
 #include "components/themes/vega/VegaTheme.h"
 #include "HomeLayoutActivity.h"
+#include "HomeWidgetActivity.h"
+#include "activities/apps/ClockFace.h"
+#include "activities/settings/BatteryActivity.h"
+#include "util/NextBookFinder.h"
 #include "fontIds.h"
 
 namespace {
@@ -240,6 +245,24 @@ bool homeListsApps() {
   return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::VEGA;
 }
 
+bool rectContains(const Rect& rect, int x, int y);  // defined with the Vega edit mode below
+
+static_assert(static_cast<uint8_t>(HomeMenuAction::BrowseFiles) == vegahome::KeyFiles &&
+                  static_cast<uint8_t>(HomeMenuAction::Library) == vegahome::KeyLibrary &&
+                  static_cast<uint8_t>(HomeMenuAction::OpdsBrowser) == vegahome::KeyOpds &&
+                  static_cast<uint8_t>(HomeMenuAction::ReadingStats) == vegahome::KeyStats &&
+                  static_cast<uint8_t>(HomeMenuAction::Bookmarks) == vegahome::KeySaved &&
+                  static_cast<uint8_t>(HomeMenuAction::Settings) == vegahome::KeySettings,
+              "vegahome::EntryKey names the HomeMenuAction values");
+
+// The Vega greeting's band above the widgets (0 when it is off).
+int vegaGreetingHeight(GfxRenderer& renderer) { return static_cast<const VegaTheme&>(GUI).homeGreetingHeight(renderer); }
+
+// What an entry is in SETTINGS.homeOrder (Vega's edit mode).
+uint8_t homeEntryKey(const HomeMenuEntry& entry) {
+  return entry.action == HomeMenuAction::App ? vegahome::appKey(entry.app) : static_cast<uint8_t>(entry.action);
+}
+
 // Apps switched off in Apps > Manage; read once when Home opens, not on every pass.
 uint8_t homeHiddenApps = 0;
 
@@ -267,6 +290,32 @@ void appendHomeMenuItems(HomeMenuEntries& items, bool hasOpdsServers, bool hasRe
     items.push({tr(STR_APPS), Apps, HomeMenuAction::Apps});
   }
   items.push({tr(STR_SETTINGS_TITLE), Settings, HomeMenuAction::Settings});
+  if (grid && SETTINGS.homeOrderCount > 0) {
+    // Vega: the order set in edit mode; entries it does not name (new ones, apps switched back on) follow.
+    HomeMenuEntries sorted;
+    bool taken[HomeMenuEntries::kCapacity] = {};
+    for (int k = 0; k < SETTINGS.homeOrderCount; ++k) {
+      for (int i = 0; i < items.size(); ++i) {
+        if (!taken[i] && homeEntryKey(items[i]) == SETTINGS.homeOrder[k]) {
+          taken[i] = true;
+          sorted.push(items[i]);
+          break;
+        }
+      }
+    }
+    for (int i = 0; i < items.size(); ++i) {
+      if (!taken[i]) sorted.push(items[i]);
+    }
+    items = sorted;
+  }
+  if (grid && SETTINGS.homeHiddenEntries != 0) {
+    // Vega: entries switched off in Settings > Apps or edit mode (the apps are left out above already).
+    HomeMenuEntries shown;
+    for (int i = 0; i < items.size(); ++i) {
+      if (items[i].action == HomeMenuAction::App || !vegahome::entryHidden(homeEntryKey(items[i]))) shown.push(items[i]);
+    }
+    items = shown;
+  }
 }
 
 HomeMenuEntries buildHomeMenuItems(bool hasOpdsServers, bool hasReadingStats, bool hasBookmarks, bool hasClippings) {
@@ -481,6 +530,8 @@ bool hasValidCarouselDiskCache(const std::vector<RecentBook>& recentBooks, const
 }
 
 int getVisibleRecentBookCount(const std::vector<RecentBook>& recentBooks) {
+  // Vega: the current book is a widget, and may have been removed.
+  if (homeListsApps() && !vegahome::hasWidget(vegahome::CurrentBook)) return 0;
   const auto& metrics = UITheme::getInstance().getMetrics();
   return std::min(static_cast<int>(recentBooks.size()), metrics.homeRecentBooksCount);
 }
@@ -970,6 +1021,10 @@ void HomeActivity::onEnter() {
     loadAllBookStats();
   }
   updateHighlightedBookContext(false);
+  editMode = false;
+  editTouchActive = false;
+  clockOptionsLoaded = upNextLoaded = highlightLoaded = false;
+  if (homeListsApps()) loadVegaWidgetData();
 
   if (coverGridUi) {
     coverGridUi->begin(recentBooks, hasOpdsServers, gridHasContinueReading,
@@ -1544,8 +1599,30 @@ void HomeActivity::loop() {
 
   if (quickActionsPopup.handleInput(mappedInput, [this] { requestUpdate(); })) return;
 
-  if (liveClockTicker.due() && SETTINGS.shouldShowClockOutsideReader() && !quickActionsPopup.isActive()) {
+  if (liveClockTicker.due() &&
+      (SETTINGS.shouldShowClockOutsideReader() || (homeListsApps() && vegahome::showsTime())) &&
+      !quickActionsPopup.isActive()) {
     requestUpdate();  // a fast refresh only moves the clock pixels that changed
+  }
+
+  if (homeListsApps() && pendingIntro() != 0) {
+    // The introduction covers Home until its button (or Confirm) is pressed.
+    int x = 0;
+    int y = 0;
+    const Rect button = vegahome::introButton(renderer);
+    if ((mappedInput.wasScreenTapped(x, y) && rectContains(button, x, y)) ||
+        mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      SETTINGS.homeIntroSeen |= pendingIntro();
+      SETTINGS.saveToFile();
+      initialRefreshMode = HalDisplay::HALF_REFRESH;
+      requestUpdate();
+    }
+    return;
+  }
+
+  if (homeListsApps() && editMode) {
+    loopVegaEdit();
+    return;
   }
 
   if (coverGridUi) {
@@ -1964,20 +2041,29 @@ void HomeActivity::loop() {
   if (homeListsApps() && mappedInput.hasTouch()) {
     // Swipe up from the bottom edge, as in the reader: the grid's layout.
     if (mappedInput.wasBottomEdgeUpSwipe()) {
-      startActivityForResult(std::make_unique<HomeLayoutActivity>(renderer, mappedInput),
-                             [this](const ActivityResult&) { requestUpdate(); });
+      auto pane = std::make_unique<HomeLayoutActivity>(renderer, mappedInput);
+      pane->setBackdrop([this] { renderVega(nullptr); });
+      startActivityForResult(std::move(pane), [this](const ActivityResult& result) {
+        const auto* menu = std::get_if<MenuResult>(&result.data);
+        if (menu != nullptr && menu->action == HomeLayoutActivity::kEditHome) {
+          setEditMode(true);
+        } else {
+          requestUpdate();
+        }
+      });
       return;
     }
     // Swipe the grid to the next or previous page, like a phone's home screen.
     const auto swipe = mappedInput.wasSwipe();
     if (swipe == MappedInputManager::SwipeDir::Left || swipe == MappedInputManager::SwipeDir::Right) {
       const int offset = getHomeMenuSelectionOffset(recentBooks);
-      const int pages = VegaTheme::pageCount(getMenuItemCount() - offset);
+      const vegahome::Plan plan = vegahome::plan(renderer, vegaGreetingHeight(renderer));
+      const int pages = plan.pageCount(getMenuItemCount() - offset);
       const int page = std::clamp(homePage + (swipe == MappedInputManager::SwipeDir::Left ? 1 : -1), 0, pages - 1);
       if (page != homePage) {
         homePage = page;
         // A selected app moves along, so Confirm never opens one that is off screen.
-        if (selectorIndex >= offset) selectorIndex = offset + page * VegaTheme::pageSize();
+        if (selectorIndex >= offset) selectorIndex = offset + plan.firstOn(page);
         requestUpdate();
       }
       return;
@@ -2141,6 +2227,28 @@ void HomeActivity::loop() {
     };
     auto handleTouch = [&](const bool activate) {
       int touchedBookIndex = -1;
+      // Vega's widgets other than the current book: a recent book's cover, the clock and calendar, the streak.
+      if (homeListsApps() && activate && mappedInput.wasCoverTapped(touchedBookIndex) &&
+          touchedBookIndex >= vegahome::kTouchRecentBook) {
+        const int book = touchedBookIndex - vegahome::kTouchRecentBook;
+        if (touchedBookIndex == vegahome::kTouchClock) {
+          onAppOpen(apps::Clock);
+        } else if (touchedBookIndex == vegahome::kTouchStats) {
+          onReadingStatsOpen();
+        } else if (touchedBookIndex == vegahome::kTouchUpNext) {
+          if (!upNextPath.empty()) onSelectBook(upNextPath);
+        } else if (touchedBookIndex == vegahome::kTouchSaved) {
+          onSavedItemsOpen();
+        } else if (touchedBookIndex == vegahome::kTouchBattery) {
+#if NEUINK_BATTERY_HISTORY
+          startActivityForResult(std::make_unique<BatteryActivity>(renderer, mappedInput),
+                                 [this](const ActivityResult&) { requestUpdate(); });
+#endif
+        } else if (book < static_cast<int>(recentBooks.size())) {
+          onSelectBook(recentBooks[book].path);
+        }
+        return true;
+      }
       if (activate ? mappedInput.wasCoverTapped(touchedBookIndex) : mappedInput.wasCoverTouchedDown(touchedBookIndex)) {
         if (touchedBookIndex < 0 || touchedBookIndex >= visibleBookCount) return false;
         const int previousSelectorIndex = selectorIndex;
@@ -2276,7 +2384,9 @@ void HomeActivity::render(RenderLock&&) {
     if (quietPass) return;
     if (homeListsApps()) {
       // Vega's gray areas ghost under fast refreshes: a cleaner one after every few of them.
-      if (initialRefreshMode == HalDisplay::FAST_REFRESH && ++fastRefreshesSinceClean > kFastRefreshesBetweenClean) {
+      // Not in edit mode: moving things there is many small changes, and leaving it is one clean refresh.
+      if (initialRefreshMode == HalDisplay::FAST_REFRESH && !editMode &&
+          ++fastRefreshesSinceClean > kFastRefreshesBetweenClean) {
         initialRefreshMode = HalDisplay::HALF_REFRESH;
       }
       if (initialRefreshMode != HalDisplay::FAST_REFRESH) fastRefreshesSinceClean = 0;
@@ -2308,6 +2418,11 @@ void HomeActivity::render(RenderLock&&) {
       visibleUpdatePending.store(false);
       requestQuietPass();
     }
+  }
+
+  if (homeListsApps()) {
+    renderVega(displayHomeBuffer);
+    return;
   }
 
   if (coverGridUi) {
@@ -2491,8 +2606,7 @@ void HomeActivity::render(RenderLock&&) {
   coverRectW = pageWidth;
   coverRectH = homeCoverTileHeight;
 
-  // Vega (touch): nothing is selected unless the buttons are in use; a pressed icon is lit.
-  const int shownSelector = homeListsApps() && !mappedInput.buttonsInUse() ? pressedSelector : selectorIndex;
+  const int shownSelector = selectorIndex;
   GUI.drawRecentBookCover(renderer, Rect{0, metrics.homeTopPadding, pageWidth, homeCoverTileHeight}, recentBooks,
                           shownSelector, coverRendered, coverBufferStored, bufferRestored,
                           std::bind(&HomeActivity::storeCoverBuffer, this),
@@ -2507,20 +2621,13 @@ void HomeActivity::render(RenderLock&&) {
   const int menuSelectedIndex = isCarouselTheme && mappedInput.hasTouchHardware()
                                     ? carouselMenuTouchDownIndex
                                     : shownSelector - getHomeMenuSelectionOffset(recentBooks);
-  if (homeListsApps()) {
-    // The grid shows the page of the selected app; with the book selected it stays where it is.
-    const int pageIndex = selectorIndex - getHomeMenuSelectionOffset(recentBooks);
-    if (pageIndex >= 0) homePage = VegaTheme::pageOf(pageIndex);
-    homePage = std::clamp(homePage, 0, std::max(0, VegaTheme::pageCount(getMenuItemCount() - getHomeMenuSelectionOffset(recentBooks)) - 1));
-    VegaTheme::setHomePage(homePage);
-  }
   GUI.drawButtonMenu(
       renderer, Rect{0, menuStartY, pageWidth, menuHeight}, static_cast<int>(menuItems.size()), menuSelectedIndex,
       [&menuItems](int index) { return menuItems[index].label; },
       [&menuItems](int index) { return menuItems[index].icon; });
 
   const char* readLabel = recentBooks.empty() ? "" : tr(STR_READ);
-  const auto labels = isCarouselTheme || homeListsApps()
+  const auto labels = isCarouselTheme
                           ? mappedInput.mapLabels(readLabel, tr(STR_SELECT), tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT))
                           : mappedInput.mapLabels(readLabel, tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -2622,4 +2729,349 @@ void HomeActivity::onAppOpen(const uint8_t appId) {
 void HomeActivity::onAppsOpen() {
   startActivityForResult(std::make_unique<AppsActivity>(renderer, mappedInput),
                          [this](const ActivityResult&) { requestUpdate(); });
+}
+
+// ---------------------------------------------------------------------------
+// Vega: widgets over the app grid, and its edit mode.
+// ---------------------------------------------------------------------------
+
+namespace {
+constexpr int kEditDragSlop = 20;  // px a press must travel to be a drag, not a tap
+constexpr int kEditButtonHeight = 44;
+
+// The edit bar over Home's status bar: Add widget on the left, Done on the right.
+void editBarRects(const GfxRenderer& renderer, Rect& add, Rect& done) {
+  const auto& metrics = VegaMetrics::values;
+  const int y = metrics.topPadding + (metrics.homeTopPadding - metrics.topPadding - kEditButtonHeight) / 2;
+  const int doneW = std::max(110, renderer.getTextWidth(UI_10_FONT_ID, tr(STR_DONE), EpdFontFamily::BOLD) + 44);
+  const int addW = renderer.getTextWidth(UI_10_FONT_ID, tr(STR_ADD_WIDGET), EpdFontFamily::BOLD) + 74;
+  add = Rect{metrics.contentSidePadding, y, addW, kEditButtonHeight};
+  done = Rect{renderer.getScreenWidth() - metrics.contentSidePadding - doneW, y, doneW, kEditButtonHeight};
+}
+
+void drawEditBar(const GfxRenderer& renderer) {
+  Rect add;
+  Rect done;
+  editBarRects(renderer, add, done);
+  const int textY = add.y + (kEditButtonHeight - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
+  renderer.fillRoundedRect(add.x, add.y, add.width, add.height, kEditButtonHeight / 2, Color::LightGray);
+  drawLucideIcon(renderer, icon_cc_plus_24, add.x + 16, add.y + (kEditButtonHeight - 24) / 2);
+  renderer.drawText(UI_10_FONT_ID, add.x + 50, textY, tr(STR_ADD_WIDGET), true, EpdFontFamily::BOLD);
+  renderer.fillRoundedRect(done.x, done.y, done.width, done.height, kEditButtonHeight / 2, Color::Black);
+  renderer.drawText(UI_10_FONT_ID,
+                    done.x + (done.width - renderer.getTextWidth(UI_10_FONT_ID, tr(STR_DONE), EpdFontFamily::BOLD)) / 2,
+                    textY, tr(STR_DONE), false, EpdFontFamily::BOLD);
+}
+
+bool rectContains(const Rect& rect, const int x, const int y) {
+  return x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;
+}
+
+// Changes to these redraw the widgets' snapshot (the cards and covers).
+uint32_t widgetLayoutKey(const int greetingHeight, const vegahome::Plan& plan) {
+  uint32_t hash = 2166136261u;
+  const auto mix = [&hash](const uint32_t value) { hash = (hash ^ value) * 16777619u; };
+  mix(static_cast<uint32_t>(greetingHeight));
+  mix(static_cast<uint32_t>(plan.unitHeight));
+  mix(SETTINGS.homeWidgetCount);
+  for (int i = 0; i < SETTINGS.homeWidgetCount; ++i) {
+    const auto& w = SETTINGS.homeWidgets[i];
+    mix(w.type | w.size << 8 | w.flags << 16);
+  }
+  return hash;
+}
+}  // namespace
+
+void HomeActivity::loadVegaWidgetData() {
+  // Only what a widget shown needs, and each once a visit (a panel's live preview asks on every pass).
+  if (vegahome::hasWidget(vegahome::RecentBooks) && !bookStatsCached) loadAllBookStats();
+  if (vegahome::hasWidget(vegahome::Calendar) && !clockOptionsLoaded) {
+    clockOptionsLoaded = true;
+    clockface::Options options;
+    clockface::loadOptions(options);
+    clockWeekStart = options.weekStart;
+  }
+  if (vegahome::hasWidget(vegahome::UpNext) && !upNextLoaded) {
+    // The next in the current book's series (the end-of-book offer's lookup), else the next book in its folder.
+    upNextLoaded = true;
+    upNextPath.clear();
+    upNextTitle.clear();
+    upNextDetail.clear();
+    if (!recentBooks.empty()) {
+      const std::string& current = recentBooks.front().path;
+      NextBookFinder::SeriesNext next;
+      if (NextBookFinder::findNextInSeries(current, next)) {
+        upNextPath = next.path;
+        upNextTitle = next.title;
+        char detail[96];
+        snprintf(detail, sizeof(detail), tr(STR_WIDGET_SERIES_FORMAT), next.series.c_str(), next.position.c_str());
+        upNextDetail = detail;
+      } else {
+        const auto files = NextBookFinder::findNextBooks(current, 1);
+        if (!files.empty()) {
+          const size_t slash = current.find_last_of('/');
+          upNextPath = (slash == std::string::npos ? std::string() : current.substr(0, slash)) + "/" + files.front();
+          const size_t dot = files.front().find_last_of('.');
+          upNextTitle = dot == std::string::npos ? files.front() : files.front().substr(0, dot);
+          upNextDetail = tr(STR_WIDGET_NEXT_IN_FOLDER);
+        }
+      }
+    }
+  }
+  if (vegahome::hasWidget(vegahome::Highlight) && !highlightLoaded) {
+    // A saved highlight that changes once a day: a book and one of its highlights picked by the day.
+    highlightLoaded = true;
+    highlightText.clear();
+    highlightSource.clear();
+    std::vector<ClippedBookEntry> books;
+    if (ClippingStore::getAllClippedBooks(books) && !books.empty()) {
+      ReadingStatsDateTime today;
+      const uint32_t day = getCurrentLocalReadingStatsDateTime(today) ? readingStatsDayIndex(today.date) : 0;
+      const ClippedBookEntry& book = books[day % books.size()];
+      ClippingStore& store = ClippingStore::getInstance();
+      if (store.loadForBook(book.bookPath, book.bookTitle, book.bookAuthor, book.bookType)) {
+        if (store.clippingCount() > 0) {
+          store.readClippingPreview((day * 7 + 3) % store.clippingCount(), highlightText);
+          highlightSource = book.bookTitle;
+        }
+        store.unload();
+      }
+    }
+  }
+}
+
+uint8_t HomeActivity::pendingIntro() const {
+  if (!mappedInput.hasTouchHardware()) return 0;  // they explain touch gestures
+  const uint8_t bit = editMode ? vegahome::IntroEdit : vegahome::IntroHome;
+  return (SETTINGS.homeIntroSeen & bit) != 0 ? 0 : bit;
+}
+
+void HomeActivity::setEditMode(const bool on) {
+  editMode = on;
+  editTouchActive = false;
+  editHeldKind = vegahome::Hit::None;
+  editHeldIndex = -1;
+  pressedSelector = -1;
+  if (!on) {
+    SETTINGS.saveToFile();
+    // Edit mode only refreshes fast: one clean refresh clears what it ghosted.
+    initialRefreshMode = HalDisplay::HALF_REFRESH;
+  }
+  requestUpdate();
+}
+
+void HomeActivity::openWidgetPanel(HomeWidgetActivity::Target target, const Rect& edited) {
+  // A panel over the lower half would hide what it edits: it hangs from the top then.
+  target.atTop = edited.height > 0 && edited.y + edited.height / 2 > renderer.getScreenHeight() / 2;
+  auto panel = std::make_unique<HomeWidgetActivity>(renderer, mappedInput, target);
+  panel->setBackdrop([this] {
+    loadVegaWidgetData();
+    renderVega(nullptr);
+  });
+  // Home under the panel is already up to date (the live preview): a fast refresh is enough when it closes.
+  startActivityForResult(std::move(panel), [this](const ActivityResult&) {
+    homeHiddenApps = apps::hiddenMask();
+    loadVegaWidgetData();
+    requestUpdate();
+  });
+}
+
+bool HomeActivity::loopVegaEdit() {
+  if (mappedInput.wasReleased(MappedInputManager::Button::Back) ||
+      mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+    setEditMode(false);
+    return true;
+  }
+  const vegahome::Plan plan = vegahome::plan(renderer, vegaGreetingHeight(renderer));
+  const auto menuItems = buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings, false);
+  const int entries = menuItems.size();
+  const int pages = plan.pageCount(entries);
+
+  int x = 0;
+  int y = 0;
+  if (mappedInput.wasScreenTouchDown(x, y)) {
+    editTouchActive = true;
+    editStartX = editLastX = x;
+    editStartY = editLastY = y;
+    const vegahome::Hit hit = vegahome::hitTest(plan, homePage, entries, x, y);
+    editHeldKind = hit.kind;
+    editHeldIndex = hit.index;
+    // What is held shows black (an entry) or strongly outlined (a widget) until it is dropped.
+    if (hit.kind != vegahome::Hit::None) requestUpdate();
+  }
+  if (!editTouchActive) return true;
+  if (mappedInput.isScreenTouchHeld(x, y)) {
+    editLastX = x;
+    editLastY = y;
+  }
+  if (!mappedInput.wasScreenTouchReleased()) return true;
+
+  editTouchActive = false;
+  const uint8_t kind = editHeldKind;
+  const int index = editHeldIndex;
+  editHeldKind = vegahome::Hit::None;
+  editHeldIndex = -1;
+  const int dx = editLastX - editStartX;
+  const int dy = editLastY - editStartY;
+  requestUpdate();
+
+  if (std::abs(dx) < kEditDragSlop && std::abs(dy) < kEditDragSlop) {
+    Rect add;
+    Rect done;
+    editBarRects(renderer, add, done);
+    HomeWidgetActivity::Target target;
+    if (rectContains(done, editStartX, editStartY)) {
+      setEditMode(false);
+    } else if (rectContains(add, editStartX, editStartY)) {
+      openWidgetPanel(target, Rect{});
+    } else if (kind == vegahome::Hit::Widget) {
+      target.kind = HomeWidgetActivity::Target::Widget;
+      target.widget = index;
+      vegahome::Place places[CrossPointSettings::HOME_WIDGET_MAX];
+      vegahome::pack(SETTINGS.homeWidgets, SETTINGS.homeWidgetCount, places);
+      openWidgetPanel(target, plan.widgetRect(places[index], SETTINGS.homeWidgets[index].size));
+    } else if (kind == vegahome::Hit::Entry) {
+      // An icon: whether it shows on Home.
+      target.kind = HomeWidgetActivity::Target::Entry;
+      target.key = homeEntryKey(menuItems[index]);
+      target.label = menuItems[index].label;
+      target.icon = menuItems[index].icon;
+      openWidgetPanel(target, plan.cellRect(homePage, index - plan.firstOn(homePage)));
+    }
+    return true;
+  }
+
+  if (kind == vegahome::Hit::None) {
+    // A swipe over empty space turns the page.
+    if (std::abs(dx) > std::abs(dy)) homePage = std::clamp(homePage + (dx < 0 ? 1 : -1), 0, pages - 1);
+    return true;
+  }
+
+  const vegahome::Hit drop = vegahome::hitTest(plan, homePage, entries, editLastX, editLastY);
+  if (kind == vegahome::Hit::Widget) {
+    if (drop.kind == vegahome::Hit::Widget) vegahome::moveWidget(index, drop.index);
+    return true;
+  }
+
+  // An entry: onto another one, to the side for the next or previous page, or past the last one.
+  int target = -1;
+  if (editLastX < vegahome::kPageEdge && homePage > 0) {
+    target = plan.firstOn(homePage) - 1;
+    --homePage;
+  } else if (editLastX >= renderer.getScreenWidth() - vegahome::kPageEdge && homePage < pages - 1) {
+    target = std::min(entries - 1, plan.firstOn(homePage + 1));
+    homePage = std::min(homePage + 1, pages - 1);
+  } else if (drop.kind == vegahome::Hit::Entry) {
+    target = drop.index;
+  } else if (drop.kind == vegahome::Hit::None && homePage == pages - 1) {
+    target = entries - 1;
+  }
+  if (target >= 0 && target != index) {
+    std::vector<uint8_t> keys;
+    keys.reserve(entries);
+    for (int i = 0; i < entries; ++i) keys.push_back(homeEntryKey(menuItems[i]));
+    vegahome::moveEntry(keys, index, target);
+  }
+  return true;
+}
+
+void HomeActivity::renderVega(const std::function<void()>& display) {
+  // A first visit: the introduction instead of Home, until it is confirmed.
+  if (display && pendingIntro() != 0) {
+    vegahome::drawIntro(renderer, static_cast<vegahome::Intro>(pendingIntro()));
+    display();
+    return;
+  }
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const int pageWidth = renderer.getScreenWidth();
+  const int greetingHeight = vegaGreetingHeight(renderer);
+  const vegahome::Plan plan = vegahome::plan(renderer, greetingHeight);
+  const auto menuItems = buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings, false);
+  const int entries = menuItems.size();
+  const int offset = getHomeMenuSelectionOffset(recentBooks);
+  const bool buttons = mappedInput.buttonsInUse() && !editMode;
+
+  // With the buttons, the page follows the selection; a touch turns it with a swipe.
+  if (buttons) homePage = selectorIndex >= offset ? plan.pageOf(selectorIndex - offset) : 0;
+  homePage = std::clamp(homePage, 0, plan.pageCount(entries) - 1);
+
+  const uint32_t layoutKey = widgetLayoutKey(greetingHeight, plan);
+  if (layoutKey != coverLayoutKey) {
+    invalidateCoverCache();
+    coverLayoutKey = layoutKey;
+  }
+
+  renderer.clearScreen();
+  const bool widgetsShown = homePage == 0 && SETTINGS.homeWidgetCount > 0;
+  bool restored = false;
+  if (widgetsShown) {
+    // The snapshot is the widget band: the cards and covers, without what changes.
+    coverRectX = 0;
+    coverRectY = plan.widgetTop;
+    coverRectW = pageWidth;
+    coverRectH = plan.widgetRows * (plan.unitHeight + plan.gap);
+    restored = coverBufferStored && restoreCoverBuffer();
+  }
+
+  if (editMode) {
+    drawEditBar(renderer);
+  } else {
+    GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.homeTopPadding}, nullptr);
+  }
+  if (homePage == 0) {
+    static_cast<const VegaTheme&>(GUI).drawGreeting(renderer, Rect{0, metrics.homeTopPadding, pageWidth, 0});
+  }
+
+  if (widgetsShown) {
+    vegahome::Data data;
+    data.books = &recentBooks;
+    data.progress = cachedBookProgress.data();
+    data.progressCount = bookStatsCached ? std::min(kMaxCachedBooks, static_cast<int>(recentBooks.size())) : 0;
+    data.stats = hasAnyBookStats(currentBookStats) ? &currentBookStats : nullptr;
+    data.progressPercent = currentBookProgressPercent;
+    data.global = &globalStats;
+    data.weekStart = clockWeekStart;
+    data.upNextTitle = &upNextTitle;
+    data.upNextDetail = &upNextDetail;
+    data.highlightText = &highlightText;
+    data.highlightSource = &highlightSource;
+    // Vega lights the selection only while the buttons are used, a pressed item otherwise.
+    data.selected = offset > 0 && (buttons ? selectorIndex == 0 : pressedSelector == 0);
+    data.editing = editMode;
+    data.picked = editHeldKind == vegahome::Hit::Widget ? editHeldIndex : -1;
+    if (!restored) {
+      vegahome::drawWidgetBackgrounds(renderer, plan, data);
+      coverBufferStored = storeCoverBuffer();
+      coverRendered = coverBufferStored;
+    }
+    vegahome::drawWidgetContents(renderer, plan, data);
+  }
+  // An icon held in edit mode: the bars at the sides it can be dropped on for the other pages.
+  if (editMode && editHeldKind == vegahome::Hit::Entry) {
+    vegahome::drawPageEdges(renderer, plan, homePage, homePage > 0, homePage < plan.pageCount(entries) - 1);
+  }
+
+  int highlighted = -1;
+  if (editMode) {
+    highlighted = editHeldKind == vegahome::Hit::Entry ? editHeldIndex : -1;
+  } else {
+    const int shown = buttons ? selectorIndex : pressedSelector;
+    highlighted = shown >= offset ? shown - offset : -1;
+  }
+  vegahome::drawGrid(
+      renderer, plan, homePage, entries, highlighted, [&menuItems](const int i) { return menuItems[i].label; },
+      [&menuItems](const int i) { return menuItems[i].icon; }, editMode);
+
+  const auto labels = mappedInput.mapLabels(recentBooks.empty() ? "" : tr(STR_READ), tr(STR_SELECT),
+                                            tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  // Without `display`, Home is only the picture behind a panel (PanelActivity::setBackdrop).
+  if (!display) return;
+  display();
+
+  firstRenderDone = true;
+  if (!recentsLoaded && !recentsLoading) {
+    recentsLoading = true;
+    loadRecentCovers(metrics.homeCoverHeight);
+  }
 }
