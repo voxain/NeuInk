@@ -13,7 +13,8 @@
 
 namespace {
 
-// The worker task and the numbers it fills in outlive any page.
+// The worker task and the numbers it fills in outlive any page. The scan runs on core 1, the one the screen is drawn
+// from, which is idle between frames: the main loop and the touch input on core 0 keep their whole core.
 GameThinker thinker;
 StorageScan::Result scanResult;
 
@@ -95,7 +96,7 @@ void scan(void*) {
 namespace StorageScan {
 
 void start() {
-  if (!Storage.ready() || !thinker.start(&scan, nullptr, 0)) LOG_ERR("STORAGE", "Could not start the scan");
+  if (!Storage.ready() || !thinker.start(&scan, nullptr, 0, portNUM_PROCESSORS > 1 ? 1 : tskNO_AFFINITY)) LOG_ERR("STORAGE", "Could not start the scan");
 }
 bool running() { return thinker.running(); }
 bool takeFinished() { return thinker.takeFinished(); }

@@ -1,9 +1,11 @@
 #include "StorageActivity.h"
 
+#include <Arduino.h>
 #include <HalStorage.h>
 #include <I18n.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 #include "MappedInputManager.h"
@@ -18,10 +20,12 @@
 namespace {
 constexpr int kSide = 16;
 constexpr int kBarHeight = 56;
+constexpr int kBarRadius = 16;
 constexpr int kBorder = 2;
 constexpr int kRowHeight = 44;
 constexpr int kRowGap = 6;
 constexpr int kSwatch = 26;
+constexpr unsigned long kSpinMs = 600;
 
 // A category in the legend: its name, icon and the gray it is in the bar. The card only has four grays, so two
 // categories share one; they never sit next to each other in the bar.
@@ -59,6 +63,11 @@ void StorageActivity::loop() {
     if (!StorageScan::result().complete) StorageScan::start();
     requestUpdate();
   }
+  // A turn of the spinner while it scans: a frame every so often, the panel cannot do more.
+  if (StorageScan::running() && millis() - lastSpinMs >= kSpinMs) {
+    lastSpinMs = millis();
+    requestUpdate();
+  }
   if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     finish();
@@ -81,19 +90,18 @@ void StorageActivity::render(RenderLock&&) {
   renderer.drawText(UI_10_FONT_ID, kSide, y + bigHeight, text, true);
   y += bigHeight + renderer.getLineHeight(UI_10_FONT_ID) + 20;
 
-  // The bar: an outlined track, the categories in it in their grays side by side, a white line between them. The
-  // ends are round; while scanning the track is gray with the spinner on it.
+  // The bar: the categories side by side in their grays with a white line between them, the track's corners cut
+  // round, then its outline. While scanning the track is gray with the spinner on it, turned a quarter further
+  // with every frame.
   const int barWidth = width - 2 * kSide;
-  const int radius = kBarHeight / 2;
-  renderer.fillRoundedRect(kSide, y, barWidth, kBarHeight, radius, scanning ? Color::LightGray : Color::White);
-  renderer.drawRoundedRect(kSide, y, barWidth, kBarHeight, kBorder, radius, true);
   if (scanning) {
-    drawLucideIcon(renderer, icon_loader_32, kSide + (barWidth - 32) / 2, y + (kBarHeight - 32) / 2);
+    renderer.fillRoundedRect(kSide, y, barWidth, kBarHeight, kBarRadius, Color::LightGray);
+    drawLucideIcon(renderer, icon_loader_32, kSide + (barWidth - 32) / 2, y + (kBarHeight - 32) / 2, true,
+                   static_cast<freeink::ui::Rotation>(spinStep++ % 4));
   } else if (total > 0) {
     const int innerX = kSide + kBorder;
     const int innerWidth = barWidth - 2 * kBorder;
     const int innerHeight = kBarHeight - 2 * kBorder;
-    const int innerRadius = innerHeight / 2;
     uint64_t before = 0;
     int last = -1;
     for (int i = 0; i < StorageScan::kCategories; ++i) {
@@ -102,15 +110,22 @@ void StorageActivity::render(RenderLock&&) {
     for (int i = 0; i < StorageScan::kCategories; ++i) {
       if (scan.bytes[i] == 0) continue;
       const int from = static_cast<int>(before * innerWidth / total);
-      const bool first = before == 0;
       before += scan.bytes[i];
-      const int to = std::max(from + 3, static_cast<int>(before * innerWidth / total));  // a sliver stays visible
-      const bool reachesEnd = i == last && before >= total;
-      renderer.fillRoundedRect(innerX + from, y + kBorder, std::min(to, innerWidth) - from, innerHeight, innerRadius,
-                               first, reachesEnd, first, reachesEnd, kEntries[i].gray);
-      if (i != last) renderer.fillRect(innerX + std::min(to, innerWidth) - 1, y + kBorder, 2, innerHeight, false);
+      const int to = std::min(innerWidth, std::max(from + 3, static_cast<int>(before * innerWidth / total)));
+      renderer.fillRectDither(innerX + from, y + kBorder, to - from, innerHeight, kEntries[i].gray);
+      if (i != last) renderer.fillRect(innerX + to - 1, y + kBorder, 2, innerHeight, false);
+    }
+    // Flat segments overflow the track's round corners: paint what lies outside the curve white again.
+    for (int row = 0; row < kBarRadius; ++row) {
+      const double dy = kBarRadius - row - 0.5;
+      const int cut = static_cast<int>(std::ceil(kBarRadius - std::sqrt(kBarRadius * kBarRadius - dy * dy)));
+      for (const int top : {y + row, y + kBarHeight - 1 - row}) {
+        renderer.fillRect(kSide, top, cut, 1, false);
+        renderer.fillRect(kSide + barWidth - cut, top, cut, 1, false);
+      }
     }
   }
+  renderer.drawRoundedRect(kSide, y, barWidth, kBarHeight, kBorder, kBarRadius, true);
   y += kBarHeight + 22;
 
   // One gray row per category: its gray, icon, name and size ("--" until known), and what is left free.

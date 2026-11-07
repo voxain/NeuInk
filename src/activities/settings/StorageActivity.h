@@ -12,4 +12,8 @@ class StorageActivity final : public Activity {
   void onExit() override;
   void loop() override;
   void render(RenderLock&&) override;
+
+ private:
+  unsigned long lastSpinMs = 0;
+  uint8_t spinStep = 0;
 };

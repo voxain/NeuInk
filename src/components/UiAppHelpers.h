@@ -107,12 +107,13 @@ inline freeink::ui::StyleSet grayButtonStyles() {
 // Legacy GfxRenderer icon arrays are pre-rotated. Render SDK Lucide assets through
 // its adapter instead so the same bitmap remains correct in every orientation.
 inline void drawLucideIcon(const GfxRenderer& renderer, const freeink::Icon& icon, const int x, const int y,
-                           const bool foregroundBlack = true) {
+                           const bool foregroundBlack = true,
+                           const freeink::ui::Rotation rotation = freeink::ui::Rotation::None) {
   freeink::ui::GfxRendererTarget target(renderer);
   target.bitmap(freeink::ui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(icon.w),
                                   static_cast<int16_t>(icon.h)},
                 freeink::ui::bitmapFromIcon(icon), freeink::ui::BitmapMode::Center,
-                freeink::ui::Paint::solid(foregroundBlack ? freeink::ui::Color::Black : freeink::ui::Color::White));
+                freeink::ui::Paint::solid(foregroundBlack ? freeink::ui::Color::Black : freeink::ui::Color::White), rotation);
 }
 
 // Scroll semantics shared by every FreeInkUI list screen: swipes move the
