@@ -1,3 +1,4 @@
+#include "util/UsageSnapshot.h"
 #include "SdFirmwareUpdateActivity.h"
 
 #include <Arduino.h>
@@ -187,6 +188,9 @@ void SdFirmwareUpdateActivity::performUpdate() {
   }
   requestUpdateAndWait();
   delay(1500);
+#if NEUINK_BATTERY_HISTORY
+  UsageSnapshot::save();  // the new firmware may lay RTC memory out differently, or a flash may wipe it
+#endif
   ESP.restart();
 }
 

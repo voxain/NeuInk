@@ -10,7 +10,7 @@
 #ifndef SIMULATOR
 #include <esp_attr.h>
 #else
-#define RTC_DATA_ATTR
+#define RTC_NOINIT_ATTR
 #endif
 
 namespace {
@@ -21,7 +21,9 @@ struct History {
   uint32_t newest;  // the bucket (minutes since day 0 / kBucketMinutes) of the latest sample
   uint8_t levels[BatteryHistory::kBuckets];
 };
-RTC_DATA_ATTR History history;
+// RTC_NOINIT, not RTC_DATA: plain RTC data is set to its initial value again on a software reset (an update, a Wi-Fi
+// session's restart); only deep sleep keeps it. The magic tells a valid copy from the garbage of a power-on.
+RTC_NOINIT_ATTR History history;
 
 // The current bucket, from the local clock; false while there is none.
 bool currentBucket(uint32_t& bucket) {
@@ -62,7 +64,11 @@ void note(const uint16_t percent) {
 
 static_assert(sizeof(History) == kStateSize, "History is the file's layout");
 
-void saveState(uint8_t (&out)[kStateSize]) { memcpy(out, &history, kStateSize); }
+bool saveState(uint8_t (&out)[kStateSize]) {
+  if (history.magic != kMagic) return false;
+  memcpy(out, &history, kStateSize);
+  return true;
+}
 
 bool restoreState(const uint8_t (&in)[kStateSize]) {
   if (history.magic == kMagic) return false;

@@ -30,9 +30,12 @@ void save() {
   const Header header{kMagic, static_cast<uint16_t>(BatteryHistory::kStateSize), static_cast<uint16_t>(usageSize)};
   memcpy(data.data(), &header, sizeof(header));
   uint8_t history[BatteryHistory::kStateSize];
-  BatteryHistory::saveState(history);
+  // Never overwrite a good file with an empty or garbage copy.
+  if (!BatteryHistory::saveState(history) ||
+      !AppUsage::saveState(data.data() + sizeof(header) + sizeof(history))) {
+    return;
+  }
   memcpy(data.data() + sizeof(header), history, sizeof(history));
-  AppUsage::saveState(data.data() + sizeof(header) + sizeof(history));
 
   HalFile file;
   if (!Storage.openFileForWrite(kTag, kPath, file)) {

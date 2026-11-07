@@ -12,7 +12,7 @@
 #ifndef SIMULATOR
 #include <esp_attr.h>
 #else
-#define RTC_DATA_ATTR
+#define RTC_NOINIT_ATTR
 #endif
 
 namespace {
@@ -25,7 +25,8 @@ struct Totals {
   uint32_t measured[AppUsage::kDays][AppUsage::kSlots];  // seconds a charge loss was measured over
   uint16_t drain[AppUsage::kDays][AppUsage::kSlots];     // percent lost in them
 };
-RTC_DATA_ATTR Totals totals;
+// RTC_NOINIT, not RTC_DATA: see BatteryHistory.cpp. The magic tells a valid copy from power-on garbage.
+RTC_NOINIT_ATTR Totals totals;
 
 // The visit in progress (not kept over a reset: a screen never outlives one).
 uint8_t runningId = 0;
@@ -93,7 +94,11 @@ void exit(const std::string& activityName) {
 
 size_t stateSize() { return sizeof(totals); }
 
-void saveState(uint8_t* out) { memcpy(out, &totals, sizeof(totals)); }
+bool saveState(uint8_t* out) {
+  if (totals.magic != kMagic) return false;
+  memcpy(out, &totals, sizeof(totals));
+  return true;
+}
 
 bool restoreState(const uint8_t* in) {
   if (totals.magic == kMagic) return false;

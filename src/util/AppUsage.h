@@ -32,7 +32,7 @@ constexpr uint8_t kSlots = kReader + 1;
 
 // The totals as bytes, for UsageSnapshot's file (see BatteryHistory::saveState).
 size_t stateSize();
-void saveState(uint8_t* out);
+bool saveState(uint8_t* out);  // false while RTC memory holds nothing valid
 bool restoreState(const uint8_t* in);
 
 // A gauge read of `percent`, now.

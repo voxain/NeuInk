@@ -25,7 +25,7 @@ constexpr uint8_t kNone = 0xFF;                       // a bucket without a samp
 // The graph as bytes, for UsageSnapshot's file: RTC memory does not survive everything (a power-off, an update).
 // restoreState() only takes them when RTC memory holds nothing of its own.
 constexpr size_t kStateSize = 8 + kBuckets;
-void saveState(uint8_t (&out)[kStateSize]);
+bool saveState(uint8_t (&out)[kStateSize]);  // false while RTC memory holds nothing valid
 bool restoreState(const uint8_t (&in)[kStateSize]);
 
 // Stores a level the gauge was just read at, in this bucket. Needs the clock; without one it does nothing.
