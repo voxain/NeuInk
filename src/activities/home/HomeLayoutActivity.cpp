@@ -18,7 +18,7 @@ constexpr freeink::ui::ActionId ACTION_NAMES = PanelActivity::ACTION_FIRST_CONTR
 constexpr freeink::ui::ActionId ACTION_GREETING = PanelActivity::ACTION_FIRST_CONTROL + 5;
 constexpr freeink::ui::ActionId ACTION_GRAY = PanelActivity::ACTION_FIRST_CONTROL + 6;
 
-enum Section { IconSize, Shape, Columns, Rows, Names, Greeting, TrueGray, kSectionCount };
+enum Section { IconSize, Shape, Grid, Names, Greeting, TrueGray, kSectionCount };
 
 // The options in the order shown, as the values stored in homeIconSize (0 = 32 px, the default).
 constexpr int kIconPx[] = {24, 32, 42, 48};
@@ -63,13 +63,14 @@ void HomeLayoutActivity::onExit() {
 int HomeLayoutActivity::sectionCount() const { return kSectionCount; }
 
 int HomeLayoutActivity::sectionHeight(const int section) const {
-  return section <= Shape ? panel::kLabelHeight + panel::kTileHeight + panel::kRowGap
-                          : panel::kControlHeight + panel::kRowGap / 2;
+  if (section <= Shape) return panel::kLabelHeight + panel::kTileHeight + panel::kRowGap;
+  if (section == Grid) return panel::kLabelHeight + panel::kControlHeight + panel::kRowGap;
+  return panel::kControlHeight + panel::kRowGap / 2;
 }
 
-// At most 60 % of the screen, so a tap above it (closing it) stays easy.
+// About two thirds of the screen: the icons, their shape and the grid together, and room above to tap it closed.
 int HomeLayoutActivity::maxContentHeight() const {
-  return renderer.getScreenHeight() * 6 / 10 - panel::kSide - topInset() - panel::kPad;
+  return renderer.getScreenHeight() * 65 / 100 - panel::kSide - topInset() - panel::kPad;
 }
 
 const freeink::Icon* HomeLayoutActivity::cornerIcon() const { return &icon_notes_24; }
@@ -101,14 +102,17 @@ void HomeLayoutActivity::buildSection(Screen& screen, const int section, const i
           [&](const int cx, const int top, const bool, const int i) { platePreview(renderer, cx, top, 49, i, 24); },
           [](const int i) { return I18N.get(kShapeLabel[i]); });
       break;
-    case Columns:
+    case Grid: {
+      // Columns and rows side by side: one is chosen with the other in view.
+      const int half = (width - 12) / 2;
+      panel::heading(renderer, x, y, tr(STR_HOME_COLUMNS), UI_10_FONT_ID);
+      panel::heading(renderer, x + half + 12, y, tr(STR_HOME_ROWS), UI_10_FONT_ID);
       snprintf(value, sizeof(value), "%d", SETTINGS.homeColumns);
-      panel::stepperRow(renderer, frame, x, y, width, tr(STR_HOME_COLUMNS), value, ACTION_COLUMNS, UI_10_FONT_ID);
-      break;
-    case Rows:
+      panel::stepper(renderer, frame, x, y + panel::kLabelHeight, half, value, ACTION_COLUMNS, UI_10_FONT_ID);
       snprintf(value, sizeof(value), "%d", SETTINGS.homeRows);
-      panel::stepperRow(renderer, frame, x, y, width, tr(STR_HOME_ROWS), value, ACTION_ROWS, UI_10_FONT_ID);
+      panel::stepper(renderer, frame, x + half + 12, y + panel::kLabelHeight, half, value, ACTION_ROWS, UI_10_FONT_ID);
       break;
+    }
     case Names:
       panel::toggleRow(renderer, frame, x, y, width, tr(STR_SHOW_NAMES), SETTINGS.homeShowNames != 0, ACTION_NAMES,
                        UI_10_FONT_ID);

@@ -144,7 +144,8 @@ void drawMonthGrid(const GfxRenderer& renderer, const Options& options, const Mo
   const int dayFontId = compact ? grid.dayFontId : UI_12_FONT_ID;
   for (int weekday = 0; weekday < 7; ++weekday) {
     char shortName[12];
-    leadingCharacters(weekdayName(weekday), compact ? 1 : 2, shortName, sizeof(shortName));
+    // Two letters as in the app, one where the columns are too narrow for them.
+    leadingCharacters(weekdayName(weekday), compact && cellWidth < 30 ? 1 : 2, shortName, sizeof(shortName));
     gameui::centredText(renderer, SMALL_FONT_ID,
                         {left + columnOf(weekday, options.weekStart) * cellWidth, grid.weekdayY, cellWidth, compact ? 18 : 24},
                         shortName, true, EpdFontFamily::BOLD);

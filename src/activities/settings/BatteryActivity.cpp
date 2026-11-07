@@ -95,12 +95,29 @@ void BatteryActivity::render(RenderLock&&) {
   renderer.drawText(UI_10_FONT_ID, kSide, y, tr(STR_BATTERY_LAST_24H), true, EpdFontFamily::BOLD);
   y += renderer.getLineHeight(UI_10_FONT_ID) + 10;
 
-  // The graph on a gray card: gridlines at 0, 50 and 100 %, the level as a line, a gap where the reader slept.
+  // The graph on a gray card: gridlines at 0, 50 and 100 %, the level as one line through the whole day, the time
+  // the reader was awake shaded darker under it (asleep, the line only joins the levels either side).
   renderer.fillRoundedRect(kSide, y, width - 2 * kSide, kCardHeight, 24, Color::LightGray);
   const int plotX = kSide + kCardPad + kAxisWidth;
   const int plotY = y + kCardPad;
   const int plotW = width - kSide - kCardPad - plotX;
   const int plotH = kCardHeight - 2 * kCardPad - kAxisHeight;
+  const int half = plotW / 2;
+  const auto levelY = [&](const float level) { return plotY + static_cast<int>(plotH * (100.0f - level) / 100.0f); };
+  if (haveLevels) {
+    constexpr int last = BatteryHistory::kBuckets - 1;
+    for (int i = 1; i <= last; ++i) {
+      if (levels[i - 1] == BatteryHistory::kNone || levels[i] == BatteryHistory::kNone) continue;
+      const int x0 = plotX + half * (i - 1) / last;
+      const int x1 = plotX + half * i / last;
+      const int y0 = levelY(levels[i - 1]);
+      const int y1 = levelY(levels[i]);
+      for (int x = x0; x < x1; ++x) {
+        const int top = y0 + (y1 - y0) * (x - x0) / std::max(1, x1 - x0);
+        renderer.fillRectDither(x, top, 1, plotY + plotH - top, Color::DarkGray);
+      }
+    }
+  }
   for (const int percent : {0, 50, 100}) {
     const int lineY = plotY + plotH * (100 - percent) / 100;
     renderer.drawLine(plotX, lineY, plotX + plotW, lineY, 2, false);
@@ -109,7 +126,6 @@ void BatteryActivity::render(RenderLock&&) {
                       lineY - renderer.getLineHeight(SMALL_FONT_ID) / 2, text, true);
   }
   // The left half is the last 24 hours, the right half the next 24: an estimate that continues the level's trend.
-  const int half = plotW / 2;
   const int middle = plotX + half;
   renderer.drawLine(middle, plotY, middle, plotY + plotH, 2, false);
   const int labelY = plotY + plotH + 8;
@@ -117,7 +133,6 @@ void BatteryActivity::render(RenderLock&&) {
   renderer.drawText(SMALL_FONT_ID, middle - renderer.getTextWidth(SMALL_FONT_ID, "0") / 2, labelY, "0", true);
   renderer.drawText(SMALL_FONT_ID, plotX + plotW - renderer.getTextWidth(SMALL_FONT_ID, "+24 h"), labelY, "+24 h", true);
 
-  const auto levelY = [&](const float level) { return plotY + static_cast<int>(plotH * (100.0f - level) / 100.0f); };
   if (haveLevels) {
     constexpr int last = BatteryHistory::kBuckets - 1;
     int previousX = 0;
@@ -126,10 +141,7 @@ void BatteryActivity::render(RenderLock&&) {
     int lastIndex = -1;
     int fitFrom = 0;  // the trend starts after the latest recharge
     for (int i = 0; i <= last; ++i) {
-      if (levels[i] == BatteryHistory::kNone) {
-        havePrevious = false;
-        continue;
-      }
+      if (levels[i] == BatteryHistory::kNone) continue;  // asleep: the line joins the levels either side
       if (lastIndex >= 0 && levels[i] > levels[lastIndex] + 1) fitFrom = i;
       const int px = plotX + half * i / last;
       const int py = levelY(levels[i]);

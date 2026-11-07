@@ -7,6 +7,7 @@
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
+#include "components/UiAppHelpers.h"
 
 namespace fui = freeink::ui;
 
@@ -138,6 +139,7 @@ void RowListActivity::buildListScreen(UiApp::ScreenType& screen) {
     const Row& row = rows[i];
     fui::ListItem item;
     item.label = row.label.c_str();
+    if (row.icon >= 0) item.icon = listIconFor(static_cast<UIIcon>(row.icon));
     if (!row.subtitle.empty()) {
       item.subtitle = row.subtitle.c_str();
       anySubtitle = true;

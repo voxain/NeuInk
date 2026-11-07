@@ -73,6 +73,22 @@ bool hasWidget(uint8_t type);
 
 // What a Home entry is in SETTINGS.homeOrder: its action, or 0x80 + the app's id for an app.
 constexpr uint8_t appKey(const uint8_t appId) { return static_cast<uint8_t>(0x80 | appId); }
+constexpr bool isAppKey(const uint8_t key) { return (key & 0x80) != 0; }
+
+// The Home entries that are not apps, as their keys (HomeActivity's HomeMenuAction values), in Home's default order;
+// the apps come between Saved and Settings.
+enum EntryKey : uint8_t { KeyFiles = 0, KeyLibrary = 2, KeyOpds = 3, KeyStats = 4, KeySaved = 5, KeySettings = 8 };
+struct EntryInfo {
+  uint8_t key;
+  StrId name;
+  UIIcon icon;
+};
+constexpr int kEntryCount = 6;
+extern const EntryInfo kEntries[kEntryCount];
+
+// Whether an entry or app is left off the Home grid (Settings > Apps, or edit mode), and switching that.
+bool entryHidden(uint8_t key);
+void setEntryHidden(uint8_t key, bool hidden);
 
 // The geometry of the Home pages.
 struct Plan {
@@ -146,6 +162,15 @@ struct Hit {
   int index = -1;
 };
 Hit hitTest(const Plan& plan, int page, int entries, int x, int y);
+
+// Edit mode: the bars at the screen's sides an entry is dropped on to move it to the previous or next page.
+constexpr int kPageEdge = 28;
+void drawPageEdges(const GfxRenderer& renderer, const Plan& plan, int page, bool previous, bool next);
+
+// The one-time introductions (bits of SETTINGS.homeIntroSeen): a full screen with its gestures and a button.
+enum Intro : uint8_t { IntroHome = 1, IntroEdit = 2 };
+void drawIntro(GfxRenderer& renderer, Intro intro);
+Rect introButton(const GfxRenderer& renderer);
 
 // Moves item `from` to where `to` is (both widgets or both entries); entries are written as their keys.
 void moveWidget(int from, int to);

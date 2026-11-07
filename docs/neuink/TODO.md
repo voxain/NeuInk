@@ -21,9 +21,10 @@ their performance or RAM cost on a device yet. Pick this up before the next rele
 
 - UI font: each face carries Hebrew, Arabic and IPA fallbacks, so the headers are larger than Inter's. Compare flash use,
   first-draw time and heap on the X4 Pro with the previous Inter build. The 8 px face is the one to check for legibility.
-- Greeting: on scalable builds it loads the whole Bitter family on demand (four faces in the PSRAM font workspace, which
-  the reader shares only when Bitter is its font). If that costs too much, set it in the reader's family or in the
-  largest built-in UI size instead; the choice is in `greetingFontId()` in `VegaTheme.cpp`.
+- Greeting: on scalable builds it opens one face, Bitter Bold at 22 pt (`scalableBuiltinDisplayFontId`). The whole
+  family it loaded before took so much of the shared font arena that SD-card reader fonts failed to load. Check on
+  a device that an installed font loads with the greeting on; if not, set the greeting in the largest built-in UI
+  size instead (`greetingFontId()` in `VegaTheme.cpp`).
 - If either is not worth it, `git revert` of the commit "Lexend Deca UI font, taller header status row, Vega greeting"
   brings back Inter (the Inter source fonts are still in `lib/EpdFont/builtinFonts/source/Inter`).
 

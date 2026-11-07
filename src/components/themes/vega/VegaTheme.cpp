@@ -27,14 +27,13 @@ namespace {
 constexpr int kHeaderIconSize = 24;
 constexpr int kGreetingGap = 10;  // above and below the greeting text
 
-// The greeting is set large, in Bitter. Scalable builds (X4 Pro) load the Bitter family on demand, the same one
-// the reader uses when Bitter is its font, and the largest scalable size is 22. Bitmap builds use their largest
-// built-in size (16), and LexendDeca where Bitter is not built in.
+// The greeting is set large, in Bitter Bold. Scalable builds (X4 Pro) open only that face at 22 pt: the whole
+// family in every reader size took so much of the font arena the reader shares that an SD-card font could no
+// longer load (the reader then fell back to Lexend Deca). Bitmap builds use their largest built-in size (16), and
+// LexendDeca where Bitter is not built in.
 int greetingFontId(GfxRenderer& renderer) {
 #if CROSSINK_SCALABLE_FONTS
-  const unsigned bitter = CrossPointSettings::BITTER;
-  ensureScalableBuiltinFamily(renderer, bitter);
-  return scalableBuiltinReaderFontId(bitter, 22);
+  return scalableBuiltinDisplayFontId(renderer, CrossPointSettings::BITTER, 1, 22);
 #elif CROSSINK_BUILTIN_BITTER
   (void)renderer;
   return BITTER_16_FONT_ID;

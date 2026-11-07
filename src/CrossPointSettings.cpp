@@ -491,6 +491,8 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   }
   JsonArray homeOrderJson = doc["homeOrder"].to<JsonArray>();
   for (int i = 0; i < homeOrderCount && i < HOME_ORDER_MAX; ++i) homeOrderJson.add(homeOrder[i]);
+  doc["homeHiddenEntries"] = homeHiddenEntries;
+  doc["homeIntroSeen"] = homeIntroSeen;
   doc["homeShowNames"] = homeShowNames;
   doc["homeGreeting"] = homeGreeting;
   doc["homeIconShape"] = homeIconShape;
@@ -717,6 +719,8 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc, bool importingCrossPoint
     if (homeOrderCount >= HOME_ORDER_MAX) break;
     homeOrder[homeOrderCount++] = key;
   }
+  homeHiddenEntries = doc["homeHiddenEntries"] | static_cast<uint16_t>(0);
+  homeIntroSeen = doc["homeIntroSeen"] | static_cast<uint8_t>(0);
   readLibraryChoice("homeShowNames", homeShowNames, 2);
   readLibraryChoice("homeGreeting", homeGreeting, 2);
   readLibraryChoice("homeIconShape", homeIconShape, 4);

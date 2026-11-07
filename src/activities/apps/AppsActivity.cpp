@@ -15,6 +15,7 @@
 #include "activities/settings/RowListActivity.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/homeIconSet.h"
+#include "components/themes/vega/VegaHome.h"
 #include "fontIds.h"
 
 namespace {
@@ -196,65 +197,74 @@ Row valueRow(std::string label, std::string value, std::function<void()> onTap) 
   return row;
 }
 
-std::unique_ptr<Activity> clockPage(GfxRenderer& renderer, MappedInputManager& input) {
-  return std::make_unique<LambdaRowList>(renderer, input, "ClockSettings", tr(STR_CLOCK_SETTINGS), [](std::vector<Row>& rows, RowListActivity&) {
-    clockface::Options options;
-    clockface::loadOptions(options);
-    const auto change = [](const std::function<void(clockface::Options&)>& edit) {
-      clockface::Options current;
-      clockface::loadOptions(current);
-      edit(current);
-      clockface::saveOptions(current);
-    };
-    const char* faces[clockface::kFaceCount] = {tr(STR_CLOCK_FACE_DIGITAL), tr(STR_CLOCK_FACE_ANALOG),
-                                                tr(STR_CLOCK_FACE_PERSIAN)};
-    // The weekdays are numbered from Monday.
-    const int firstDay = options.weekStart == clockface::Saturday ? 5 : (options.weekStart == clockface::Sunday ? 6 : 0);
-    rows.clear();
-    rows.push_back(valueRow(tr(STR_CLOCK_FACE), faces[options.shownFace()], [change] {
-      change([](clockface::Options& o) {
-        // The face with Persian days needs the Persian date on.
-        do {
-          o.face = static_cast<uint8_t>((o.face + 1) % clockface::kFaceCount);
-        } while (o.face == clockface::PersianDays && !o.persianDate);
-      });
-    }));
-    rows.push_back(toggleRow(tr(STR_CLOCK_PERSIAN_DATE), options.persianDate, [change] {
-      change([](clockface::Options& o) {
-        o.persianDate = !o.persianDate;
-        if (!o.persianDate && o.face == clockface::PersianDays) o.face = clockface::Digital;
-      });
-    }));
-    rows.push_back(valueRow(tr(STR_CLOCK_WEEK_START), clockface::weekdayName(firstDay), [change] {
-      change([](clockface::Options& o) { o.weekStart = static_cast<uint8_t>((o.weekStart + 1) % clockface::kWeekStartCount); });
-    }));
-    rows.push_back(toggleRow(tr(STR_CLOCK_WEEK_NUMBER), options.weekNumber, [change] {
-      change([](clockface::Options& o) { o.weekNumber = !o.weekNumber; });
-    }, tr(STR_CLOCK_FORMAT_NOTE)));
-  });
+// The Clock's options, under its switch on its page in Settings > Apps.
+void addClockRows(std::vector<Row>& rows) {
+  clockface::Options options;
+  clockface::loadOptions(options);
+  const auto change = [](const std::function<void(clockface::Options&)>& edit) {
+    clockface::Options current;
+    clockface::loadOptions(current);
+    edit(current);
+    clockface::saveOptions(current);
+  };
+  const char* faces[clockface::kFaceCount] = {tr(STR_CLOCK_FACE_DIGITAL), tr(STR_CLOCK_FACE_ANALOG),
+                                              tr(STR_CLOCK_FACE_PERSIAN)};
+  // The weekdays are numbered from Monday.
+  const int firstDay = options.weekStart == clockface::Saturday ? 5 : (options.weekStart == clockface::Sunday ? 6 : 0);
+  rows.push_back(valueRow(tr(STR_CLOCK_FACE), faces[options.shownFace()], [change] {
+    change([](clockface::Options& o) {
+      // The face with Persian days needs the Persian date on.
+      do {
+        o.face = static_cast<uint8_t>((o.face + 1) % clockface::kFaceCount);
+      } while (o.face == clockface::PersianDays && !o.persianDate);
+    });
+  }));
+  rows.push_back(toggleRow(tr(STR_CLOCK_PERSIAN_DATE), options.persianDate, [change] {
+    change([](clockface::Options& o) {
+      o.persianDate = !o.persianDate;
+      if (!o.persianDate && o.face == clockface::PersianDays) o.face = clockface::Digital;
+    });
+  }));
+  rows.push_back(valueRow(tr(STR_CLOCK_WEEK_START), clockface::weekdayName(firstDay), [change] {
+    change([](clockface::Options& o) { o.weekStart = static_cast<uint8_t>((o.weekStart + 1) % clockface::kWeekStartCount); });
+  }));
+  rows.push_back(toggleRow(tr(STR_CLOCK_WEEK_NUMBER), options.weekNumber, [change] {
+    change([](clockface::Options& o) { o.weekNumber = !o.weekNumber; });
+  }, tr(STR_CLOCK_FORMAT_NOTE)));
 }
 
-std::unique_ptr<Activity> sudokuPage(GfxRenderer& renderer, MappedInputManager& input) {
-  return std::make_unique<LambdaRowList>(renderer, input, "SudokuSettings", tr(STR_SUDOKU_SETTINGS), [](std::vector<Row>& rows, RowListActivity&) {
-    SudokuActivity::Options options;
-    SudokuActivity::loadOptions(options);
-    const char* labels[SudokuActivity::kOptionCount] = {
-        tr(STR_SUDOKU_OPT_EXPLAIN), tr(STR_SUDOKU_OPT_DAILY),     tr(STR_SUDOKU_OPT_LIVE),
-        tr(STR_SUDOKU_OPT_REPEATS), tr(STR_SUDOKU_OPT_PAINT),     tr(STR_SUDOKU_OPT_FILL_LAST),
-        tr(STR_SUDOKU_OPT_LIMIT),   tr(STR_SUDOKU_OPT_RESTART),   tr(STR_SUDOKU_OPT_STATS)};
-    const char* descriptions[SudokuActivity::kOptionCount] = {
-        tr(STR_SUDOKU_OPT_EXPLAIN_DESC), tr(STR_SUDOKU_OPT_DAILY_DESC),     tr(STR_SUDOKU_OPT_LIVE_DESC),
-        tr(STR_SUDOKU_OPT_REPEATS_DESC), tr(STR_SUDOKU_OPT_PAINT_DESC),     tr(STR_SUDOKU_OPT_FILL_LAST_DESC),
-        tr(STR_SUDOKU_OPT_LIMIT_DESC),   tr(STR_SUDOKU_OPT_RESTART_DESC),   tr(STR_SUDOKU_OPT_STATS_DESC)};
+// Sudoku's options, likewise.
+void addSudokuRows(std::vector<Row>& rows) {
+  SudokuActivity::Options options;
+  SudokuActivity::loadOptions(options);
+  const char* labels[SudokuActivity::kOptionCount] = {
+      tr(STR_SUDOKU_OPT_EXPLAIN), tr(STR_SUDOKU_OPT_DAILY),     tr(STR_SUDOKU_OPT_LIVE),
+      tr(STR_SUDOKU_OPT_REPEATS), tr(STR_SUDOKU_OPT_PAINT),     tr(STR_SUDOKU_OPT_FILL_LAST),
+      tr(STR_SUDOKU_OPT_LIMIT),   tr(STR_SUDOKU_OPT_RESTART),   tr(STR_SUDOKU_OPT_STATS)};
+  const char* descriptions[SudokuActivity::kOptionCount] = {
+      tr(STR_SUDOKU_OPT_EXPLAIN_DESC), tr(STR_SUDOKU_OPT_DAILY_DESC),     tr(STR_SUDOKU_OPT_LIVE_DESC),
+      tr(STR_SUDOKU_OPT_REPEATS_DESC), tr(STR_SUDOKU_OPT_PAINT_DESC),     tr(STR_SUDOKU_OPT_FILL_LAST_DESC),
+      tr(STR_SUDOKU_OPT_LIMIT_DESC),   tr(STR_SUDOKU_OPT_RESTART_DESC),   tr(STR_SUDOKU_OPT_STATS_DESC)};
+  for (int i = 0; i < SudokuActivity::kOptionCount; ++i) {
+    rows.push_back(toggleRow(labels[i], options.on[i], [i] {
+      SudokuActivity::Options current;
+      SudokuActivity::loadOptions(current);
+      current.on[i] = !current.on[i];
+      SudokuActivity::saveOptions(current);
+    }, descriptions[i]));
+  }
+}
+
+// One app's page: whether it shows on Home, then its own options.
+std::unique_ptr<Activity> appPage(GfxRenderer& renderer, MappedInputManager& input, const uint8_t key,
+                                  const char* name) {
+  return std::make_unique<LambdaRowList>(renderer, input, "AppSettings", name, [key](std::vector<Row>& rows, RowListActivity&) {
     rows.clear();
-    for (int i = 0; i < SudokuActivity::kOptionCount; ++i) {
-      rows.push_back(toggleRow(labels[i], options.on[i], [i] {
-        SudokuActivity::Options current;
-        SudokuActivity::loadOptions(current);
-        current.on[i] = !current.on[i];
-        SudokuActivity::saveOptions(current);
-      }, descriptions[i]));
-    }
+    rows.push_back(toggleRow(tr(STR_SHOW_ON_HOME), !vegahome::entryHidden(key),
+                             [key] { vegahome::setEntryHidden(key, !vegahome::entryHidden(key)); },
+                             key == vegahome::KeySettings ? tr(STR_SETTINGS_HIDDEN_NOTE) : ""));
+    if (key == vegahome::appKey(apps::Clock)) addClockRows(rows);
+    if (key == vegahome::appKey(apps::Sudoku)) addSudokuRows(rows);
   });
 }
 
@@ -263,31 +273,22 @@ std::unique_ptr<Activity> sudokuPage(GfxRenderer& renderer, MappedInputManager& 
 std::unique_ptr<Activity> AppsActivity::makeSettingsPage(GfxRenderer& renderer, MappedInputManager& input) {
   return std::make_unique<LambdaRowList>(
       renderer, input, "AppsSettings", tr(STR_APPS), [&renderer, &input](std::vector<Row>& rows, RowListActivity& page) {
+        // Everything with an icon on Home, in Home's default order: the entries, the apps among them before Settings.
         rows.clear();
-        Row header;
-        header.kind = Row::Kind::Header;
-        header.label = tr(STR_APPS_MANAGE_TITLE);
-        rows.push_back(std::move(header));
-        const uint8_t mask = apps::hiddenMask();
-        for (const apps::Info& app : apps::kAll) {
-          rows.push_back(toggleRow(I18N.get(app.name), (mask & (1u << app.id)) == 0, [id = app.id] {
-            apps::saveHiddenMask(static_cast<uint8_t>(apps::hiddenMask() ^ (1u << id)));
-          }));
-        }
-        rows.back().subtitle = tr(STR_APPS_HIDDEN_NOTE);
-
-        Row options;
-        options.kind = Row::Kind::Header;
-        options.label = tr(STR_SETTINGS_TITLE);
-        rows.push_back(std::move(options));
-        const auto addPage = [&](const char* label, std::unique_ptr<Activity> (*make)(GfxRenderer&, MappedInputManager&)) {
+        const auto add = [&](const uint8_t key, const StrId name, const UIIcon icon) {
           Row row;
           row.kind = Row::Kind::Chevron;
-          row.label = label;
-          row.onTap = [&renderer, &input, &page, make] { page.openChild(make(renderer, input)); };
+          row.label = I18N.get(name);
+          row.icon = static_cast<int8_t>(icon);
+          if (vegahome::entryHidden(key)) row.subtitle = tr(STR_HIDDEN_ON_HOME);
+          row.onTap = [&renderer, &input, &page, key, name] { page.openChild(appPage(renderer, input, key, I18N.get(name))); };
           rows.push_back(std::move(row));
         };
-        addPage(tr(STR_APP_CLOCK), clockPage);
-        addPage(tr(STR_GAME_SUDOKU), sudokuPage);
+        for (const vegahome::EntryInfo& entry : vegahome::kEntries) {
+          if (entry.key == vegahome::KeySettings) {
+            for (const apps::Info& app : apps::kAll) add(vegahome::appKey(app.id), app.name, app.icon);
+          }
+          add(entry.key, entry.name, entry.icon);
+        }
       });
 }

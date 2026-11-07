@@ -66,9 +66,12 @@ top of CrossInk. The full list, with photos and how to use each one, is in
 
 NeuInk's own redesign, 0.3.0, on the X4 Pro. Details are in [FEATURES.md](FEATURES.md#23-the-neuink-interface-030).
 
-- **Vega theme (the default):** the last book as a card over a paged grid of rounded icons for every
-  action and app; light-gray title bars with the app's icon. A swipe up from the bottom edge opens a
-  panel for icon size, shape and grid.
+- **Vega theme (the default):** widgets over a paged grid of rounded icons for every action and app;
+  light-gray title bars with the app's icon. A swipe up from the bottom edge opens a panel for icon
+  size, shape, the grid's columns and rows, and the pencil that starts edit mode.
+- **Home widgets:** the current book (with pace, time left and finish date), recent covers, a
+  calendar that marks the days you read, the date, a clock and your reading streak, in three sizes.
+  In edit mode, drag widgets and icons into place, tap a widget for its options, hide any icon.
 - **Reader menu:** a floating gray card with tabs, white rows and switches, sliders like the Control
   Center's, and orientation and paragraph alignment as picture buttons in the list. All icons are
   [Lucide](https://lucide.dev).
@@ -120,7 +123,7 @@ NeuInk's own redesign, 0.3.0, on the X4 Pro. Details are in [FEATURES.md](FEATUR
   only while you use the buttons.
 - **Settings in eight groups**, each with an icon and a short description.
 - **Control Center:** swipe down for light and warmth in 1 % steps, with eight buttons
-  you choose (X4 Pro).
+  you choose and a Settings button in its corner (X4 Pro).
 - **Night light:** a second brightness and warmth from evening to morning (X4 Pro).
 - **Rotation** that turns the buttons and the touch screen with the page.
 - **Bluetooth page turner:** pair a remote and map its buttons.

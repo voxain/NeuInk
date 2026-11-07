@@ -24,7 +24,7 @@ constexpr ThemeMetrics values = makeValues();
 class VegaTheme : public LyraTheme {
  public:
   // Home itself (the widgets and the app grid) is components/themes/vega/VegaHome; the theme gives it the greeting.
-  int homeGreetingHeight(GfxRenderer& renderer) const override;
+  int homeGreetingHeight(GfxRenderer& renderer) const;
   // "Good morning" and so on, under Home's status bar (rect.y: Home's top padding).
   void drawGreeting(GfxRenderer& renderer, Rect rect) const;
 

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "./FileBrowserActivity.h"
+#include "HomeWidgetActivity.h"
 #include "QuickActions.h"
 #include "activities/Activity.h"
 #include "activities/reader/BookReadingStats.h"
@@ -102,7 +103,6 @@ class HomeActivity final : public Activity {
   int coverRectY = 0;
   int coverRectW = 0;
   int coverRectH = 0;
-  int coverGreetingHeight = 0;  // greeting height the cover snapshot was taken with (Vega)
   float currentBookProgressPercent = -1.0f;
   std::string currentBookChapterTitle;
   BookReadingStats currentBookStats;
@@ -147,7 +147,8 @@ class HomeActivity final : public Activity {
   // Vega.
   void renderVega(const std::function<void()>& display);
   bool loopVegaEdit();
-  void openWidgetPanel(int widget);
+  void openWidgetPanel(HomeWidgetActivity::Target target, const Rect& edited);
+  uint8_t pendingIntro() const;  // the vegahome::Intro to show first, 0 for none
   void setEditMode(bool on);
   void loadVegaWidgetData();
   bool storeCoverBuffer();    // Store frame buffer for cover image

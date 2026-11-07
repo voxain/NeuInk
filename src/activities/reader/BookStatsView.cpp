@@ -1,3 +1,4 @@
+#include "components/StatTile.h"
 #include "BookStatsView.h"
 
 #include <FreeInkUICore.h>
@@ -179,13 +180,7 @@ void drawCenteredLabel(const GfxRenderer& renderer, const int fontId, const int 
 void drawStatCell(const GfxRenderer& renderer, const int x, const int w, const int y, const int h, const char* value,
                   const char* label) {
   constexpr int tileGap = 5;
-  renderer.fillRoundedRect(x + tileGap, y + tileGap, w - 2 * tileGap, h - 2 * tileGap, 14, Color::LightGray);
-  const int valueLineH = renderer.getLineHeight(UI_12_FONT_ID);
-  const int labelLineH = renderer.getLineHeight(SMALL_FONT_ID);
-  const int totalTextH = valueLineH + 4 + labelLineH;
-  const int textY = y + (h - totalTextH) / 2;
-  drawCenteredLabel(renderer, UI_12_FONT_ID, x, w, textY, value, true);
-  drawCenteredLabel(renderer, SMALL_FONT_ID, x, w, textY + valueLineH + 4, label);
+  drawStatTile(renderer, x + tileGap, y + tileGap, w - 2 * tileGap, h - 2 * tileGap, value, label, Color::LightGray);
 }
 
 void drawSectionCard(const GfxRenderer& renderer, const int x, const int y, const int w, const int h, const char* title,

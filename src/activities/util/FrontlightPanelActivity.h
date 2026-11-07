@@ -57,6 +57,7 @@ class FrontlightPanelActivity final : public Activity {
   static void onWarmthStepEvent(const freeink::ui::ActionEvent& event, void* user);
   static void onQuickActionEvent(const freeink::ui::ActionEvent& event, void* user);
   static void onDismissEvent(const freeink::ui::ActionEvent& event, void* user);
+  static void onSettingsEvent(const freeink::ui::ActionEvent& event, void* user);
   void buildPanelScreen(UiApp::ScreenType& screen);
   void addStepSlider(UiApp::ScreenType& screen, const freeink::ui::Rect& row, uint8_t value,
                      freeink::ui::ActionId sliderAction, freeink::ui::ActionId stepAction);

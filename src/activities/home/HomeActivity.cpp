@@ -243,6 +243,19 @@ bool homeListsApps() {
   return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::VEGA;
 }
 
+bool rectContains(const Rect& rect, int x, int y);  // defined with the Vega edit mode below
+
+static_assert(static_cast<uint8_t>(HomeMenuAction::BrowseFiles) == vegahome::KeyFiles &&
+                  static_cast<uint8_t>(HomeMenuAction::Library) == vegahome::KeyLibrary &&
+                  static_cast<uint8_t>(HomeMenuAction::OpdsBrowser) == vegahome::KeyOpds &&
+                  static_cast<uint8_t>(HomeMenuAction::ReadingStats) == vegahome::KeyStats &&
+                  static_cast<uint8_t>(HomeMenuAction::Bookmarks) == vegahome::KeySaved &&
+                  static_cast<uint8_t>(HomeMenuAction::Settings) == vegahome::KeySettings,
+              "vegahome::EntryKey names the HomeMenuAction values");
+
+// The Vega greeting's band above the widgets (0 when it is off).
+int vegaGreetingHeight(GfxRenderer& renderer) { return static_cast<const VegaTheme&>(GUI).homeGreetingHeight(renderer); }
+
 // What an entry is in SETTINGS.homeOrder (Vega's edit mode).
 uint8_t homeEntryKey(const HomeMenuEntry& entry) {
   return entry.action == HomeMenuAction::App ? vegahome::appKey(entry.app) : static_cast<uint8_t>(entry.action);
@@ -292,6 +305,14 @@ void appendHomeMenuItems(HomeMenuEntries& items, bool hasOpdsServers, bool hasRe
       if (!taken[i]) sorted.push(items[i]);
     }
     items = sorted;
+  }
+  if (grid && SETTINGS.homeHiddenEntries != 0) {
+    // Vega: entries switched off in Settings > Apps or edit mode (the apps are left out above already).
+    HomeMenuEntries shown;
+    for (int i = 0; i < items.size(); ++i) {
+      if (items[i].action == HomeMenuAction::App || !vegahome::entryHidden(homeEntryKey(items[i]))) shown.push(items[i]);
+    }
+    items = shown;
   }
 }
 
@@ -1581,6 +1602,21 @@ void HomeActivity::loop() {
     requestUpdate();  // a fast refresh only moves the clock pixels that changed
   }
 
+  if (homeListsApps() && pendingIntro() != 0) {
+    // The introduction covers Home until its button (or Confirm) is pressed.
+    int x = 0;
+    int y = 0;
+    const Rect button = vegahome::introButton(renderer);
+    if ((mappedInput.wasScreenTapped(x, y) && rectContains(button, x, y)) ||
+        mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      SETTINGS.homeIntroSeen |= pendingIntro();
+      SETTINGS.saveToFile();
+      initialRefreshMode = HalDisplay::HALF_REFRESH;
+      requestUpdate();
+    }
+    return;
+  }
+
   if (homeListsApps() && editMode) {
     loopVegaEdit();
     return;
@@ -2002,8 +2038,9 @@ void HomeActivity::loop() {
   if (homeListsApps() && mappedInput.hasTouch()) {
     // Swipe up from the bottom edge, as in the reader: the grid's layout.
     if (mappedInput.wasBottomEdgeUpSwipe()) {
-      startActivityForResult(std::make_unique<HomeLayoutActivity>(renderer, mappedInput),
-                             [this](const ActivityResult& result) {
+      auto pane = std::make_unique<HomeLayoutActivity>(renderer, mappedInput);
+      pane->setBackdrop([this] { renderVega(nullptr); });
+      startActivityForResult(std::move(pane), [this](const ActivityResult& result) {
                                // Its gray card ghosts under a fast refresh.
                                initialRefreshMode = HalDisplay::HALF_REFRESH;
                                const auto* menu = std::get_if<MenuResult>(&result.data);
@@ -2019,7 +2056,7 @@ void HomeActivity::loop() {
     const auto swipe = mappedInput.wasSwipe();
     if (swipe == MappedInputManager::SwipeDir::Left || swipe == MappedInputManager::SwipeDir::Right) {
       const int offset = getHomeMenuSelectionOffset(recentBooks);
-      const vegahome::Plan plan = vegahome::plan(renderer, GUI.homeGreetingHeight(renderer));
+      const vegahome::Plan plan = vegahome::plan(renderer, vegaGreetingHeight(renderer));
       const int pages = plan.pageCount(getMenuItemCount() - offset);
       const int page = std::clamp(homePage + (swipe == MappedInputManager::SwipeDir::Left ? 1 : -1), 0, pages - 1);
       if (page != homePage) {
@@ -2337,7 +2374,9 @@ void HomeActivity::render(RenderLock&&) {
     if (quietPass) return;
     if (homeListsApps()) {
       // Vega's gray areas ghost under fast refreshes: a cleaner one after every few of them.
-      if (initialRefreshMode == HalDisplay::FAST_REFRESH && ++fastRefreshesSinceClean > kFastRefreshesBetweenClean) {
+      // Not in edit mode: moving things there is many small changes, and leaving it is one clean refresh.
+      if (initialRefreshMode == HalDisplay::FAST_REFRESH && !editMode &&
+          ++fastRefreshesSinceClean > kFastRefreshesBetweenClean) {
         initialRefreshMode = HalDisplay::HALF_REFRESH;
       }
       if (initialRefreshMode != HalDisplay::FAST_REFRESH) fastRefreshesSinceClean = 0;
@@ -2530,18 +2569,11 @@ void HomeActivity::render(RenderLock&&) {
   }
 
   renderer.clearScreen();
-  // The greeting section (Vega) sits above the card, so the tile and the menu below it grow by its height. A snapshot
-  // taken with another height (the greeting was switched) has the card and the tile at the wrong place: drop it.
-  const int greetingHeight = GUI.homeGreetingHeight(renderer);
-  if (greetingHeight != coverGreetingHeight) {
-    invalidateCoverCache();
-    coverGreetingHeight = greetingHeight;
-  }
   bool bufferRestored = coverBufferStored && restoreCoverBuffer();
 
   auto menuItems = buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings,
                                                 metrics.homeContinueReadingInMenu && !recentBooks.empty());
-  int homeCoverTileHeight = metrics.homeCoverTileHeight + greetingHeight;
+  int homeCoverTileHeight = metrics.homeCoverTileHeight;
   if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::CLASSIC) {
     // Keep the four always-present actions clear of the button-hint strip on
     // shorter displays; any optional actions paginate below them.
@@ -2695,7 +2727,6 @@ void HomeActivity::onAppsOpen() {
 
 namespace {
 constexpr int kEditDragSlop = 20;  // px a press must travel to be a drag, not a tap
-constexpr int kEditPageEdge = 28;  // px from the side where a dropped entry goes to the next or previous page
 constexpr int kEditButtonHeight = 44;
 
 // The edit bar over Home's status bar: Add widget on the left, Done on the right.
@@ -2751,23 +2782,40 @@ void HomeActivity::loadVegaWidgetData() {
   }
 }
 
+uint8_t HomeActivity::pendingIntro() const {
+  if (!mappedInput.hasTouchHardware()) return 0;  // they explain touch gestures
+  const uint8_t bit = editMode ? vegahome::IntroEdit : vegahome::IntroHome;
+  return (SETTINGS.homeIntroSeen & bit) != 0 ? 0 : bit;
+}
+
 void HomeActivity::setEditMode(const bool on) {
   editMode = on;
   editTouchActive = false;
   editHeldKind = vegahome::Hit::None;
   editHeldIndex = -1;
   pressedSelector = -1;
-  if (!on) SETTINGS.saveToFile();
+  if (!on) {
+    SETTINGS.saveToFile();
+    // Edit mode only refreshes fast: one clean refresh clears what it ghosted.
+    initialRefreshMode = HalDisplay::HALF_REFRESH;
+  }
   requestUpdate();
 }
 
-void HomeActivity::openWidgetPanel(const int widget) {
-  startActivityForResult(std::make_unique<HomeWidgetActivity>(renderer, mappedInput, widget),
-                         [this](const ActivityResult&) {
-                           initialRefreshMode = HalDisplay::HALF_REFRESH;
-                           loadVegaWidgetData();
-                           requestUpdate();
-                         });
+void HomeActivity::openWidgetPanel(HomeWidgetActivity::Target target, const Rect& edited) {
+  // A panel over the lower half would hide what it edits: it hangs from the top then.
+  target.atTop = edited.height > 0 && edited.y + edited.height / 2 > renderer.getScreenHeight() / 2;
+  auto panel = std::make_unique<HomeWidgetActivity>(renderer, mappedInput, target);
+  panel->setBackdrop([this] {
+    loadVegaWidgetData();
+    renderVega(nullptr);
+  });
+  startActivityForResult(std::move(panel), [this](const ActivityResult&) {
+    initialRefreshMode = HalDisplay::HALF_REFRESH;
+    homeHiddenApps = apps::hiddenMask();
+    loadVegaWidgetData();
+    requestUpdate();
+  });
 }
 
 bool HomeActivity::loopVegaEdit() {
@@ -2776,7 +2824,7 @@ bool HomeActivity::loopVegaEdit() {
     setEditMode(false);
     return true;
   }
-  const vegahome::Plan plan = vegahome::plan(renderer, GUI.homeGreetingHeight(renderer));
+  const vegahome::Plan plan = vegahome::plan(renderer, vegaGreetingHeight(renderer));
   const auto menuItems = buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings, false);
   const int entries = menuItems.size();
   const int pages = plan.pageCount(entries);
@@ -2813,12 +2861,24 @@ bool HomeActivity::loopVegaEdit() {
     Rect add;
     Rect done;
     editBarRects(renderer, add, done);
+    HomeWidgetActivity::Target target;
     if (rectContains(done, editStartX, editStartY)) {
       setEditMode(false);
     } else if (rectContains(add, editStartX, editStartY)) {
-      openWidgetPanel(-1);
+      openWidgetPanel(target, Rect{});
     } else if (kind == vegahome::Hit::Widget) {
-      openWidgetPanel(index);
+      target.kind = HomeWidgetActivity::Target::Widget;
+      target.widget = index;
+      vegahome::Place places[CrossPointSettings::HOME_WIDGET_MAX];
+      vegahome::pack(SETTINGS.homeWidgets, SETTINGS.homeWidgetCount, places);
+      openWidgetPanel(target, plan.widgetRect(places[index], SETTINGS.homeWidgets[index].size));
+    } else if (kind == vegahome::Hit::Entry) {
+      // An icon: whether it shows on Home.
+      target.kind = HomeWidgetActivity::Target::Entry;
+      target.key = homeEntryKey(menuItems[index]);
+      target.label = menuItems[index].label;
+      target.icon = menuItems[index].icon;
+      openWidgetPanel(target, plan.cellRect(homePage, index - plan.firstOn(homePage)));
     }
     return true;
   }
@@ -2837,10 +2897,10 @@ bool HomeActivity::loopVegaEdit() {
 
   // An entry: onto another one, to the side for the next or previous page, or past the last one.
   int target = -1;
-  if (editLastX < kEditPageEdge && homePage > 0) {
+  if (editLastX < vegahome::kPageEdge && homePage > 0) {
     target = plan.firstOn(homePage) - 1;
     --homePage;
-  } else if (editLastX >= renderer.getScreenWidth() - kEditPageEdge) {
+  } else if (editLastX >= renderer.getScreenWidth() - vegahome::kPageEdge && homePage < pages - 1) {
     target = std::min(entries - 1, plan.firstOn(homePage + 1));
     homePage = std::min(homePage + 1, pages - 1);
   } else if (drop.kind == vegahome::Hit::Entry) {
@@ -2858,9 +2918,15 @@ bool HomeActivity::loopVegaEdit() {
 }
 
 void HomeActivity::renderVega(const std::function<void()>& display) {
+  // A first visit: the introduction instead of Home, until it is confirmed.
+  if (display && pendingIntro() != 0) {
+    vegahome::drawIntro(renderer, static_cast<vegahome::Intro>(pendingIntro()));
+    display();
+    return;
+  }
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
-  const int greetingHeight = GUI.homeGreetingHeight(renderer);
+  const int greetingHeight = vegaGreetingHeight(renderer);
   const vegahome::Plan plan = vegahome::plan(renderer, greetingHeight);
   const auto menuItems = buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings, false);
   const int entries = menuItems.size();
@@ -2918,6 +2984,10 @@ void HomeActivity::renderVega(const std::function<void()>& display) {
     }
     vegahome::drawWidgetContents(renderer, plan, data);
   }
+  // An icon held in edit mode: the bars at the sides it can be dropped on for the other pages.
+  if (editMode && editHeldKind == vegahome::Hit::Entry) {
+    vegahome::drawPageEdges(renderer, plan, homePage, homePage > 0, homePage < plan.pageCount(entries) - 1);
+  }
 
   int highlighted = -1;
   if (editMode) {
@@ -2933,6 +3003,8 @@ void HomeActivity::renderVega(const std::function<void()>& display) {
   const auto labels = mappedInput.mapLabels(recentBooks.empty() ? "" : tr(STR_READ), tr(STR_SELECT),
                                             tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  // Without `display`, Home is only the picture behind a panel (PanelActivity::setBackdrop).
+  if (!display) return;
   display();
 
   firstRenderDone = true;

@@ -23,6 +23,7 @@ class RowListActivity : public Activity {
     std::string value;
     std::string subtitle;  // a smaller second line under the label
     bool checked = false;  // Toggle
+    int8_t icon = -1;      // a UIIcon before the label, -1 for none
     std::function<void()> onTap;  // empty: an information row
   };
 

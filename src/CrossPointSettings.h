@@ -704,6 +704,10 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t homeWidgetCount = 1;
   uint8_t homeOrder[HOME_ORDER_MAX] = {};
   uint8_t homeOrderCount = 0;
+  // Vega Home entries hidden in Settings > Apps or edit mode, a bit per vegahome::EntryKey (the apps' own switches
+  // are in apps::hiddenMask), and the one-time introductions already shown (bit 0: Home, bit 1: edit mode).
+  uint16_t homeHiddenEntries = 0;
+  uint8_t homeIntroSeen = 0;
   // Vega Home: a greeting above the current-book card ("Good morning", by the time of day and language).
   uint8_t homeGreeting = 1;
   // Shape of the icon plates (0 = squircle, 1 = rounded square, 2 = circle, 3 = hexagon) and whether their gray is true
@@ -807,7 +811,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t ccSlot5 = CC_REFRESH;
   uint8_t ccSlot6 = CC_TOUCH_LOCK;
   uint8_t ccSlot7 = CC_SYNC;
-  uint8_t ccSlot8 = CC_SETTINGS;
+  uint8_t ccSlot8 = CC_NIGHT_LIGHT;  // Settings has its own button on the card
   uint8_t controlCenterSlot(const int i) const {
     const uint8_t slots[CONTROL_CENTER_SLOTS] = {ccSlot1, ccSlot2, ccSlot3, ccSlot4,
                                                  ccSlot5, ccSlot6, ccSlot7, ccSlot8};

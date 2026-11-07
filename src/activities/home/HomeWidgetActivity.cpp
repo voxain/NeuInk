@@ -39,11 +39,18 @@ void sizePreview(const GfxRenderer& renderer, const int cx, const int top, const
 }
 }  // namespace
 
-HomeWidgetActivity::HomeWidgetActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const int widget)
-    : PanelActivity(renderer, mappedInput, "HomeWidget"), widget(widget) {}
+HomeWidgetActivity::HomeWidgetActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const Target& target)
+    : PanelActivity(renderer, mappedInput, "HomeWidget"),
+      target(target),
+      widget(target.kind == Target::Widget ? target.widget : -1) {}
+
+freeink::ui::SheetEdge HomeWidgetActivity::anchor() const {
+  return target.atTop ? freeink::ui::SheetEdge::Top : freeink::ui::SheetEdge::Bottom;
+}
 
 HomeWidgetActivity::Item HomeWidgetActivity::item(const int section) const {
   if (section == 0) return {Title, 0};
+  if (target.kind == Target::Entry) return {section == 1 ? ShowEntry : Note, 0};
   if (widget < 0) return {AddRow, static_cast<uint8_t>(section - 1)};
   const vegahome::Info& info = vegahome::info(SETTINGS.homeWidgets[widget].type);
   int next = 1;
@@ -54,6 +61,7 @@ HomeWidgetActivity::Item HomeWidgetActivity::item(const int section) const {
 }
 
 int HomeWidgetActivity::sectionCount() const {
+  if (target.kind == Target::Entry) return 3;
   if (widget < 0) return 1 + vegahome::kTypeCount;
   const vegahome::Info& info = vegahome::info(SETTINGS.homeWidgets[widget].type);
   return 1 + ((info.sizes & (info.sizes - 1)) != 0 ? 1 : 0) + info.optionCount + (info.hasMinutes ? 1 : 0);
@@ -65,6 +73,8 @@ int HomeWidgetActivity::sectionHeight(const int section) const {
       return kTitleHeight;
     case Sizes:
       return panel::kLabelHeight + panel::kTileHeight + panel::kRowGap;
+    case Note:
+      return 2 * renderer.getLineHeight(SMALL_FONT_ID) + 8;
     default:
       return panel::kControlHeight + panel::kRowGap / 2;
   }
@@ -108,6 +118,11 @@ void HomeWidgetActivity::buildSection(Screen& screen, const int section, const i
   const int lineH10 = renderer.getLineHeight(UI_10_FONT_ID);
   switch (it.part) {
     case Title: {
+      if (target.kind == Target::Entry) {
+        if (const freeink::Icon* icon = homeIcon(target.icon, 24)) drawLucideIcon(renderer, *icon, x, y + 6);
+        renderer.drawText(UI_12_FONT_ID, x + 34, y + 4, target.label, true, EpdFontFamily::BOLD);
+        break;
+      }
       if (widget < 0) {
         renderer.drawText(UI_12_FONT_ID, x, y + 4, tr(STR_ADD_WIDGET), true, EpdFontFamily::BOLD);
         break;
@@ -154,6 +169,17 @@ void HomeWidgetActivity::buildSection(Screen& screen, const int section, const i
       panel::stepperRow(renderer, frame, x, y, width, tr(STR_WIDGET_MINUTES), value, ACTION_MINUTES, UI_10_FONT_ID);
       break;
     }
+    case ShowEntry:
+      panel::toggleRow(renderer, frame, x, y, width, tr(STR_SHOW_ON_HOME), true, ACTION_TOGGLE, UI_10_FONT_ID);
+      break;
+    case Note: {
+      int lineY = y;
+      for (const auto& line : renderer.wrappedText(SMALL_FONT_ID, tr(STR_HIDDEN_APP_NOTE), width - 8, 2)) {
+        renderer.drawText(SMALL_FONT_ID, x + 4, lineY, line.c_str(), true);
+        lineY += renderer.getLineHeight(SMALL_FONT_ID);
+      }
+      break;
+    }
     case AddRow: {
       const uint8_t type = it.index;
       const vegahome::Info& info = vegahome::info(type);
@@ -180,6 +206,12 @@ void HomeWidgetActivity::onChoice(const freeink::ui::ActionId action, const int 
     const uint8_t size = sizeForNew(type);
     if (size >= vegahome::kSizeCount) return;
     SETTINGS.homeWidgets[SETTINGS.homeWidgetCount++] = vegahome::Widget{type, size, vegahome::info(type).defaultFlags, 0};
+    finish();
+    return;
+  }
+  if (target.kind == Target::Entry) {
+    // Off: the icon leaves Home (Settings > Apps brings it back).
+    vegahome::setEntryHidden(target.key, true);
     finish();
     return;
   }

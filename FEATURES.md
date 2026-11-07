@@ -644,7 +644,7 @@ them too (see [section 1](#built-in-on-every-reader-131)).
 
 ## 12. Apps
 
-New in 1.2.0. **Apps** on the Home screen opens a tile per app (every theme;
+New in 1.2.0. **Apps** on the Home screen opens a tile per app (Vega lists the apps on Home itself; every other theme;
 from 1.3.0 also on the X4 Classic and X3 / X4, played with the buttons:
 see [section 21](#21-readers-without-touch); in Cover Grid it is the icon of four squares under the covers). **Manage**, top right, lists the apps with a
 switch each: an app that is switched off is hidden. The apps are part of the
@@ -874,6 +874,8 @@ tap on the top bar still does what it did before.
   beside it always move exactly 1 %.
 - **Warmth:** a second slider, cold (snowflake) on the left and warm (flame) on
   the right, with its own − and +.
+- **Settings** (unreleased): a round button in the card's top right corner, so Settings are always one
+  swipe away, even with every icon hidden on Home.
 - **Eight buttons you choose** in **Settings → Controls → Control Center**,
   from: Tap to Look Up, Wi-Fi, Dark, Touch lock, Light, Night light, Guide Dots,
   Focus Reading, Refresh, Sync, Sleep, Settings, Reading stats, Library, Apps,
@@ -1046,9 +1048,11 @@ How to install on these readers: [README, Readers without touch](README.md#reade
 
 NeuInk's own redesign, on the X4 Pro. The screens in sections 1 to 22 show VARAGH 1.3.1; these show NeuInk 0.3.0.
 
-- **Vega theme (the default).** Home is the last book as a card over a paged grid of rounded icons (Home actions
-  and apps). A swipe up from the bottom edge opens a panel for icon size (24 to 48), shape (squircle, rounded,
-  circle, hexagon), grid (4x3 to 3x3) and whether names show. Title bars are light gray with the app's icon.
+- **Vega theme (the default).** Home is widgets over a paged grid of rounded icons (Home actions and apps). A
+  swipe up from the bottom edge opens a panel for icon size (24 to 48), shape (squircle, rounded, circle,
+  hexagon), the grid's columns (2 to 6) and rows (1 to 8), the names, the greeting, and the pencil that starts
+  edit mode (see [Home widgets](#home-widgets-and-edit-mode-unreleased)). Title bars are light gray with the
+  app's icon.
 - **Reader menu.** A floating gray card: tabs as a black pill, white rows, switches, sliders like the Control
   Center's with round steps, and Orientation and Alignment as picture buttons in the list. The icons are Lucide,
   turned in software where one icon serves several directions.
@@ -1057,6 +1061,34 @@ NeuInk's own redesign, on the X4 Pro. The screens in sections 1 to 22 show VARAG
   it survives sleep, restarts, updates and a power-off.
 - **Storage.** One segmented bar and a row per category, scanned in the background.
 - **USB.** A computer at the other end of the cable (not a charger) makes the reader offer the SD card as a drive.
+
+### Home widgets and edit mode (unreleased)
+
+Vega's first page holds widgets on a grid two cells wide and three high, the icons under them; icons that do not
+fit move to the next page, and a page full of widgets puts every icon behind a swipe. Each widget takes the first
+free place it fits in, so two small ones side by side and a mix of sizes reorder cleanly. By default Home looks as
+before: the greeting, the current book as a wide card, the icons.
+
+| Widget | Sizes | Options |
+|---|---|---|
+| Current book | 1x1, 2x1, 2x2 (with stat tiles) | pace, time left, estimated finish date |
+| Recent books | 1x1 (two covers), 2x1, 2x2 (with titles) | progress bars |
+| Calendar | 1x1, 2x1, 2x2 | a dot on the days you read, for any reading or from a number of minutes |
+| Date | 1x1, 2x1 | |
+| Clock | 1x1, 2x1, 2x2 | the date, an analog face |
+| Reading streak | 1x1, 2x1 (the last seven days), 2x2 (totals) | today's reading |
+
+A cover opens its book, the clock, date and calendar open the Clock app, and the streak opens Reading stats.
+
+**Edit mode** starts from the pencil in the layout panel. Press a widget or an icon and lift your finger where it
+should go: it moves when you let go, as the screen cannot follow a finger. While an icon is held, bars at the sides
+of the screen mark where to drop it for the previous or next page. A tap on a widget opens its size and data, shown
+behind the panel as you change them; the bin in its corner removes it. A tap on an icon can hide it. **Add widget**
+and **Done** sit at the top. The first visit to Home and to edit mode explains the gestures once.
+
+**Settings > Apps** lists everything with an icon on Home (Settings and Library too), each with **Show on Home**
+and, for the Clock and Sudoku, their options. Home can be left completely empty: Settings stay one tap away
+through the button at the top of the Control Center.
 
 <table>
   <tr>

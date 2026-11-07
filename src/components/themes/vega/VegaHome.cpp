@@ -11,9 +11,12 @@
 
 #include "RecentBooksStore.h"
 #include "VegaTheme.h"
+#include "activities/apps/AppRegistry.h"
 #include "activities/apps/ClockFace.h"
 #include "activities/reader/BookReadingStats.h"
 #include "activities/reader/GlobalReadingStats.h"
+#include "components/LevelBox.h"
+#include "components/StatTile.h"
 #include "components/TouchRegistry.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
@@ -87,24 +90,15 @@ void fittedCentred(const GfxRenderer& r, const int cx, const int y, const int wi
   textCentred(r, font, cx, y, r.truncatedText(font, text, width, style).c_str(), style);
 }
 
-// A pill bar on the gray card, white with the read part black.
+// A level bar on the gray card, white with the read part black (the house level box).
 void progressBar(const GfxRenderer& r, const int x, const int y, const int width, const int height,
                  const float percent) {
-  r.fillRoundedRect(x, y, width, height, height / 2, Color::White);
-  const int filled = std::clamp(static_cast<int>(percent / 100.0f * width), 0, width);
-  if (filled > 0) r.fillRoundedRect(x, y, std::max(filled, height), height, height / 2, Color::Black);
+  levelbox::draw(r, x, y, width, height, height / 2, static_cast<int>(percent / 100.0f * width), nullptr, 0,
+                 Color::White);
 }
 
-// A figure with its name under it on a white tile.
 void statTile(const GfxRenderer& r, const Rect& tile, const char* value, const char* label) {
-  r.fillRoundedRect(tile.x, tile.y, tile.width, tile.height, 12, Color::White);
-  const int valueH = r.getLineHeight(UI_12_FONT_ID);
-  const int labelH = r.getLineHeight(SMALL_FONT_ID);
-  const int top = tile.y + (tile.height - valueH - labelH) / 2;
-  const int cx = tile.x + tile.width / 2;
-  textCentred(r, UI_12_FONT_ID, cx, top, r.truncatedText(UI_12_FONT_ID, value, tile.width - 8, EpdFontFamily::BOLD).c_str(),
-              EpdFontFamily::BOLD);
-  textCentred(r, SMALL_FONT_ID, cx, top + valueH, r.truncatedText(SMALL_FONT_ID, label, tile.width - 8).c_str());
+  drawStatTile(r, tile.x, tile.y, tile.width, tile.height, value, label, Color::White, 12);
 }
 
 // Up to six tiles, three to a row, filling the box.
@@ -427,6 +421,28 @@ bool readOn(const calmath::Date& day, const void* context) {
   return mark->global->secondsReadOn(index) >= mark->seconds;
 }
 
+// Today as the Clock's calendar sleep screen shows it: the weekday, the day in large digits (clockface size
+// `digits`), the month (and the year), centred on cx from top. dayPanelHeight is how tall that is.
+int dayPanelHeight(const GfxRenderer& r, const int digits) {
+  return r.getLineHeight(UI_12_FONT_ID) + 6 + clockface::digitsHeight(digits) + 6 + r.getLineHeight(UI_10_FONT_ID);
+}
+
+void dayPanel(const GfxRenderer& r, const int cx, const int top, const int width, const calmath::DateTime& now,
+              const int digits, const bool withYear) {
+  char day[4];
+  char month[40];
+  snprintf(day, sizeof(day), "%d", static_cast<int>(now.date.day));
+  if (withYear) {
+    snprintf(month, sizeof(month), "%s %d", clockface::monthName(now.date.month), static_cast<int>(now.date.year));
+  } else {
+    snprintf(month, sizeof(month), "%s", clockface::monthName(now.date.month));
+  }
+  const int line12 = r.getLineHeight(UI_12_FONT_ID);
+  fittedCentred(r, cx, top, width, clockface::weekdayName(calmath::weekday(now.date)));
+  clockface::drawDigits(r, digits, day, cx, top + line12 + 6);
+  fittedCentred(r, cx, top + line12 + 6 + clockface::digitsHeight(digits) + 6, width, month, EpdFontFamily::REGULAR);
+}
+
 void calendarContents(GfxRenderer& r, const Rect& card, const Widget& widget, const uint8_t size, const Data& data) {
   calmath::DateTime now;
   if (!clockface::now(now)) {
@@ -445,35 +461,26 @@ void calendarContents(GfxRenderer& r, const Rect& card, const Widget& widget, co
   char title[40];
   snprintf(title, sizeof(title), "%s %d", clockface::monthName(shown.month), static_cast<int>(shown.year));
 
+  // As in the Clock app: the month's name centred over the grid, today in a black box, the days of the months
+  // around it faded. The wide one adds today on the left, as the Clock's calendar sleep screen shows it.
   clockface::MonthGrid grid;
-  grid.dayFontId = SMALL_FONT_ID;
-  if (size == Small) {
-    textAt(r, UI_10_FONT_ID, card.x + kPad + 2, card.y + kPad - 4, clockface::monthName(shown.month),
-           EpdFontFamily::BOLD);
-    grid.x = card.x + kPad - 4;
-    grid.width = card.width - 2 * kPad + 8;
-    grid.weekdayY = card.y + kPad + line10 - 4;
-  } else if (size == Wide) {
-    // Today large on the left, the month on the right.
+  grid.dayFontId = size == Large ? 0 : SMALL_FONT_ID;
+  grid.x = card.x + kPad - 4;
+  grid.width = card.width - 2 * kPad + 8;
+  if (size == Wide) {
     const int panel = card.width * 2 / 7;
-    const int cx = card.x + kPad + panel / 2;
-    char day[4];
-    snprintf(day, sizeof(day), "%d", static_cast<int>(now.date.day));
-    const int digitsH = clockface::digitsHeight(1);
-    const int top = card.y + (card.height - line12 - digitsH - line10 - 12) / 2;
-    fittedCentred(r, cx, top, panel, clockface::weekdayName(calmath::weekday(now.date)));
-    clockface::drawDigits(r, 1, day, cx, top + line12 + 6);
-    textCentred(r, UI_10_FONT_ID, cx, top + line12 + digitsH + 12, clockface::monthName(shown.month));
+    dayPanel(r, card.x + kPad + panel / 2, card.y + (card.height - dayPanelHeight(r, 1)) / 2, panel, now, 1, false);
     grid.x = card.x + kPad + panel + 8;
     grid.width = card.x + card.width - kPad - grid.x;
-    grid.weekdayY = card.y + kPad - 4;
-  } else {
-    textAt(r, UI_12_FONT_ID, card.x + kPad + 4, card.y + kPad, title, EpdFontFamily::BOLD);
-    grid.dayFontId = 0;
-    grid.x = card.x + kPad;
-    grid.width = card.width - 2 * kPad;
-    grid.weekdayY = card.y + kPad + line12 + 8;
   }
+  const int titleFont = size == Large ? UI_12_FONT_ID : UI_10_FONT_ID;
+  const int titleY = card.y + kPad - (size == Large ? 0 : 4);
+  textCentred(r, titleFont, grid.x + grid.width / 2, titleY,
+              r.truncatedText(titleFont, size == Small ? clockface::monthName(shown.month) : title, grid.width,
+                              EpdFontFamily::BOLD)
+                  .c_str(),
+              EpdFontFamily::BOLD);
+  grid.weekdayY = titleY + (size == Large ? line12 + 8 : line10);
   const bool large = size == Large;
   grid.gridY = grid.weekdayY + (large ? 28 : 18);
   int bottom = card.y + card.height - kPad + (large ? 0 : 4);
@@ -497,30 +504,27 @@ void dateContents(GfxRenderer& r, const Rect& card, const uint8_t size) {
     return;
   }
   TouchRegistry::getInstance().add(card, kTouchClock, TouchRegistry::Cover);
-  char day[4];
-  char month[40];
-  snprintf(day, sizeof(day), "%d", static_cast<int>(now.date.day));
-  snprintf(month, sizeof(month), "%s %d", clockface::monthName(now.date.month), static_cast<int>(now.date.year));
-  const char* weekday = clockface::weekdayName(calmath::weekday(now.date));
-  const int line10 = r.getLineHeight(UI_10_FONT_ID);
-  const int line12 = r.getLineHeight(UI_12_FONT_ID);
-  const int digitsH = clockface::digitsHeight(2);
   if (size == Small) {
-    const int cx = card.x + card.width / 2;
-    const int top = card.y + (card.height - line12 - digitsH - line10 - 12) / 2;
-    fittedCentred(r, cx, top, card.width - 2 * kPad, weekday);
-    clockface::drawDigits(r, 2, day, cx, top + line12 + 6);
-    fittedCentred(r, cx, top + line12 + digitsH + 12, card.width - 2 * kPad, month, EpdFontFamily::REGULAR);
+    dayPanel(r, card.x + card.width / 2, card.y + (card.height - dayPanelHeight(r, 2)) / 2, card.width - 2 * kPad,
+             now, 2, true);
     return;
   }
+  // Wide: the day large on the left, the weekday, month and week beside it.
+  char day[4];
+  char month[40];
+  char week[24];
+  snprintf(day, sizeof(day), "%d", static_cast<int>(now.date.day));
+  snprintf(month, sizeof(month), "%s %d", clockface::monthName(now.date.month), static_cast<int>(now.date.year));
+  snprintf(week, sizeof(week), tr(STR_CLOCK_WEEK), calmath::isoWeek(now.date));
+  const int line10 = r.getLineHeight(UI_10_FONT_ID);
+  const int line12 = r.getLineHeight(UI_12_FONT_ID);
+  const int lineS = r.getLineHeight(SMALL_FONT_ID);
   const int half = card.width * 2 / 5;
-  clockface::drawDigits(r, 2, day, card.x + half / 2 + kPad, card.y + (card.height - digitsH) / 2);
+  clockface::drawDigits(r, 2, day, card.x + half / 2 + kPad, card.y + (card.height - clockface::digitsHeight(2)) / 2);
   const int tx = card.x + half + kPad;
   const int tw = card.x + card.width - kPad - tx;
-  char week[24];
-  snprintf(week, sizeof(week), tr(STR_CLOCK_WEEK), calmath::isoWeek(now.date));
-  const int lineS = r.getLineHeight(SMALL_FONT_ID);
   int y = card.y + (card.height - line12 - line10 - lineS - 12) / 2;
+  const char* weekday = clockface::weekdayName(calmath::weekday(now.date));
   textAt(r, UI_12_FONT_ID, tx, y, r.truncatedText(UI_12_FONT_ID, weekday, tw, EpdFontFamily::BOLD).c_str(),
          EpdFontFamily::BOLD);
   y += line12 + 6;
@@ -535,6 +539,8 @@ void clockContents(GfxRenderer& r, const Rect& card, const Widget& widget, const
     return;
   }
   TouchRegistry::getInstance().add(card, kTouchClock, TouchRegistry::Cover);
+  // The clock keeps clear of the card's edge by more than the other widgets: big digits close to it look cramped.
+  constexpr int kMargin = 18;
   const bool twelveHour = SETTINGS.clockFormat == 1;
   const int hour = twelveHour ? (now.hour % 12 == 0 ? 12 : now.hour % 12) : now.hour;
   char hours[4];
@@ -548,45 +554,69 @@ void clockContents(GfxRenderer& r, const Rect& card, const Widget& widget, const
     snprintf(date, sizeof(date), tr(STR_CLOCK_DATE_FORMAT), clockface::weekdayName(calmath::weekday(now.date)),
              static_cast<int>(now.date.day), clockface::monthName(now.date.month), static_cast<int>(now.date.year));
   }
-  const int dateH = date[0] ? r.getLineHeight(size == Small ? SMALL_FONT_ID : UI_10_FONT_ID) + 6 : 0;
+  const int dateFont = size == Small ? SMALL_FONT_ID : UI_10_FONT_ID;
+  const int dateH = date[0] ? r.getLineHeight(dateFont) + 8 : 0;
   const int cx = card.x + card.width / 2;
-  const int innerW = card.width - 2 * kPad;
-  if (twelveHour) textRight(r, SMALL_FONT_ID, card.x + card.width - kPad, card.y + kPad - 4, now.hour < 12 ? "AM" : "PM");
+  const int boxW = card.width - 2 * kMargin;
+  const int boxH = card.height - 2 * kMargin - dateH;
+  const int boxTop = card.y + kMargin;
+  if (twelveHour) {
+    textRight(r, SMALL_FONT_ID, card.x + card.width - kMargin, card.y + kMargin - 8, now.hour < 12 ? "AM" : "PM");
+  }
 
   if ((widget.flags & ClockAnalog) && size == Wide) {
     // The face on the left, the date beside it.
-    const int radius = (card.height - 2 * kPad) / 2;
-    clockface::drawAnalog(r, card.x + kPad + radius, card.y + card.height / 2, radius, now);
+    const int radius = (card.height - 2 * kMargin) / 2;
+    clockface::drawAnalog(r, card.x + kMargin + radius, card.y + card.height / 2, radius, now);
     if (date[0]) {
-      const int tx = card.x + 2 * kPad + 2 * radius + 8;
-      const int tw = card.x + card.width - kPad - tx;
-      int y = card.y + card.height / 2 - r.getLineHeight(UI_12_FONT_ID);
-      for (const auto& line : r.wrappedText(UI_12_FONT_ID, date, tw, 3, EpdFontFamily::BOLD)) {
+      const int tx = card.x + 2 * kMargin + 2 * radius + 8;
+      const int tw = card.x + card.width - kMargin - tx;
+      const int line12 = r.getLineHeight(UI_12_FONT_ID);
+      const auto lines = r.wrappedText(UI_12_FONT_ID, date, tw, 3, EpdFontFamily::BOLD);
+      int y = card.y + (card.height - static_cast<int>(lines.size()) * line12) / 2;
+      for (const auto& line : lines) {
         textAt(r, UI_12_FONT_ID, tx, y, line.c_str(), EpdFontFamily::BOLD);
-        y += r.getLineHeight(UI_12_FONT_ID);
+        y += line12;
       }
     }
     return;
   }
   if (widget.flags & ClockAnalog) {
-    const int radius = (std::min(innerW, card.height - 2 * kPad - dateH)) / 2;
-    clockface::drawAnalog(r, cx, card.y + kPad + radius, radius, now);
-  } else if (size == Wide) {
-    const int digitsH = clockface::digitsHeight(1);
-    clockface::drawDigits(r, 1, both, cx, card.y + (card.height - digitsH - dateH) / 2);
+    const int radius = std::min(boxW, boxH) / 2;
+    clockface::drawAnalog(r, cx, boxTop + boxH / 2, radius, now);
   } else {
-    // Stacked: the hours over the minutes.
-    const int set = size == Large ? 2 : 1;
-    const int digitsH = clockface::digitsHeight(set);
-    const int gap = size == Large ? 12 : 4;
-    const int top = card.y + (card.height - 2 * digitsH - gap - dateH) / 2;
-    clockface::drawDigits(r, set, hours, cx, top);
-    clockface::drawDigits(r, set, minutes, cx, top + digitsH + gap);
+    // The largest digits that fit, on one line or as the hours over the minutes.
+    int bestSet = 0;
+    bool bestStacked = false;
+    int bestHeight = 0;
+    for (int set = 2; set >= 0; --set) {
+      const int h = clockface::digitsHeight(set);
+      const int gap = h / 10;
+      if (clockface::digitsWidth(set, both) <= boxW && h <= boxH && h > bestHeight) {
+        bestSet = set;
+        bestStacked = false;
+        bestHeight = h;
+      }
+      const int stackedW = std::max(clockface::digitsWidth(set, hours), clockface::digitsWidth(set, minutes));
+      if (stackedW <= boxW && 2 * h + gap <= boxH && 2 * h + gap > bestHeight) {
+        bestSet = set;
+        bestStacked = true;
+        bestHeight = 2 * h + gap;
+      }
+    }
+    const int h = clockface::digitsHeight(bestSet);
+    const int top = boxTop + (boxH - bestHeight) / 2;
+    if (bestStacked) {
+      clockface::drawDigits(r, bestSet, hours, cx, top);
+      clockface::drawDigits(r, bestSet, minutes, cx, top + h + h / 10);
+    } else {
+      clockface::drawDigits(r, bestSet, both, cx, top);
+    }
   }
   if (date[0]) {
-    const int font = size == Small ? SMALL_FONT_ID : UI_10_FONT_ID;
-    const int y = card.y + card.height - kPad - dateH + 4;
-    textCentred(r, font, cx, y, r.truncatedText(font, date, innerW, EpdFontFamily::BOLD).c_str(), EpdFontFamily::BOLD);
+    const int y = card.y + card.height - kMargin - r.getLineHeight(dateFont);
+    textCentred(r, dateFont, cx, y, r.truncatedText(dateFont, date, boxW, EpdFontFamily::BOLD).c_str(),
+                EpdFontFamily::BOLD);
   }
 }
 
@@ -934,6 +964,136 @@ void moveEntry(const std::vector<uint8_t>& keys, const int from, int to) {
   order.insert(order.begin() + to, moved);
   SETTINGS.homeOrderCount = static_cast<uint8_t>(std::min<int>(count, CrossPointSettings::HOME_ORDER_MAX));
   std::copy_n(order.begin(), SETTINGS.homeOrderCount, SETTINGS.homeOrder);
+}
+
+
+// ---- Home entries -----------------------------------------------------------------------------------------------
+
+const EntryInfo kEntries[kEntryCount] = {
+    {KeyFiles, StrId::STR_BROWSE_FILES, UIIcon::Folder},       {KeyLibrary, StrId::STR_LIBRARY, UIIcon::Library},
+    {KeyOpds, StrId::STR_OPDS_BROWSER, UIIcon::Opds},          {KeyStats, StrId::STR_READING_STATS, UIIcon::Chart},
+    {KeySaved, StrId::STR_HIGHLIGHTS_HUB, UIIcon::BookmarkIcon}, {KeySettings, StrId::STR_SETTINGS_TITLE, UIIcon::Settings},
+};
+
+bool entryHidden(const uint8_t key) {
+  if (isAppKey(key)) return apps::isHidden(static_cast<apps::Id>(key & 0x7F));
+  return key < 16 && (SETTINGS.homeHiddenEntries & (1u << key)) != 0;
+}
+
+void setEntryHidden(const uint8_t key, const bool hidden) {
+  if (isAppKey(key)) {
+    const uint8_t bit = static_cast<uint8_t>(1u << (key & 0x7F));
+    const uint8_t mask = apps::hiddenMask();
+    apps::saveHiddenMask(hidden ? mask | bit : mask & ~bit);
+    return;
+  }
+  if (key >= 16) return;
+  if (hidden) {
+    SETTINGS.homeHiddenEntries |= static_cast<uint16_t>(1u << key);
+  } else {
+    SETTINGS.homeHiddenEntries &= static_cast<uint16_t>(~(1u << key));
+  }
+  SETTINGS.saveToFile();
+}
+
+// ---- edit mode and the introductions -------------------------------------------------------------------------
+
+void drawPageEdges(const GfxRenderer& renderer, const Plan& plan, const int page, const bool previous,
+                   const bool next) {
+  const int top = page == 0 && plan.firstRows > 0 ? plan.firstTop : plan.otherTop;
+  const int height = plan.dotsY - 8 - top;
+  constexpr int kBar = 10;
+  if (previous) renderer.fillRoundedRect(4, top, kBar, height, kBar / 2, Color::DarkGray);
+  if (next) renderer.fillRoundedRect(renderer.getScreenWidth() - 4 - kBar, top, kBar, height, kBar / 2, Color::DarkGray);
+}
+
+namespace {
+
+constexpr int kIntroButtonW = 200;
+constexpr int kIntroButtonH = 52;
+constexpr int kArrowD = 56;
+
+// A black disc with a white arrow pointing `rotation` from up.
+void arrowDisc(const GfxRenderer& r, const int cx, const int cy, const freeink::ui::Rotation rotation) {
+  r.fillRoundedRect(cx - kArrowD / 2, cy - kArrowD / 2, kArrowD, kArrowD, kArrowD / 2, Color::Black);
+  drawLucideIcon(r, icon_arrow_up_32, cx - 16, cy - 16, false, rotation);
+}
+
+// A bold title and its explanation, centred, from y; returns the y under it.
+int explained(const GfxRenderer& r, const int cx, int y, const int width, const char* title, const char* text) {
+  textCentred(r, UI_12_FONT_ID, cx, y, title, EpdFontFamily::BOLD);
+  y += r.getLineHeight(UI_12_FONT_ID) + 2;
+  for (const auto& line : r.wrappedText(UI_10_FONT_ID, text, width, 3)) {
+    textCentred(r, UI_10_FONT_ID, cx, y, line.c_str());
+    y += r.getLineHeight(UI_10_FONT_ID);
+  }
+  return y;
+}
+
+// An icon on a gray disc and its text beside it; returns the y under the row.
+int point(const GfxRenderer& r, const int x, const int y, const int width, const freeink::Icon& icon,
+          const char* text) {
+  constexpr int kDisc = 48;
+  r.fillRoundedRect(x, y, kDisc, kDisc, kDisc / 2, Color::LightGray);
+  drawLucideIcon(r, icon, x + (kDisc - 24) / 2, y + (kDisc - 24) / 2);
+  const int lineH = r.getLineHeight(UI_10_FONT_ID);
+  const auto lines = r.wrappedText(UI_10_FONT_ID, text, width - kDisc - 16, 4);
+  int ty = y + std::max(0, (kDisc - static_cast<int>(lines.size()) * lineH) / 2);
+  for (const auto& line : lines) {
+    textAt(r, UI_10_FONT_ID, x + kDisc + 16, ty, line.c_str());
+    ty += lineH;
+  }
+  return std::max(y + kDisc, ty) + 22;
+}
+
+}  // namespace
+
+Rect introButton(const GfxRenderer& renderer) {
+  const int w = renderer.getScreenWidth();
+  const int h = renderer.getScreenHeight();
+  return Rect{(w - kIntroButtonW) / 2, h * 2 / 3, kIntroButtonW, kIntroButtonH};
+}
+
+void drawIntro(GfxRenderer& renderer, const Intro intro) {
+  using freeink::ui::Rotation;
+  const int w = renderer.getScreenWidth();
+  const int h = renderer.getScreenHeight();
+  const int cx = w / 2;
+  const int textW = w - 2 * 48;
+  renderer.clearScreen();
+  if (intro == IntroHome) {
+    // Where each gesture starts: the top edge, the sides, the bottom edge.
+    arrowDisc(renderer, cx, 24 + kArrowD / 2, Rotation::R180);
+    explained(renderer, cx, 24 + kArrowD + 12, textW, tr(STR_INTRO_QUICK_TITLE), tr(STR_INTRO_QUICK_TEXT));
+    const int midY = h * 2 / 5;
+    arrowDisc(renderer, 16 + kArrowD / 2, midY, Rotation::CCW90);
+    arrowDisc(renderer, w - 16 - kArrowD / 2, midY, Rotation::CW90);
+    const int pagesW = w - 2 * (kArrowD + 32);
+    const int pagesLines =
+        static_cast<int>(renderer.wrappedText(UI_10_FONT_ID, tr(STR_INTRO_PAGES_TEXT), pagesW, 3).size());
+    const int pagesH = renderer.getLineHeight(UI_12_FONT_ID) + 2 + pagesLines * renderer.getLineHeight(UI_10_FONT_ID);
+    explained(renderer, cx, midY - pagesH / 2, pagesW, tr(STR_INTRO_PAGES_TITLE), tr(STR_INTRO_PAGES_TEXT));
+    const int bottomArrowY = h - 24 - kArrowD / 2;
+    const int lines = static_cast<int>(renderer.wrappedText(UI_10_FONT_ID, tr(STR_INTRO_CUSTOMIZE_TEXT), textW, 3).size());
+    const int blockH = renderer.getLineHeight(UI_12_FONT_ID) + 2 + lines * renderer.getLineHeight(UI_10_FONT_ID);
+    explained(renderer, cx, bottomArrowY - kArrowD / 2 - 12 - blockH, textW, tr(STR_INTRO_CUSTOMIZE_TITLE),
+              tr(STR_INTRO_CUSTOMIZE_TEXT));
+    arrowDisc(renderer, cx, bottomArrowY, Rotation::None);
+  } else {
+    int y = 48;
+    textCentred(renderer, UI_12_FONT_ID, cx, y, tr(STR_INTRO_EDIT_TITLE), EpdFontFamily::BOLD);
+    y += renderer.getLineHeight(UI_12_FONT_ID) + 28;
+    const int x = 32;
+    const int width = w - 2 * x;
+    y = point(renderer, x, y, width, icon_transfer_arrows_24, tr(STR_INTRO_EDIT_DRAG));
+    y = point(renderer, x, y, width, icon_chevrons_right_24, tr(STR_INTRO_EDIT_PAGES));
+    y = point(renderer, x, y, width, icon_notes_24, tr(STR_INTRO_EDIT_TAP));
+    point(renderer, x, y, width, icon_cc_plus_24, tr(STR_INTRO_EDIT_ADD));
+  }
+  const Rect button = introButton(renderer);
+  renderer.fillRoundedRect(button.x, button.y, button.width, button.height, button.height / 2, Color::Black);
+  textCentred(renderer, UI_10_FONT_ID, cx, button.y + (button.height - renderer.getLineHeight(UI_10_FONT_ID)) / 2,
+              tr(STR_INTRO_GOT_IT), EpdFontFamily::BOLD, false);
 }
 
 }  // namespace vegahome

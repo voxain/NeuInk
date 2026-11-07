@@ -7,6 +7,7 @@
 #include <Icon.h>
 
 #include <atomic>
+#include <functional>
 
 #include "activities/Activity.h"
 #include "components/DrawerHandle.h"
@@ -135,22 +136,29 @@ void toggleRow(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, 
             action, static_cast<int16_t>(value), fui::InputTouch);
 }
 
-// A white row with its name and a number between a minus and a plus button; a hit carries -1 or +1.
+// A white pill with a number between a minus and a plus button; a hit carries -1 or +1.
+template <size_t MaxInteractions>
+void stepper(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y, const int width,
+             const char* value, const fui::ActionId action, const int fontId) {
+  constexpr int diameter = 38;
+  renderer.fillRoundedRect(x, y, width, kControlHeight, kControlHeight / 2, Color::White);
+  const int buttonY = y + (kControlHeight - diameter) / 2;
+  stepButton(renderer, frame, x + 7, buttonY, diameter, icon_cc_minus_24, action, -1, 6, 8, Color::LightGray);
+  stepButton(renderer, frame, x + width - 7 - diameter, buttonY, diameter, icon_cc_plus_24, action, 1, 6, 8,
+             Color::LightGray);
+  const int textW = renderer.getTextWidth(fontId, value, EpdFontFamily::BOLD);
+  renderer.drawText(fontId, x + (width - textW) / 2, y + (kControlHeight - renderer.getLineHeight(fontId)) / 2, value,
+                    true, EpdFontFamily::BOLD);
+}
+
+// A white row with its name and a stepper at its right end.
 template <size_t MaxInteractions>
 void stepperRow(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y,
                 const int width, const char* label, const char* value, const fui::ActionId action, const int fontId) {
-  constexpr int diameter = 38;
-  constexpr int valueWidth = 64;
+  constexpr int stepperWidth = 160;
   renderer.fillRoundedRect(x, y, width, kControlHeight, kControlHeight / 2, Color::White);
-  const int textY = y + (kControlHeight - renderer.getLineHeight(fontId)) / 2;
-  renderer.drawText(fontId, x + 22, textY, label, true);
-  const int buttonY = y + (kControlHeight - diameter) / 2;
-  const int plusX = x + width - 8 - diameter;
-  const int minusX = plusX - valueWidth - diameter;
-  stepButton(renderer, frame, minusX, buttonY, diameter, icon_cc_minus_24, action, -1, 6, 8, Color::LightGray);
-  stepButton(renderer, frame, plusX, buttonY, diameter, icon_cc_plus_24, action, 1, 6, 8, Color::LightGray);
-  renderer.drawText(fontId, minusX + diameter + (valueWidth - renderer.getTextWidth(fontId, value, EpdFontFamily::BOLD)) / 2,
-                    textY, value, true, EpdFontFamily::BOLD);
+  renderer.drawText(fontId, x + 22, y + (kControlHeight - renderer.getLineHeight(fontId)) / 2, label, true);
+  stepper(renderer, frame, x + width - stepperWidth, y, stepperWidth, value, action, fontId);
 }
 
 // A row's name in small bold, above the tiles or rows it names.
@@ -172,6 +180,9 @@ class PanelActivity : public Activity {
   void loop() override;
   void render(RenderLock&&) override;
   bool requiresFreshBackdrop() const override { return true; }
+  // Redraws the screen under the panel into the frame buffer (no refresh) before every pass, so what the panel
+  // changes shows behind it at once. Without it the panel paints only its own band.
+  void setBackdrop(std::function<void()> draw) { backdrop = std::move(draw); }
 
   // A subclass's controls register under ids from this one up (eight of them).
   static constexpr freeink::ui::ActionId ACTION_FIRST_CONTROL = 10;
@@ -192,6 +203,8 @@ class PanelActivity : public Activity {
   // A round button in the card's top right corner (nullptr: none) and its tap.
   virtual const freeink::Icon* cornerIcon() const { return nullptr; }
   virtual void onCorner() {}
+  // The edge the card hangs from: the bottom, or the top to keep the lower half of the screen in view.
+  virtual freeink::ui::SheetEdge anchor() const { return freeink::ui::SheetEdge::Bottom; }
   // The card's top to its content (below the corner button when there is one).
   int topInset() const;
   // After the content changed its sections: back to the first one.
@@ -209,6 +222,9 @@ class PanelActivity : public Activity {
   std::atomic<bool> uiReady{false};
   freeink::ui::Rect handle{};
   int cardTop = 0;
+  int cardBottom = 0;
   int firstSection = 0;
   int paintedTop = 0;
+  int paintedBottom = 0;
+  std::function<void()> backdrop;
 };

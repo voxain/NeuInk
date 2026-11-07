@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+- Vega Home widgets: current book (pace, time left, estimated finish), recent books, calendar (dots on the days
+  read, optionally from a number of minutes), date, clock (digital or analog) and reading streak, in 1x1, 2x1 and
+  2x2 on a two-by-three grid; the icons shrink to make room, rows that do not fit move to the next page. The
+  default layout is the one before (greeting, current book, icons).
+- Edit mode from the pencil in the layout panel: drag widgets and icons into place (bars at the sides take an icon
+  to another page), tap a widget for its options (shown live behind the panel, which hangs from the top for
+  widgets in the lower half), tap an icon to hide it, add widgets. Edit mode refreshes fast only and cleans the
+  screen once when it ends. One-time introductions to Home's gestures and to edit mode.
+- Layout panel: columns (2-6) and rows (1-8) as numbers side by side, scrolls a page at a time, about two thirds
+  of the screen high, and shows its changes on Home behind it.
+- Settings > Apps lists everything on Home with its icon; each page has Show on Home, and the Clock's and Sudoku's
+  options. Home can be empty: the Control Center has a Settings button in its corner, and its eighth button now
+  defaults to Night light instead of Settings.
+- Battery graph: one line through the whole day; the time the reader was awake is shaded under it.
+- Fixed: installed SD-card reader fonts fell back to Lexend Deca. The Vega greeting opened the whole Bitter
+  family in every reader size in the font arena the reader shares; it now opens one face at one size.
+- Reading time per day for the last 64 days, in /.crosspoint/daily_reading.bin (the stats format and the stats
+  sync are unchanged). The time-left, finish-date and pace estimates are one shared copy (Home, Dashboard, stats).
+
 ## [NeuInk 0.3.0] - 2026-11-07
 
 The NeuInk interface: the Vega theme, a rebuilt reader menu, Battery and Storage pages, apps, and a USB prompt. The

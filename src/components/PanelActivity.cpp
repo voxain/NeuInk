@@ -14,7 +14,14 @@ constexpr int kTopInset = panel::kGrabberBand + panel::kPad / 2;  // the card's 
 }  // namespace
 
 // The card's top to its content: below the corner button when there is one.
-int PanelActivity::topInset() const { return cornerIcon() != nullptr ? 10 + kCornerButton + 6 : kTopInset; }
+int PanelActivity::topInset() const {
+  if (cornerIcon() != nullptr) return 10 + kCornerButton + 6;
+  return anchor() == freeink::ui::SheetEdge::Top ? panel::kPad : kTopInset;
+}
+
+namespace {
+constexpr int kTopCardTop = 34;  // a card hanging from the top starts below the status row, as the quick controls
+}  // namespace
 
 PanelActivity::PanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const char* name)
     : Activity(name, renderer, mappedInput), uiTarget(makeUiTarget(renderer)), app(uiTarget, uiTarget.deviceContext()) {}
@@ -24,6 +31,7 @@ void PanelActivity::onEnter() {
   uiReady = false;
   firstSection = 0;
   paintedTop = renderer.getScreenHeight();
+  paintedBottom = 0;
   applySharedUiTheme(app, uiTarget);
   app.on(ACTION_DISMISS, &PanelActivity::onActionEvent, this);
   app.on(ACTION_CORNER, &PanelActivity::onActionEvent, this);
@@ -82,9 +90,8 @@ void PanelActivity::screenBuilder(Screen& screen, void* user) {
   auto* self = static_cast<PanelActivity*>(user);
   const GfxRenderer& renderer = self->renderer;
   const int width = renderer.getScreenWidth();
-  const int bottom = renderer.getScreenHeight() - panel::kSide;
   auto& frame = screen.frame();
-  self->handle = panel::card(renderer, frame, freeink::ui::SheetEdge::Bottom, self->cardTop, bottom, ACTION_DISMISS);
+  self->handle = panel::card(renderer, frame, self->anchor(), self->cardTop, self->cardBottom, ACTION_DISMISS);
   const int x = panel::kSide + panel::kPad;
   const int contentW = width - 2 * x;
   const int top = self->cardTop + self->topInset();
@@ -127,25 +134,34 @@ void PanelActivity::loop() {
   int endY = 0;
   if (mappedInput.wasSwipeWithPoints(direction, startX, startY, endX, endY) &&
       (direction == MappedInputManager::SwipeDir::Up || direction == MappedInputManager::SwipeDir::Down) &&
-      startY >= cardTop + panel::kGrabberBand) {
+      startY >= cardTop && startY < cardBottom && !handle.contains(static_cast<int16_t>(startX), static_cast<int16_t>(startY))) {
     scrollPage(direction == MappedInputManager::SwipeDir::Up);
     return;
   }
-  if (DrawerHandle::wasDismissSwipe(mappedInput, handle, freeink::ui::SheetEdge::Bottom) ||
+  if (DrawerHandle::wasDismissSwipe(mappedInput, handle, anchor()) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     finish();
   }
 }
 
 void PanelActivity::render(RenderLock&&) {
-  // Over the screen we opened on: only the card's band is repainted, white behind it.
-  const int height = topInset() + visibleHeight() + panel::kPad;
-  cardTop = renderer.getScreenHeight() - panel::kSide - height;
+  const bool atTop = anchor() == freeink::ui::SheetEdge::Top;
+  const int height = topInset() + visibleHeight() + (atTop ? panel::kPad / 2 + panel::kGrabberBand : panel::kPad);
+  const int screenH = renderer.getScreenHeight();
+  cardTop = atTop ? kTopCardTop : screenH - panel::kSide - height;
+  cardBottom = cardTop + height;
   uiReady = false;
-  // A card that got shorter leaves its old top behind: clear from the higher of the two.
-  const int clearTop = std::min(cardTop, paintedTop) - 6;
+  if (backdrop) {
+    backdrop();
+  } else {
+    // Over the screen we opened on: only the card's band is repainted, white behind it. A card that got shorter
+    // leaves its old edge behind: clear to the farther of the two.
+    const int clearTop = atTop ? 0 : std::min(cardTop, paintedTop) - 6;
+    const int clearBottom = atTop ? std::max(cardBottom, paintedBottom) + 6 : screenH;
+    renderer.fillRect(0, clearTop, renderer.getScreenWidth(), clearBottom - clearTop, false);
+  }
   paintedTop = cardTop;
-  renderer.fillRect(0, clearTop, renderer.getScreenWidth(), renderer.getScreenHeight() - clearTop, false);
+  paintedBottom = cardBottom;
   renderer.setSmoothRoundEnds(true);
   app.render();
   renderer.setSmoothRoundEnds(false);
