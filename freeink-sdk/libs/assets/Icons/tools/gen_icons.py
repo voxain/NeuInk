@@ -113,9 +113,9 @@ def main():
             data, center = pack(rasterize(svg, px), px)
             arr = f"icon_{ident(alias)}_{px}_bits"
             body = ", ".join(f"0x{b:02X}" for b in data)
-            out.append(f"static const uint8_t {arr}[] = {{{body}}};")
+            out.append(f"inline constexpr uint8_t {arr}[] = {{{body}}};")
             out.append(
-                f"static const freeink::Icon icon_{ident(alias)}_{px} = "
+                f"inline constexpr freeink::Icon icon_{ident(alias)}_{px} = "
                 f"{{{px}, {px}, {center}, {arr}}};"
             )
         out.append("")

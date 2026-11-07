@@ -4,6 +4,7 @@
 #include <I18n.h>
 #include <Logging.h>
 
+#include <algorithm>
 #include <cstring>
 
 namespace {
@@ -256,6 +257,49 @@ void BookReadingStats::recordForwardPageRead(uint32_t seconds) {
 
 void BookReadingStats::recordReadingSpan(const ReadingStatsDateTime& localStart, const uint32_t seconds) {
   recordReadingSpanIntoBuckets(timeOfDaySeconds, dayOfWeekSeconds, localStart, seconds);
+}
+
+bool BookReadingStats::extrapolatedTimeLeft(const float progressPercent, uint32_t& seconds) const {
+  seconds = 0;
+  if (progressPercent <= 0.0f || progressPercent >= 100.0f || totalReadingSeconds < 120) return false;
+  const float progress = progressPercent / 100.0f;
+  const float estimate = (static_cast<float>(totalReadingSeconds) * (1.0f - progress)) / progress;
+  if (estimate <= 0.0f) return false;
+  seconds = static_cast<uint32_t>(estimate + 0.5f);
+  return seconds > 0;
+}
+
+bool BookReadingStats::timeLeft(const float progressPercent, uint32_t& seconds) const {
+  if (estimatedTimeLeftSeconds > 0) {
+    seconds = estimatedTimeLeftSeconds;
+    return true;
+  }
+  return extrapolatedTimeLeft(progressPercent, seconds);
+}
+
+ReadingStatsDate BookReadingStats::estimatedFinishDate(const ReadingStatsDateTime& today,
+                                                       const uint32_t remainingSeconds) const {
+  ReadingStatsDateTime finish = today;
+  if (!today.isValid() || remainingSeconds == 0) return {};
+  if (startDate.isValid() && totalReadingSeconds > 0) {
+    // The remaining reading time in calendar time, at the book's reading seconds per calendar day.
+    const uint16_t readingDays = std::max<uint16_t>(1, readingSpanDaysElapsed(startDate, today.date));
+    const uint64_t calendarSeconds =
+        (static_cast<uint64_t>(remainingSeconds) * readingDays * 86400ULL + totalReadingSeconds / 2ULL) /
+        totalReadingSeconds;
+    if (calendarSeconds > 0) {
+      addSecondsToReadingStatsDateTime(finish, static_cast<uint32_t>(std::min<uint64_t>(calendarSeconds, UINT32_MAX)));
+      if (finish.date.isValid()) return finish.date;
+      finish = today;
+    }
+  }
+  addSecondsToReadingStatsDateTime(finish, remainingSeconds);
+  return finish.date;
+}
+
+float BookReadingStats::pagesPerMinute(const uint32_t pagesTurned, const uint32_t readingSeconds) {
+  if (readingSeconds <= 60) return 0.0f;
+  return static_cast<float>(pagesTurned) * 60.0f / static_cast<float>(readingSeconds);
 }
 
 void BookReadingStats::formatDuration(uint32_t seconds, char* buf, size_t len) {

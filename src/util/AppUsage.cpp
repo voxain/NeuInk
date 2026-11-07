@@ -16,7 +16,7 @@
 #endif
 
 namespace {
-constexpr uint32_t kMagic = 0x41505534;  // "APU4"
+constexpr uint32_t kMagic = 0x41505535;  // "APU5": Home and its entries got slots
 
 struct Totals {
   uint32_t magic;
@@ -65,12 +65,29 @@ uint32_t rollDay() {
 
 // The slot a screen belongs to, or 0 for one that is only part of another's visit.
 uint8_t slotOf(const std::string& activityName) {
-  if (activityName == "Reader" || activityName == "EpubReader" || activityName == "TxtReader" ||
-      activityName == "XtcReader") {
-    return AppUsage::kReader;
+  struct Screen {
+    const char* name;
+    uint8_t slot;
+  };
+  static constexpr Screen kScreens[] = {
+      {"Reader", AppUsage::kReader},         {"EpubReader", AppUsage::kReader},    {"TxtReader", AppUsage::kReader},
+      {"XtcReader", AppUsage::kReader},      {"Home", AppUsage::kHome},            {"Settings", AppUsage::kSettings},
+      {"FileBrowser", AppUsage::kFiles},     {"Library", AppUsage::kLibrary},      {"OpdsServerList", AppUsage::kOpds},
+      {"OpdsBookBrowser", AppUsage::kOpds},  {"StatsPicker", AppUsage::kStats},    {"BookStats", AppUsage::kStats},
+      {"HighlightsHub", AppUsage::kSaved},   {"SavedItemsHome", AppUsage::kSaved},
+  };
+  for (const Screen& screen : kScreens) {
+    if (activityName == screen.name) return screen.slot;
   }
   const apps::Info* app = apps::findByActivityName(activityName);
   return app ? static_cast<uint8_t>(app->id) : 0;
+}
+
+// Adds the visit in progress to today's total and ends it.
+void closeRunning() {
+  if (runningId == 0) return;
+  totals.seconds[rollDay() % AppUsage::kDays][runningId] += (millis() - runningSince) / 1000;
+  runningId = 0;
 }
 }  // namespace
 
@@ -79,6 +96,9 @@ namespace AppUsage {
 void enter(const std::string& activityName) {
   const uint8_t id = slotOf(activityName);
   if (id == 0 || runningId == id) return;
+  // Opened over another app (Settings over Home): that one's time so far is banked; it starts again when it is
+  // back in front (the activity manager enters it again on the way back).
+  closeRunning();
   runningId = id;
   runningSince = millis();
   baselineValid = false;
@@ -87,8 +107,7 @@ void enter(const std::string& activityName) {
 void exit(const std::string& activityName) {
   const uint8_t id = slotOf(activityName);
   if (id == 0 || runningId != id) return;
-  totals.seconds[rollDay() % kDays][id] += (millis() - runningSince) / 1000;
-  runningId = 0;
+  closeRunning();
   baselineValid = false;
 }
 

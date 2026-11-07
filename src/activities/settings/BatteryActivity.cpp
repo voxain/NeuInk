@@ -8,9 +8,12 @@
 #include <algorithm>
 #include <cstdio>
 #include <utility>
+#include <vector>
 
 #include "MappedInputManager.h"
+#include "components/BatteryGraph.h"
 #include "components/BigText.h"
+#include "components/themes/vega/VegaHome.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "activities/apps/AppRegistry.h"
@@ -26,11 +29,32 @@ constexpr int kAxisWidth = 44;  // room for the % labels
 constexpr int kAxisHeight = 30;  // room for the time labels
 }  // namespace
 
+namespace {
+// The AppUsage slot of a Home entry.
+uint8_t usageSlotOf(const uint8_t key) {
+  switch (key) {
+    case vegahome::KeyFiles:
+      return AppUsage::kFiles;
+    case vegahome::KeyLibrary:
+      return AppUsage::kLibrary;
+    case vegahome::KeyOpds:
+      return AppUsage::kOpds;
+    case vegahome::KeyStats:
+      return AppUsage::kStats;
+    case vegahome::KeySaved:
+      return AppUsage::kSaved;
+    default:
+      return AppUsage::kSettings;
+  }
+}
+}  // namespace
+
 BatteryActivity::BatteryActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
     : Activity("Battery", renderer, mappedInput) {}
 
 void BatteryActivity::onEnter() {
   Activity::onEnter();
+  firstRow = 0;
   requestUpdate();
 }
 
@@ -38,6 +62,17 @@ void BatteryActivity::loop() {
   if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     finish();
+    return;
+  }
+  const auto swipe = mappedInput.wasSwipe();
+  if ((swipe == MappedInputManager::SwipeDir::Up || mappedInput.wasReleased(MappedInputManager::Button::Down)) &&
+      moreBelow) {
+    firstRow += std::max(1, shownRows);
+    requestUpdate();
+  } else if ((swipe == MappedInputManager::SwipeDir::Down || mappedInput.wasReleased(MappedInputManager::Button::Up)) &&
+             firstRow > 0) {
+    firstRow = std::max(0, firstRow - std::max(1, shownRows));
+    requestUpdate();
   }
 }
 
@@ -62,26 +97,11 @@ void BatteryActivity::render(RenderLock&&) {
   snprintf(text, sizeof(text), "%d.%02d V", volts / 1000, (volts % 1000) / 10);
   renderer.drawText(UI_10_FONT_ID, kSide, y + bigHeight, text, true);
 
-  // "~6h 20m", or days from two days on.
-  const auto runtime = [&](const int tenths, char* out, const size_t size) {
-    if (tenths <= 0 || percent == 0) {
-      snprintf(out, size, "-");
-      return;
-    }
-    const uint32_t seconds = static_cast<uint32_t>(static_cast<uint64_t>(percent) * 10 * 3600 / tenths);
-    if (seconds >= 48 * 3600) {
-      snprintf(out, size, "~%u %s", static_cast<unsigned>(seconds / 86400), tr(STR_BATTERY_DAYS));
-    } else {
-      char duration[16];
-      formatCompactReadingDuration(seconds, duration, sizeof(duration));
-      snprintf(out, size, "~%s", duration);
-    }
-  };
   int ey = y;
   for (const auto& estimate : {std::pair<StrId, int>{StrId::STR_BATTERY_SCREEN_ON, rates.awakeTenths},
                                std::pair<StrId, int>{StrId::STR_BATTERY_ASLEEP, rates.sleepTenths}}) {
     char value[24];
-    runtime(estimate.second, value, sizeof(value));
+    batterygraph::runtimeText(estimate.second, percent, value, sizeof(value));
     const int right = width - kSide;
     renderer.drawText(SMALL_FONT_ID, right - renderer.getTextWidth(SMALL_FONT_ID, I18N.get(estimate.first)), ey,
                       I18N.get(estimate.first), true);
@@ -95,80 +115,12 @@ void BatteryActivity::render(RenderLock&&) {
   renderer.drawText(UI_10_FONT_ID, kSide, y, tr(STR_BATTERY_LAST_24H), true, EpdFontFamily::BOLD);
   y += renderer.getLineHeight(UI_10_FONT_ID) + 10;
 
-  // The graph on a gray card: gridlines at 0, 50 and 100 %, the level as a line, a gap where the reader slept.
+  // The graph on a gray card (components/BatteryGraph).
   renderer.fillRoundedRect(kSide, y, width - 2 * kSide, kCardHeight, 24, Color::LightGray);
   const int plotX = kSide + kCardPad + kAxisWidth;
-  const int plotY = y + kCardPad;
-  const int plotW = width - kSide - kCardPad - plotX;
-  const int plotH = kCardHeight - 2 * kCardPad - kAxisHeight;
-  for (const int percent : {0, 50, 100}) {
-    const int lineY = plotY + plotH * (100 - percent) / 100;
-    renderer.drawLine(plotX, lineY, plotX + plotW, lineY, 2, false);
-    snprintf(text, sizeof(text), "%d", percent);
-    renderer.drawText(SMALL_FONT_ID, plotX - 8 - renderer.getTextWidth(SMALL_FONT_ID, text),
-                      lineY - renderer.getLineHeight(SMALL_FONT_ID) / 2, text, true);
-  }
-  // The left half is the last 24 hours, the right half the next 24: an estimate that continues the level's trend.
-  const int half = plotW / 2;
-  const int middle = plotX + half;
-  renderer.drawLine(middle, plotY, middle, plotY + plotH, 2, false);
-  const int labelY = plotY + plotH + 8;
-  renderer.drawText(SMALL_FONT_ID, plotX, labelY, "-24 h", true);
-  renderer.drawText(SMALL_FONT_ID, middle - renderer.getTextWidth(SMALL_FONT_ID, "0") / 2, labelY, "0", true);
-  renderer.drawText(SMALL_FONT_ID, plotX + plotW - renderer.getTextWidth(SMALL_FONT_ID, "+24 h"), labelY, "+24 h", true);
-
-  const auto levelY = [&](const float level) { return plotY + static_cast<int>(plotH * (100.0f - level) / 100.0f); };
-  if (haveLevels) {
-    constexpr int last = BatteryHistory::kBuckets - 1;
-    int previousX = 0;
-    int previousY = 0;
-    bool havePrevious = false;
-    int lastIndex = -1;
-    int fitFrom = 0;  // the trend starts after the latest recharge
-    for (int i = 0; i <= last; ++i) {
-      if (levels[i] == BatteryHistory::kNone) {
-        havePrevious = false;
-        continue;
-      }
-      if (lastIndex >= 0 && levels[i] > levels[lastIndex] + 1) fitFrom = i;
-      const int px = plotX + half * i / last;
-      const int py = levelY(levels[i]);
-      if (havePrevious) renderer.drawLine(previousX, previousY, px, py, 3, true);
-      previousX = px;
-      previousY = py;
-      havePrevious = true;
-      lastIndex = i;
-    }
-
-    // Least-squares line through the points since the last recharge, continued from the current level.
-    float count = 0, sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-    for (int i = fitFrom; i <= last; ++i) {
-      if (levels[i] == BatteryHistory::kNone) continue;
-      count += 1;
-      sumX += i;
-      sumY += levels[i];
-      sumXY += static_cast<float>(i) * levels[i];
-      sumXX += static_cast<float>(i) * i;
-    }
-    const float denominator = count * sumXX - sumX * sumX;
-    if (lastIndex >= 0 && count >= 3 && denominator > 0.0f) {
-      const float slope = (count * sumXY - sumX * sumY) / denominator;  // percent per bucket
-      const float from = levels[lastIndex];
-      const int steps = BatteryHistory::kBuckets;
-      int fromX = plotX + half * lastIndex / last;
-      int fromY = levelY(from);
-      for (int k = 1; k <= steps; ++k) {
-        float level = from + slope * static_cast<float>(last + k - lastIndex);
-        level = level < 0.0f ? 0.0f : (level > 100.0f ? 100.0f : level);
-        const int toX = middle + half * k / steps;
-        const int toY = levelY(level);
-        if ((k / 12) % 2 == 0) renderer.drawLine(fromX, fromY, toX, toY, 3, true);  // dashed: an estimate
-        fromX = toX;
-        fromY = toY;
-        if (level <= 0.0f || level >= 100.0f) break;
-      }
-    }
-  }
+  batterygraph::draw(renderer, Rect{plotX, y + kCardPad, width - kSide - kCardPad - plotX,
+                                    kCardHeight - 2 * kCardPad - kAxisHeight},
+                     levels, haveLevels, true);
   y += kCardHeight + 14;
 
   // Time in each app today: a gray row per app that was opened.
@@ -176,15 +128,27 @@ void BatteryActivity::render(RenderLock&&) {
   renderer.drawText(UI_10_FONT_ID, kSide, y, tr(STR_APPS_TIME), true, EpdFontFamily::BOLD);
   y += renderer.getLineHeight(UI_10_FONT_ID) + 8;
   bool any = false;
-  // The reader first, then the apps.
-  const auto row = [&](const StrId name, const uint8_t slot) {
-    const uint32_t week = AppUsage::secondsWeek(slot);
+  // More apps than fit scroll a page at a time (a swipe or the up and down buttons): rows before firstRow are
+  // skipped, and the rows stop at the button hints.
+  constexpr int rowHeight = 40;
+  const int listTop = y;
+  const int listBottom = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight - 8;
+  int rowIndex = 0;
+  shownRows = 0;
+  moreBelow = false;
+  const auto row = [&](const StrId name, const uint8_t slot, const uint32_t week) {
     const int rate = AppUsage::drainTenthsPerHour(slot);
     // Everything that is not an app has no clock, only the rate.
     const bool other = slot == 0;
     if (other ? rate < 0 : week == 0) return;
     any = true;
-    constexpr int rowHeight = 40;
+    const int index = rowIndex++;
+    if (index < firstRow) return;
+    if (moreBelow || y + rowHeight > listBottom) {
+      moreBelow = true;
+      return;
+    }
+    ++shownRows;
     renderer.fillRoundedRect(kSide, y, width - 2 * kSide, rowHeight, rowHeight / 2, Color::LightGray);
     const int textY = y + (rowHeight - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
     renderer.drawText(UI_10_FONT_ID, kSide + 20, textY, I18N.get(name), true);
@@ -210,10 +174,33 @@ void BatteryActivity::render(RenderLock&&) {
                       textY, duration, true, EpdFontFamily::BOLD);
     y += rowHeight + 6;
   };
-  row(StrId::STR_CAT_READER, AppUsage::kReader);
-  for (const apps::Info& app : apps::kAll) row(app.name, app.id);
-  row(StrId::STR_APPS_OTHER, 0);
+  // The reader, Home and everything with an icon on Home, the most used first; then what ran outside all of them.
+  struct Used {
+    StrId name;
+    uint8_t slot;
+    uint32_t week;
+  };
+  std::vector<Used> used;
+  used.reserve(AppUsage::kSlots);
+  const auto add = [&used](const StrId name, const uint8_t slot) {
+    used.push_back({name, slot, AppUsage::secondsWeek(slot)});
+  };
+  add(StrId::STR_CAT_READER, AppUsage::kReader);
+  add(StrId::STR_HOME, AppUsage::kHome);
+  for (const vegahome::EntryInfo& entry : vegahome::kEntries) add(entry.name, usageSlotOf(entry.key));
+  for (const apps::Info& app : apps::kAll) add(app.name, app.id);
+  std::stable_sort(used.begin(), used.end(), [](const Used& a, const Used& b) { return a.week > b.week; });
+  for (const Used& entry : used) row(entry.name, entry.slot, entry.week);
+  row(StrId::STR_APPS_OTHER, 0, 0);
   if (!any) renderer.drawText(SMALL_FONT_ID, kSide, y, tr(STR_NO_APP_TIME), true);
+  if (firstRow > 0 || moreBelow) {
+    // A thin bar at the right edge: which part of the list shows.
+    const int trackH = listBottom - listTop;
+    const int thumbY = listTop + trackH * firstRow / rowIndex;
+    const int thumbH = std::max(16, trackH * shownRows / rowIndex);
+    renderer.fillRoundedRect(width - 8, listTop, 4, trackH, 2, Color::LightGray);
+    renderer.fillRoundedRect(width - 8, std::min(thumbY, listTop + trackH - thumbH), 4, thumbH, 2, Color::Black);
+  }
 
   const auto labels = mappedInput.mapLabels(mappedInput.withBackArrow(tr(STR_BACK)), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

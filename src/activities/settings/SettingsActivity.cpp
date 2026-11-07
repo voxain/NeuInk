@@ -44,7 +44,7 @@
 #include "QuickActions.h"
 #include "QuickActionsActivity.h"
 #include "SdCardFontSystem.h"
-#include "SdFirmwareUpdateActivity.h"
+#include "SoftwareUpdatesActivity.h"
 #include "SettingsList.h"
 #include "SilentRestart.h"
 #include "StatusBarSettingsActivity.h"
@@ -285,7 +285,6 @@ void SettingsActivity::rebuildSettingsLists() {
   readerLookupSettings.clear();
   displayStatusBarSettings.clear();
   displayScreenRefreshSettings.clear();
-  generalUpdatesSettings.clear();
   networkSettings.clear();
   systemFilesCacheSettings.clear();
   fileBrowserSettings.clear();
@@ -348,7 +347,6 @@ void SettingsActivity::rebuildSettingsLists() {
   readerScreenMarginSettings = buildReaderScreenMarginSettingsList(allSettings);
   generalSettings = buildGeneralSettingsList(allSettings);
   generalDateTimeSettings = buildGeneralDateTimeSettingsList(allSettings);
-  generalUpdatesSettings = buildGeneralUpdatesSettingsList();
   networkSettings = buildNetworkSettingsList();
   systemFilesCacheSettings = buildSystemFilesCacheSettingsList(allSettings);
   systemReadingStatsSettings = buildSystemReadingStatsSettingsList(allSettings);
@@ -411,10 +409,7 @@ void SettingsActivity::setCurrentSettingsForCategory() {
 
   switch (selectedCategoryIndex) {
     case GroupGeneral:
-      currentSettings = activeSubmenu == SettingAction::GeneralDateTime
-                            ? &generalDateTimeSettings
-                            : (activeSubmenu == SettingAction::GeneralUpdates ? &generalUpdatesSettings
-                                                                              : &generalSettings);
+      currentSettings = activeSubmenu == SettingAction::GeneralDateTime ? &generalDateTimeSettings : &generalSettings;
       break;
     case GroupDisplay:
       if (activeSubmenu == SettingAction::DisplaySleepScreen) {
@@ -687,32 +682,6 @@ void SettingsActivity::openWordSpacingPicker() {
 
 // Cross-grade: pick another project, read the backup warning, then reboot into
 // the OTA activity pointed at that project's releases.
-void SettingsActivity::openSwitchFirmwarePicker() {
-  using firmware_targets::Target;
-  constexpr Target targets[] = {Target::VARAGH, Target::CROSSINK, Target::CROSSPOINT};
-  std::vector<std::string> options;
-  for (const Target target : targets) options.emplace_back(firmware_targets::displayName(target));
-
-  optionPopup.show(StrId::STR_SWITCH_FIRMWARE, options, 0, [this, targets](int selectedIndex) {
-    if (selectedIndex < 0 || selectedIndex >= static_cast<int>(std::size(targets))) {
-      requestUpdate();
-      return;
-    }
-    const Target target = targets[selectedIndex];
-    const std::string heading = std::string(tr(STR_SWITCH_FIRMWARE_TO)) + firmware_targets::displayName(target) + "?";
-    startActivityForResult(
-        std::make_unique<ConfirmationActivity>(renderer, mappedInput, heading, tr(STR_SWITCH_FIRMWARE_BACKUP)),
-        [this, target](const ActivityResult& result) {
-          if (result.isCancelled) {
-            requestUpdate();
-            return;
-          }
-          silentRestartToNetwork(NetworkBootTarget::OTA, firmware_targets::toPayload(target));
-        });
-  });
-  requestUpdate();
-}
-
 void SettingsActivity::openLanguagePicker() {
   // NeuInk: every language; one left out of this firmware is marked for
   // download until its pack is on the SD card (util/LanguagePacks).
@@ -1314,15 +1283,6 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::ClearCache:
         startActivityForResult(std::make_unique<ClearCacheActivity>(renderer, mappedInput), resultHandler);
         break;
-      case SettingAction::CheckForUpdates:
-        silentRestartToNetwork(NetworkBootTarget::OTA);
-        break;
-      case SettingAction::SwitchFirmware:
-        openSwitchFirmwarePicker();
-        break;
-      case SettingAction::SdFirmwareUpdate:
-        startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);
-        break;
       case SettingAction::DownloadFonts:
         silentRestartToManageFonts();
         break;
@@ -1377,6 +1337,11 @@ void SettingsActivity::toggleCurrentSetting() {
     }
     return;  // Results will be handled in the result handler, so we can return early here
   } else if (setting.type == SettingType::SUBMENU) {
+    if (setting.action == SettingAction::GeneralUpdates) {
+      startActivityForResult(std::make_unique<SoftwareUpdatesActivity>(renderer, mappedInput),
+                             [this](const ActivityResult&) { requestUpdate(); });
+      return;
+    }
     openSubmenu(setting.action);
     return;
   } else {

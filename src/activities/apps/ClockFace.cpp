@@ -32,6 +32,24 @@ constexpr StrId kWeekdayNames[7] = {StrId::STR_WEEKDAY_1, StrId::STR_WEEKDAY_2, 
 
 const gameui::DigitSet kLargeDigits{appart::kClockLargeGlyphs, appart::kClockLargeBits, appart::kClockLargeRows};
 const gameui::DigitSet kMediumDigits{appart::kClockMediumGlyphs, appart::kClockMediumBits, appart::kClockMediumRows};
+const gameui::DigitSet kSmallDigits{appart::kClockSmallGlyphs, appart::kClockSmallBits, appart::kClockSmallRows};
+
+const gameui::DigitSet kRegularDigits{appart::kClockRegularGlyphs, appart::kClockRegularBits,
+                                      appart::kClockRegularRows};
+
+const gameui::DigitSet& digitSet(const int size) {
+  switch (size) {
+    case 1:
+      return kMediumDigits;
+    case 2:
+      return kLargeDigits;
+    case 3:
+      return kRegularDigits;
+    default:
+      return kSmallDigits;
+  }
+}
+int digitGap(const int size) { return size == 2 ? 8 : (size == 1 ? 6 : (size == 3 ? 5 : 4)); }
 
 // The first `count` characters of a UTF-8 string.
 void leadingCharacters(const char* text, const int count, char* out, const size_t size) {
@@ -84,21 +102,23 @@ void drawTime(const GfxRenderer& renderer, const Face face, const int top, const
   }
 }
 
-void drawAnalog(const GfxRenderer& renderer, const int top, const calmath::DateTime& time) {
-  const int cx = renderer.getScreenWidth() / 2;
-  const int cy = top + 118;
-  constexpr int radius = 128;
+}  // namespace
+
+void drawAnalog(const GfxRenderer& renderer, const int cx, const int cy, const int radius,
+                const calmath::DateTime& time) {
   constexpr float kPi = 3.14159265f;
-  gameui::ring(renderer, cx, cy, radius, 4, true);
+  // The app's face is 128 px; the marks and hands keep their proportions at other sizes.
+  const auto px = [radius](const int at128) { return std::max(1, at128 * radius / 128); };
+  gameui::ring(renderer, cx, cy, radius, px(4), true);
   for (int mark = 0; mark < 12; ++mark) {
     const float angle = static_cast<float>(mark) * kPi / 6.0f;
     const bool quarter = mark % 3 == 0;
-    const float inner = static_cast<float>(radius - (quarter ? 22 : 15));
-    const float outer = static_cast<float>(radius - 8);
+    const float inner = static_cast<float>(radius - px(quarter ? 22 : 15));
+    const float outer = static_cast<float>(radius - px(8));
     renderer.drawLine(cx + static_cast<int>(lroundf(inner * sinf(angle))),
                       cy - static_cast<int>(lroundf(inner * cosf(angle))),
                       cx + static_cast<int>(lroundf(outer * sinf(angle))),
-                      cy - static_cast<int>(lroundf(outer * cosf(angle))), quarter ? 5 : 3, true);
+                      cy - static_cast<int>(lroundf(outer * cosf(angle))), px(quarter ? 5 : 3), true);
   }
   const float hourAngle = (static_cast<float>(time.hour % 12) + static_cast<float>(time.minute) / 60.0f) * kPi / 6.0f;
   const float minuteAngle = static_cast<float>(time.minute) * kPi / 30.0f;
@@ -106,15 +126,18 @@ void drawAnalog(const GfxRenderer& renderer, const int top, const calmath::DateT
     float angle;
     float length;
     int width;
-  } hands[2] = {{hourAngle, 68.0f, 9}, {minuteAngle, 100.0f, 5}};
+  } hands[2] = {{hourAngle, static_cast<float>(px(68)), px(9)}, {minuteAngle, static_cast<float>(px(100)), px(5)}};
+  const float tail = static_cast<float>(px(14));
   for (const auto& hand : hands) {
-    renderer.drawLine(cx - static_cast<int>(lroundf(14.0f * sinf(hand.angle))),
-                      cy + static_cast<int>(lroundf(14.0f * cosf(hand.angle))),
+    renderer.drawLine(cx - static_cast<int>(lroundf(tail * sinf(hand.angle))),
+                      cy + static_cast<int>(lroundf(tail * cosf(hand.angle))),
                       cx + static_cast<int>(lroundf(hand.length * sinf(hand.angle))),
                       cy - static_cast<int>(lroundf(hand.length * cosf(hand.angle))), hand.width, true);
   }
-  gameui::disc(renderer, cx, cy, 9, true);
+  gameui::disc(renderer, cx, cy, px(9), true);
 }
+
+namespace {
 
 void persianDateText(const calmath::Date& date, char* out, const size_t size) {
   const calmath::Date persian = calmath::toPersian(date);
@@ -122,46 +145,80 @@ void persianDateText(const calmath::Date& date, char* out, const size_t size) {
            static_cast<int>(persian.year));
 }
 
+}  // namespace
+
 // The weekday names above the columns, then the days of the month `shown`.
-void drawMonth(const GfxRenderer& renderer, const Options& options, const bool secondNumbers, const int weekdayY,
-               const int gridY, const int rowHeight, const calmath::Date& shown, const calmath::Date& today) {
-  const int width = renderer.getScreenWidth();
-  const int cellWidth = (width - 2 * kGridMargin) / 7;
-  const int left = (width - 7 * cellWidth) / 2;
+void drawMonthGrid(const GfxRenderer& renderer, const Options& options, const MonthGrid& grid, const calmath::Date& shown,
+                   const calmath::Date& today, const DayMark marked, const void* context) {
+  const int cellWidth = grid.width / 7;
+  const int left = grid.x + (grid.width - 7 * cellWidth) / 2;
+  const bool compact = grid.dayFontId != 0;
+  const int dayFontId = compact ? grid.dayFontId : UI_12_FONT_ID;
   for (int weekday = 0; weekday < 7; ++weekday) {
     char shortName[12];
-    leadingCharacters(weekdayName(weekday), 2, shortName, sizeof(shortName));
+    // Two letters as in the app, one where the columns are too narrow for them.
+    leadingCharacters(weekdayName(weekday), compact && cellWidth < 30 ? 1 : 2, shortName, sizeof(shortName));
     gameui::centredText(renderer, SMALL_FONT_ID,
-                        {left + columnOf(weekday, options.weekStart) * cellWidth, weekdayY, cellWidth, 24}, shortName,
-                        true, EpdFontFamily::BOLD);
+                        {left + columnOf(weekday, options.weekStart) * cellWidth, grid.weekdayY, cellWidth, compact ? 18 : 24},
+                        shortName, true, EpdFontFamily::BOLD);
   }
 
   const calmath::Date first = calmath::addDays(shown, -columnOf(calmath::weekday(shown), options.weekStart));
   const int rows = rowsFor(shown, options.weekStart);
   for (int i = 0; i < rows * 7; ++i) {
     const calmath::Date day = calmath::addDays(first, i);
-    const gameui::Box cell{left + (i % 7) * cellWidth, gridY + (i / 7) * rowHeight, cellWidth, rowHeight};
+    const gameui::Box cell{left + (i % 7) * cellWidth, grid.gridY + (i / 7) * grid.rowHeight, cellWidth, grid.rowHeight};
     const bool isToday = day == today;
     const bool inMonth = day.month == shown.month;
     char number[4];
     snprintf(number, sizeof(number), "%d", static_cast<int>(day.day));
-    if (secondNumbers) {
+    if (grid.secondNumbers) {
       if (isToday) renderer.fillRoundedRect(cell.x + 3, cell.y + 3, cell.w - 6, cell.h - 6, 10, Color::Black);
       gameui::centredText(renderer, UI_12_FONT_ID, {cell.x, cell.y + 8, cell.w, 30}, number, !isToday,
                           inMonth ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
       snprintf(number, sizeof(number), "%d", static_cast<int>(calmath::toPersian(day).day));
       gameui::centredText(renderer, SMALL_FONT_ID, {cell.x, cell.y + cell.h - 32, cell.w, 22}, number, !isToday);
     } else {
+      const int side = std::min(cell.w, cell.h) - (compact ? 2 : 8);
       if (isToday) {
-        const int side = std::min(cell.w, cell.h) - 8;
-        renderer.fillRoundedRect(cell.x + (cell.w - side) / 2, cell.y + (cell.h - side) / 2, side, side, 12,
-                                 Color::Black);
+        renderer.fillRoundedRect(cell.x + (cell.w - side) / 2, cell.y + (cell.h - side) / 2, side, side,
+                                 compact ? side / 3 : 12, Color::Black);
       }
-      gameui::centredText(renderer, UI_12_FONT_ID, cell, number, !isToday,
+      // A marked day carries a dot under its number, so the number moves up a little.
+      const bool dot = inMonth && marked != nullptr && marked(day, context);
+      const gameui::Box text{cell.x, cell.y - (dot ? side / 8 : 0), cell.w, cell.h};
+      gameui::centredText(renderer, dayFontId, text, number, !isToday,
                           isToday ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
+      if (dot) {
+        const int r = std::max(2, side / 12);
+        gameui::disc(renderer, cell.x + cell.w / 2, cell.y + cell.h / 2 + side / 2 - r - 2, r, !isToday);
+      }
     }
     if (!inMonth && !isToday) gameui::fade(renderer, cell);
   }
+}
+
+int monthRows(const calmath::Date& shown, const uint8_t weekStart) { return rowsFor(shown, weekStart); }
+
+int digitsHeight(const int size) { return digitSet(size).rows; }
+int digitsWidth(const int size, const char* text) { return gameui::digitTextWidth(digitSet(size), text, digitGap(size)); }
+void drawDigits(const GfxRenderer& renderer, const int size, const char* text, const int centreX, const int y) {
+  gameui::digitText(renderer, digitSet(size), text, centreX, y, digitGap(size));
+}
+
+namespace {
+
+// The app's and the sleep screen's month: across the screen.
+void drawMonth(const GfxRenderer& renderer, const Options& options, const bool secondNumbers, const int weekdayY,
+               const int gridY, const int rowHeight, const calmath::Date& shown, const calmath::Date& today) {
+  MonthGrid grid;
+  grid.x = kGridMargin;
+  grid.width = renderer.getScreenWidth() - 2 * kGridMargin;
+  grid.weekdayY = weekdayY;
+  grid.gridY = gridY;
+  grid.rowHeight = rowHeight;
+  grid.secondNumbers = secondNumbers;
+  drawMonthGrid(renderer, options, grid, shown, today);
 }
 
 void drawWeekNumber(const GfxRenderer& renderer, const int y, const calmath::Date& today) {
@@ -198,6 +255,10 @@ const char* monthName(const int month) { return month >= 1 && month <= 12 ? I18N
 
 const char* weekdayName(const int weekday) {
   return weekday >= 0 && weekday <= 6 ? I18N.get(kWeekdayNames[weekday]) : "";
+}
+
+void weekdayInitials(const int weekday, const int count, char* out, const size_t size) {
+  leadingCharacters(weekdayName(weekday), count, out, size);
 }
 
 bool now(calmath::DateTime& out) {
@@ -253,7 +314,7 @@ void drawApp(const GfxRenderer& renderer, const Options& options, const int top,
   const Face face = options.shownFace();
   const Layout layout = appLayout(options, top, shown);
   if (face == Analog) {
-    drawAnalog(renderer, top, time);
+    drawAnalog(renderer, width / 2, top + 118, 128, time);
   } else {
     drawTime(renderer, face, top, time);
   }

@@ -163,7 +163,6 @@ void BaseTheme::drawReaderBattery(const GfxRenderer& renderer, const int x, cons
                     foregroundBlack ? Color::LightGray : Color::DarkGray, foregroundBlack ? Color::Black : Color::White);
 }
 
-int BaseTheme::homeGreetingHeight(GfxRenderer&) const { return 0; }
 
 int BaseTheme::homeHeaderClockTextYOffset(const GfxRenderer& renderer) {
   const auto& metrics = UITheme::getInstance().getMetrics();

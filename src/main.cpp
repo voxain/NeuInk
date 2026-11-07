@@ -2017,7 +2017,9 @@ void loop() {
   }
 #if CROSSINK_APP_CAP_USB_DRIVE
   // A computer at the other end of the cable (not a charger): offer USB file transfer once per connection.
-  if (UsbPrompt::shouldPrompt(gpio.isUsbHostConnected()) && !buttonShortcutController.isQuickLocked()) {
+  // shouldPrompt runs first either way: it follows the cable even while the prompt is switched off.
+  if (UsbPrompt::shouldPrompt(gpio.isUsbHostConnected()) && SETTINGS.usbDrivePrompt &&
+      !buttonShortcutController.isQuickLocked()) {
     activityManager.offerUsbDrive();
   }
 #endif

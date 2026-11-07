@@ -481,7 +481,20 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["libraryListExpanded"] = libraryListExpanded;
   doc["recentBooksView"] = recentBooksView;
   doc["homeIconSize"] = homeIconSize;
-  doc["homeGrid"] = homeGrid;
+  doc["homeColumns"] = homeColumns;
+  doc["homeRows"] = homeRows;
+  JsonArray homeWidgetsJson = doc["homeWidgets"].to<JsonArray>();
+  for (int i = 0; i < homeWidgetCount && i < HOME_WIDGET_MAX; ++i) {
+    const HomeWidget& w = homeWidgets[i];
+    homeWidgetsJson.add(static_cast<uint32_t>(w.type) | static_cast<uint32_t>(w.size) << 8 |
+                        static_cast<uint32_t>(w.flags) << 16 | static_cast<uint32_t>(w.value) << 24);
+  }
+  JsonArray homeOrderJson = doc["homeOrder"].to<JsonArray>();
+  for (int i = 0; i < homeOrderCount && i < HOME_ORDER_MAX; ++i) homeOrderJson.add(homeOrder[i]);
+  doc["homeHiddenEntries"] = homeHiddenEntries;
+  doc["homeIntroSeen"] = homeIntroSeen;
+  doc["usbDrivePrompt"] = usbDrivePrompt;
+  if (lastSeenVersion[0] != '\0') doc["lastSeenVersion"] = lastSeenVersion;
   doc["homeShowNames"] = homeShowNames;
   doc["homeGreeting"] = homeGreeting;
   doc["homeIconShape"] = homeIconShape;
@@ -684,7 +697,35 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc, bool importingCrossPoint
   recentBooksView = RECENT_BOOKS_LIST;
   readLibraryChoice("recentBooksView", recentBooksView, RECENT_BOOKS_VIEW_COUNT);
   readLibraryChoice("homeIconSize", homeIconSize, 4);
-  readLibraryChoice("homeGrid", homeGrid, 4);
+  if (doc["homeColumns"].isNull()) {
+    // Before the number inputs: one of four grids (4x3, 4x4, 3x4, 3x3).
+    const int grid = doc["homeGrid"] | 0;
+    homeColumns = grid >= 2 && grid <= 3 ? 3 : 4;
+    homeRows = grid == 1 || grid == 2 ? 4 : 3;
+  } else {
+    homeColumns = static_cast<uint8_t>(std::clamp(doc["homeColumns"] | 4, 2, 6));
+    homeRows = static_cast<uint8_t>(std::clamp(doc["homeRows"] | 3, 1, 8));
+  }
+  const JsonArrayConst homeWidgetsJson = doc["homeWidgets"].as<JsonArrayConst>();
+  if (!homeWidgetsJson.isNull()) {
+    homeWidgetCount = 0;
+    for (const uint32_t packed : homeWidgetsJson) {
+      if (homeWidgetCount >= HOME_WIDGET_MAX) break;
+      homeWidgets[homeWidgetCount++] = HomeWidget{static_cast<uint8_t>(packed), static_cast<uint8_t>(packed >> 8),
+                                                  static_cast<uint8_t>(packed >> 16), static_cast<uint8_t>(packed >> 24)};
+    }
+  }
+  const JsonArrayConst homeOrderJson = doc["homeOrder"].as<JsonArrayConst>();
+  homeOrderCount = 0;
+  for (const uint8_t key : homeOrderJson) {
+    if (homeOrderCount >= HOME_ORDER_MAX) break;
+    homeOrder[homeOrderCount++] = key;
+  }
+  homeHiddenEntries = doc["homeHiddenEntries"] | static_cast<uint16_t>(0);
+  homeIntroSeen = doc["homeIntroSeen"] | static_cast<uint8_t>(0);
+  readLibraryChoice("usbDrivePrompt", usbDrivePrompt, 2);
+  strncpy(lastSeenVersion, doc["lastSeenVersion"] | "", sizeof(lastSeenVersion) - 1);
+  lastSeenVersion[sizeof(lastSeenVersion) - 1] = '\0';
   readLibraryChoice("homeShowNames", homeShowNames, 2);
   readLibraryChoice("homeGreeting", homeGreeting, 2);
   readLibraryChoice("homeIconShape", homeIconShape, 4);

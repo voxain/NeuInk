@@ -12,5 +12,11 @@ class BatteryActivity final : public Activity {
   void onEnter() override;
   void loop() override;
   void render(RenderLock&&) override;
+
+ private:
+  // The apps list: the first row shown, how many fit, whether more follow.
+  int firstRow = 0;
+  int shownRows = 0;
+  bool moreBelow = false;
 };
 #endif

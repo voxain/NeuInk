@@ -35,9 +35,12 @@ void note(uint16_t percent);
 // Awake: the loss between neighbouring points (the status bar reads the gauge on every redraw). Asleep: the loss
 // across a gap of at least half an hour, where no point exists because nothing ran (a recharge ends a pair).
 // A sleep that lost nothing counts as one percent, so that estimate is a lower bound of the runtime.
+// Any rise is a charge and is left out entirely (a slow charge climbs one percent at a time). `overallTenths` is the
+// drain over all the time measured, awake and asleep: the graph's estimate follows it, so it can only fall.
 struct Rates {
   int awakeTenths = -1;
   int sleepTenths = -1;
+  int overallTenths = -1;
 };
 Rates rates(const uint8_t (&levels)[kBuckets]);
 
