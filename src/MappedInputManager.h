@@ -74,6 +74,7 @@ class MappedInputManager {
   // Enable/disable reader-specific front button mapping.
   // Call with true in reader activity onEnter(), false in onExit().
   void setReaderMode(bool enabled) { readerMode = enabled; }
+  bool isReaderMode() const { return readerMode; }
   void setPowerAsConfirmInReaderMode(bool enabled) { powerAsConfirmInReaderMode = enabled; }
 #if CROSSINK_APP_CAP_TOUCH
   void setReaderTouchscreenOverride(bool enabled) { readerTouchscreenOverride = enabled; }
@@ -241,6 +242,9 @@ class MappedInputManager {
   // Directions for tabbed menus, derived from the physical button layout.
   Button menuButton(Button direction) const;
   bool wasAnyPressed() const;
+  // True while the device is steered with its buttons: always without a touch screen, otherwise from the first
+  // physical button press until the next touch. Themes that show a selection only then ask this.
+  bool buttonsInUse() const { return !hasTouchHardware() || buttonNavSeen; }
   bool wasAnyReleased() const;
   unsigned long getHeldTime() const;
   // True when reader-mode orientation handling swaps the logical front navigation buttons.
@@ -282,6 +286,7 @@ class MappedInputManager {
   bool edgeSlideQualified = false;
 #endif
   mutable ReleaseSuppression releaseSuppression;
+  mutable bool buttonNavSeen = false;  // a physical button since the last touch
   mutable bool suppressPhysicalUpRelease = false;
   mutable bool suppressPhysicalDownRelease = false;
   static constexpr size_t LABEL_BUFFER_SIZE = 128;

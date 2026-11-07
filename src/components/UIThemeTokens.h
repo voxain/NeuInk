@@ -3,6 +3,7 @@
 #include <BoardConfig.h>
 #endif
 #include <FreeInkUIGfxRenderer.h>
+#include <FreeInkUIIcon.h>
 #include <HalGPIO.h>
 #include <HalTiltSensor.h>
 
@@ -12,7 +13,11 @@
 
 #include "AppCapabilities.h"
 #include "CrossPointSettings.h"
+#include "MappedInputManager.h"
 #include "UITheme.h"
+#include "components/icons/homeIcons.h"
+
+extern MappedInputManager mappedInputManager;  // main.cpp
 
 namespace UiThemeTokensDetail {
 inline int16_t scaledListMetric(const int metric) {
@@ -62,6 +67,10 @@ inline uint16_t configureUiList(freeink::ui::ListProps& props, const freeink::ui
   // two-line height and avoid overlapping the following item.
   if (props.labelText.maxLines > 1) props.rowHeight = std::max(props.rowHeight, tokens.rowHeight);
   if (props.rowGap < 0) props.rowGap = tokens.listRowGap;
+  props.chevron = freeink::ui::bitmapFromIcon(icon_chevron_right_24);
+  props.toggleOffDense = mappedInputManager.isReaderMode();  // see ListProps::toggleOffDense
+  // Nothing stays selected on a touch screen: the list shows a selection only for the buttons.
+  props.hideSelection = UITheme::getInstance().getTheme().selectionOnlyForButtons() && !mappedInputManager.buttonsInUse();
   return freeink::ui::listVisibleRows(rect, props.rowHeight, props.rowGap);
 }
 

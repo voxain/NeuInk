@@ -42,8 +42,9 @@ void draw(const GfxRenderer& renderer, const Layout& layout, const char* const* 
   for (uint8_t i = 0; i < layout.count; ++i) {
     const Rect& button = layout.buttons[i];
     const bool selected = static_cast<int>(i) == selectedIndex;
-    if (selected) renderer.fillRect(button.x, button.y, button.width, button.height, true);
-    renderer.drawRect(button.x, button.y, button.width, button.height, true);
+    // The look of the shared UI components: light gray, black when picked, no outline.
+    renderer.fillRoundedRect(button.x, button.y, button.width, button.height, 14,
+                             selected ? Color::Black : Color::LightGray);
     const char* label = labels[i] != nullptr ? labels[i] : "";
     const EpdFontFamily::Style style =
         static_cast<int>(i) == primaryIndex ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;

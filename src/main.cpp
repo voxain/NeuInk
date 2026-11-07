@@ -113,6 +113,8 @@ inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_
 #include "fontIds.h"
 #include "network/OnlineWifi.h"
 #include "network/UsbSerialFileTransfer.h"
+#include "util/UsageSnapshot.h"
+#include "util/UsbPrompt.h"
 #ifdef SIMULATOR
 #include <SimulatorLifecycle.h>
 
@@ -120,6 +122,7 @@ inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_
 #include "simulator/SimulatorSmokeTest.h"
 #endif
 #include "util/BatteryDiagnosticLog.h"
+#include "util/BatteryHistory.h"
 #include "util/ButtonNavigator.h"
 #include "util/ButtonShortcutController.h"
 #include "util/LanguagePacks.h"
@@ -1235,6 +1238,9 @@ void enterDeepSleep(bool fromTimeout) {
     }
   }
 
+#if NEUINK_BATTERY_HISTORY
+  UsageSnapshot::save();
+#endif
   // Last chance to sample: startDeepSleep() cuts the SD rail on X3, so nothing
   // can be written again until the next wake.
   BatteryDiagnosticLog::record(BatteryDiagnosticLog::Event::Sleep, BoardConfig::ACTIVE.name);
@@ -1392,6 +1398,9 @@ void setup() {
   // only on screens that explicitly allow the fallback.
   gpio.setSharedConfirmPowerShortPressEmitsPower(true);
   powerManager.begin();
+#if NEUINK_BATTERY_HISTORY
+  HalPowerManager::setBatteryObserver(BatteryHistory::note);  // the battery graph follows the reads that happen anyway
+#endif
 
   const auto wakeupReason = gpio.getWakeupReason();
 #ifndef SIMULATOR
@@ -1481,6 +1490,9 @@ void setup() {
 #endif
   }
   APP_STATE.loadFromFile();
+#if NEUINK_BATTERY_HISTORY
+  UsageSnapshot::restore();  // only takes the file when RTC memory was wiped
+#endif
   mirrorWakeShortPressToNvs();
   // Needs SETTINGS for the clock's UTC offset, so it cannot run any earlier.
   BatteryDiagnosticLog::record(BatteryDiagnosticLog::Event::Wake, BoardConfig::ACTIVE.name,
@@ -2010,6 +2022,12 @@ void loop() {
   if (gpio.wasUsbStateChanged()) {
     activityManager.requestUpdate();
   }
+#if CROSSINK_APP_CAP_USB_DRIVE
+  // A computer at the other end of the cable (not a charger): offer USB file transfer once per connection.
+  if (UsbPrompt::shouldPrompt(gpio.isUsbHostConnected()) && !buttonShortcutController.isQuickLocked()) {
+    activityManager.offerUsbDrive();
+  }
+#endif
 
   // While on external power the percent climbs with no user interaction to
   // repaint it (gauge boards like the X4 Pro report SoC continuously), so poll
@@ -2039,6 +2057,16 @@ void loop() {
   mappedInputManager.clearInjectedReleases();
   // Wi-Fi switched on from the Control Center lives outside the reader too.
   if (OnlineWifi::manualOn()) OnlineWifi::tick();
+  {
+    // The status bar's Wi-Fi icon changes with joining or dropping: draw it again then, and only then. The
+    // reader has no status bar. (tick() above already runs once a second while Wi-Fi is on; this only compares.)
+    static int lastWifiState = 0;
+    const int wifiState = OnlineWifi::indicatorState();
+    if (wifiState != lastWifiState) {
+      lastWifiState = wifiState;
+      if (!activityManager.currentIsReader()) activityManager.requestUpdate();
+    }
+  }
   if (SETTINGS.frontlightNightEnabled != 0 || FrontlightNight::isNight()) {
     if (FrontlightNight::tick()) {
       activityManager.persistGlobalSettings();

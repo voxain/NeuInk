@@ -53,6 +53,13 @@ enum class SettingAction {
   DownloadFonts,
   TtfRendering,
   ClockSync,
+  GeneralDateTime,
+  GeneralUpdates,
+  ReaderContent,
+  ReaderAids,
+  ReaderLookup,
+  DisplayStatusBar,
+  DisplayScreenRefresh,
 };
 
 struct SettingInfo {
@@ -253,6 +260,13 @@ class SettingsActivity final : public Activity {
   std::vector<SettingInfo> controlsTwoFingerSwipeSettings;
   std::vector<SettingInfo> controlsEdgeGestureSettings;
   std::vector<SettingInfo> generalSettings;
+  std::vector<SettingInfo> generalDateTimeSettings;
+  std::vector<SettingInfo> generalUpdatesSettings;
+  std::vector<SettingInfo> readerContentSettings;
+  std::vector<SettingInfo> readerAidsSettings;
+  std::vector<SettingInfo> readerLookupSettings;
+  std::vector<SettingInfo> displayStatusBarSettings;
+  std::vector<SettingInfo> displayScreenRefreshSettings;
   std::vector<SettingInfo> networkSettings;
   std::vector<SettingInfo> systemFilesCacheSettings;
   std::vector<SettingInfo> fileBrowserSettings;

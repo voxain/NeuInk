@@ -24,6 +24,7 @@
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
 #include "components/UiAppHelpers.h"
+#include "components/icons/homeIcons.h"
 #include "components/icons/listIcons.h"
 #include "fontIds.h"
 #include "network/HttpDownloader.h"
@@ -310,18 +311,17 @@ void OpdsBookBrowserActivity::screenHeader(UiApp::ScreenType& screen, const bool
       // shared Back/title baseline instead of at the top of its action lane.
       const int16_t iconX =
           static_cast<int16_t>(searchRect.x + (searchRect.width - TouchHeaderBackButton::ICON_SIZE) / 2);
-      const int16_t iconY = static_cast<int16_t>(backLayout.iconRect.y + TouchHeaderBackButton::TITLE_VERTICAL_OFFSET +
-                                                 (backLayout.iconRect.height - TouchHeaderBackButton::ICON_SIZE) / 2);
-      screen.target().bitmap(
-          fui::Rect{iconX, iconY, TouchHeaderBackButton::ICON_SIZE, TouchHeaderBackButton::ICON_SIZE},
-          fui::bitmapFromIcon(icon_search_32), fui::BitmapMode::Center, fui::Paint::solid(fui::Color::Black));
+      const int16_t iconY = static_cast<int16_t>(TouchHeaderBackButton::titleCenterY(headerRect) - icon_search_24.h / 2);
+      screen.target().bitmap(fui::Rect{iconX, iconY, icon_search_24.w, icon_search_24.h},
+                             fui::bitmapFromIcon(icon_search_24), fui::BitmapMode::Center,
+                             fui::Paint::solid(fui::Color::Black));
     }
   } else {
     fui::HeaderProps header;
     header.title = server.name.empty() ? tr(STR_OPDS_BROWSER) : server.name.c_str();
     header.borderEdges = fui::EdgeBottom;
     if (withSearch && !searchTemplate.empty()) {
-      header.trailingIcon = fui::bitmapFromIcon(icon_search_32);
+      header.trailingIcon = fui::bitmapFromIcon(icon_search_24);
       header.trailingAction = ACTION_SEARCH;
       // Optically align the icon with the title glyphs: text hangs low in its
       // line cell by the font's internal leading; drop the button to match.

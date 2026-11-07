@@ -28,6 +28,7 @@ inline UIScaleSpec uiScaleSpec() {
       spec.titleFontId = UI_12_FONT_ID;
       break;
   }
-  spec.smallFontId = spec.bodyFontId;
+  // Secondary text (values, subtitles) is a step below the body text, so a label and its setting differ.
+  spec.smallFontId = spec.bodyFontId == UI_10_FONT_ID ? SMALL_FONT_ID : UI_10_FONT_ID;
   return spec;
 }

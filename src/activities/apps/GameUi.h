@@ -14,6 +14,8 @@
 #include "MappedInputManager.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
+#include "components/UiAppHelpers.h"
+#include "components/icons/homeIcons.h"
 #include "fontIds.h"
 
 // Drawing, touch and storage helpers shared by the built-in apps. The panel is
@@ -29,7 +31,7 @@ constexpr char kSaveDir[] = "/.crosspoint/games";
 // - kBottomMargin between the lowest control and the foot of the screen.
 constexpr int kHeaderGap = 8;
 constexpr int kSectionGap = 12;
-constexpr int kBottomMargin = 20;
+constexpr int kBottomMargin = 44;  // clear of the panel's bezel, which sits recessed at the foot
 // A button in the header is as tall as the smallest comfortable touch target.
 constexpr int kCornerHeight = 44;
 // The back arrow and the title sit this far below their usual place, which
@@ -86,19 +88,6 @@ inline void fittedText(const GfxRenderer& renderer, const Box& box, const char* 
   centredText(renderer, fontId, box, text, black, EpdFontFamily::BOLD);
 }
 
-// Black text with a white rim, for labels that sit on a pixel pattern.
-inline void rimmedText(const GfxRenderer& renderer, const int fontId, const Box& box, const char* text,
-                       const EpdFontFamily::Style style = EpdFontFamily::BOLD) {
-  const int x = box.x + (box.w - renderer.getTextWidth(fontId, text, style)) / 2;
-  const int y = centredTextY(renderer, fontId, box);
-  for (int dy = -2; dy <= 2; ++dy) {
-    for (int dx = -2; dx <= 2; ++dx) {
-      if (dx != 0 || dy != 0) renderer.drawText(fontId, x + dx, y + dy, text, false, style);
-    }
-  }
-  renderer.drawText(fontId, x, y, text, true, style);
-}
-
 // A one-bit bitmap (rows padded to whole bytes, 1 = ink) painted in black or white.
 inline void bitsAt(const GfxRenderer& renderer, const uint8_t* data, const int width, const int rows, const int x,
                    const int y, const bool black) {
@@ -116,11 +105,35 @@ inline void stamp(const GfxRenderer& renderer, const appart::Bitmap& bitmap, con
   bitsAt(renderer, bitmap.bits, bitmap.width, bitmap.height, x, y, black);
 }
 
-// A piece that stays readable on any square: its white underlay first, then its ink.
-inline void stampOver(const GfxRenderer& renderer, const appart::Bitmap& ink, const appart::Bitmap& underlay,
-                      const int x, const int y) {
-  stamp(renderer, underlay, x, y, false);
-  stamp(renderer, ink, x, y, true);
+// A one-bit shape filled with the 50% gray checkerboard.
+inline void stampGray(const GfxRenderer& renderer, const appart::Bitmap& bitmap, const int x, const int y) {
+  const int stride = (bitmap.width + 7) / 8;
+  for (int row = 0; row < bitmap.height; ++row) {
+    for (int column = 0; column < bitmap.width; ++column) {
+      if (bitmap.bits[row * stride + column / 8] & (0x80 >> (column % 8))) {
+        renderer.drawPixel(x + column, y + row, ((x + column + y + row) & 1) == 0);
+      }
+    }
+  }
+}
+
+// A chess piece: the Lucide outline over its filled shape, which is white for a white piece and 50% gray for a
+// black one. A black piece also gets a one-pixel white rim, so either stays readable on a hatched square.
+inline void piece(const GfxRenderer& renderer, const appart::Bitmap& outline, const appart::Bitmap& silhouette,
+                  const bool white, const int x, const int y) {
+  if (!white) {
+    for (int dy = -1; dy <= 1; ++dy) {
+      for (int dx = -1; dx <= 1; ++dx) {
+        if (dx != 0 || dy != 0) stamp(renderer, silhouette, x + dx, y + dy, false);
+      }
+    }
+  }
+  if (white) {
+    stamp(renderer, silhouette, x, y, false);
+  } else {
+    stampGray(renderer, silhouette, x, y);
+  }
+  stamp(renderer, outline, x, y, true);
 }
 
 // The large game letters and digits (GameGlyphs.h), which the UI fonts are too
@@ -150,14 +163,6 @@ inline void centredGlyph(const GfxRenderer& renderer, const gameglyphs::Glyph& g
   glyphAt(renderer, glyph, bits, rows, x, y, ink != Ink::White);
 }
 
-// letter: 'a'..'z' or 'A'..'Z'.
-inline void bigLetter(const GfxRenderer& renderer, const char letter, const Box& box, const Ink ink) {
-  const int index = (letter >= 'a' && letter <= 'z') ? letter - 'a' : letter - 'A';
-  if (index < 0 || index >= 26) return;
-  centredGlyph(renderer, gameglyphs::kLetterGlyphs[index], gameglyphs::kLetterBits, gameglyphs::kLetterRows,
-               gameglyphs::kLetterCap, box, ink);
-}
-
 // digit: 1..9. Bold for printed clues, regular for the player's own digits.
 inline void bigDigit(const GfxRenderer& renderer, const int digit, const bool bold, const Box& box, const Ink ink) {
   if (digit < 1 || digit > 9) return;
@@ -170,30 +175,27 @@ inline void bigDigit(const GfxRenderer& renderer, const int digit, const bool bo
   }
 }
 
+// The look of the shared UI components: a light-gray rounded box, black when chosen, no outline.
+inline void buttonBody(const GfxRenderer& renderer, const Box& box, const bool filled, const int radius = 14) {
+  renderer.fillRoundedRect(box.x, box.y, box.w, box.h, radius, filled ? Color::Black : Color::LightGray);
+}
+
 // A label wider than its button (a long translation) is drawn in the small font.
 inline void button(const GfxRenderer& renderer, const Box& box, const char* label, const bool filled,
                    const int fontId = UI_10_FONT_ID) {
-  if (filled) {
-    renderer.fillRoundedRect(box.x, box.y, box.w, box.h, 8, Color::Black);
-  } else {
-    renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 8, true);
-  }
+  buttonBody(renderer, box, filled);
   const bool fits = renderer.getTextWidth(fontId, label, EpdFontFamily::BOLD) <= box.w - 8;
   centredText(renderer, fits ? fontId : SMALL_FONT_ID, box, label, !filled, EpdFontFamily::BOLD);
 }
 
 // A button with a picture above its word.
-inline void iconButton(const GfxRenderer& renderer, const Box& box, const appart::Bitmap& icon, const char* label,
+inline void iconButton(const GfxRenderer& renderer, const Box& box, const freeink::Icon& icon, const char* label,
                        const bool filled) {
-  if (filled) {
-    renderer.fillRoundedRect(box.x, box.y, box.w, box.h, 10, Color::Black);
-  } else {
-    renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 10, true);
-  }
+  buttonBody(renderer, box, filled, 16);
   constexpr int labelHeight = 30;
-  const int iconY = box.y + (box.h - icon.height - labelHeight - 4) / 2;
-  stamp(renderer, icon, box.x + (box.w - icon.width) / 2, iconY, !filled);
-  fittedText(renderer, {box.x + 3, iconY + icon.height + 4, box.w - 6, labelHeight}, label, !filled);
+  const int iconY = box.y + (box.h - icon.h - labelHeight - 4) / 2;
+  drawLucideIcon(renderer, icon, box.x + (box.w - icon.w) / 2, iconY, !filled);
+  fittedText(renderer, {box.x + 3, iconY + icon.h + 4, box.w - 6, labelHeight}, label, !filled);
 }
 
 // Diagonal hatching, the dark squares of a printed chess diagram.
@@ -249,6 +251,12 @@ inline void choice(const GfxRenderer& renderer, const Box& box, const char* labe
   if (!enabled) fade(renderer, box);
 }
 
+// A thin gray rule across a panel at y: between its settings and its buttons.
+inline void panelRule(const GfxRenderer& renderer, const Box& panel, const int y) {
+  constexpr int inset = 18;
+  renderer.fillRectDither(panel.x + inset, y, panel.w - 2 * inset, 2, Color::DarkGray);
+}
+
 // A white panel with a frame, laid over whatever is already drawn.
 inline void panelFrame(const GfxRenderer& renderer, const Box& box) {
   renderer.fillRoundedRect(box.x - 3, box.y - 3, box.w + 6, box.h + 6, 14, Color::White);
@@ -301,7 +309,10 @@ inline void drawHeader(GfxRenderer& renderer, const MappedInputManager& input, c
   } else {
     GUI.drawHeader(renderer, header, centred ? "" : title);
   }
-  renderer.fillRect(0, header.y + header.height - 4, renderer.getScreenWidth(), 5, false);
+  // Games draw their own divider below the bar: wipe the theme's underline, if it has one.
+  if (UITheme::getInstance().getMetrics().headerUnderlineSize > 0) {
+    renderer.fillRect(0, header.y + header.height - 4, renderer.getScreenWidth(), 5, false);
+  }
   if (centred) {
     const int left = TouchHeaderBackButton::layout(header).titleX;
     const int right = rightEdge > 0 ? rightEdge - 8 : renderer.getScreenWidth() - left;
@@ -344,7 +355,6 @@ struct ButtonPointer {
     focusX = b.x + b.w / 2;
     focusY = b.y + b.h / 2;
   }
-  bool focusedOn(const Box& b) const { return enabled && count > 0 && b.contains(focusX, focusY); }
 
   // Call at the end of render, before the display update.
   void draw(const GfxRenderer& renderer) {
@@ -385,13 +395,6 @@ struct ButtonPointer {
     return true;
   }
 
-  // Confirm held this long on the framed box (HoldButton on button readers).
-  unsigned long heldOn(const MappedInputManager& input, const Box& b) const {
-    if (!focusedOn(b) || confirmDownMs == 0 || !input.isPressed(MappedInputManager::Button::Confirm)) return 0;
-    return millis() - confirmDownMs;
-  }
-  // A completed hold must not also tap the box when Confirm comes up.
-  void consumeConfirm() { confirmDownMs = 0; }
 
  private:
   uint16_t nearest(const int px, const int py) const {
@@ -433,76 +436,6 @@ struct ButtonPointer {
     focusX = bx;
     focusY = by;
     return true;
-  }
-};
-
-// A button that acts only when it is held: it fills from the left while the
-// finger rests on it, in a few steps because the panel repaints slowly.
-struct HoldButton {
-  static constexpr unsigned long kHoldMs = 1200;
-  static constexpr uint8_t kSteps = 4;
-
-  static constexpr unsigned long kHintMs = 2000;
-
-  Box box;
-  uint8_t step = 0;  // 0 = not held, kSteps = full
-  // A plain tap shows a short note under the button: it needs a hold.
-  unsigned long hintUntilMs = 0;
-
-  // Call on every loop. Returns true once, when the hold is complete; sets
-  // `repaint` when the fill has to be drawn again.
-  // With a ButtonPointer on a button reader, Confirm held on the framed box counts.
-  bool update(MappedInputManager& input, bool& repaint, ButtonPointer* pointer = nullptr) {
-    int x = 0;
-    int y = 0;
-    unsigned long heldMs = 0;
-    uint8_t now = 0;
-    if (pointer && pointer->enabled) {
-      heldMs = pointer->heldOn(input, box);
-      if (heldMs >= kHoldMs) {
-        pointer->consumeConfirm();
-        step = 0;
-        repaint = true;
-        return true;
-      }
-      now = heldMs >= 100 ? static_cast<uint8_t>(1 + (heldMs - 100) * (kSteps - 1) / (kHoldMs - 100)) : 0;
-    } else if (box.w > 0 && input.isScreenTouchTapCandidate(x, y, heldMs) && box.grown(8).contains(x, y)) {
-      if (heldMs >= kHoldMs) {
-        // The rest of this touch is not a tap on whatever comes next.
-        input.suppressCurrentTouchContact();
-        step = 0;
-        repaint = true;
-        return true;
-      }
-      now = heldMs >= 100 ? static_cast<uint8_t>(1 + (heldMs - 100) * (kSteps - 1) / (kHoldMs - 100)) : 0;
-    }
-    if (now != step) {
-      step = now;
-      repaint = true;
-    }
-    if (box.w > 0 && input.wasScreenTapped(x, y) && box.grown(8).contains(x, y)) {
-      hintUntilMs = millis() + kHintMs;
-      repaint = true;
-    } else if (hintUntilMs != 0 && static_cast<long>(millis() - hintUntilMs) >= 0) {
-      hintUntilMs = 0;
-      repaint = true;
-    }
-    return false;
-  }
-
-  void draw(const GfxRenderer& renderer, const char* label, const char* hint) const {
-    cornerButton(renderer, box, label);
-    if (step > 0) renderer.invertRect(box.x + 4, box.y + 4, (box.w - 8) * step / kSteps, box.h - 8);
-    if (hintUntilMs == 0) return;
-    // The note sits under the button, right edges lined up, over whatever is there.
-    const int textW = renderer.getTextWidth(SMALL_FONT_ID, hint);
-    const int w = textW + 24;
-    const int h = renderer.getLineHeight(SMALL_FONT_ID) + 14;
-    const int x = box.x + box.w - w;
-    const int y = box.y + box.h + 6;
-    renderer.fillRoundedRect(x, y, w, h, 10, Color::White);
-    renderer.drawRoundedRect(x, y, w, h, 2, 10, true);
-    renderer.drawText(SMALL_FONT_ID, x + 12, y + 7, hint, true);
   }
 };
 

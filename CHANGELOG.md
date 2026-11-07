@@ -1,5 +1,149 @@
 # NeuInk changelog
 
+## [Unreleased]
+
+## [NeuInk 0.3.0] - 2026-11-07
+
+The NeuInk interface: the Vega theme, a rebuilt reader menu, Battery and Storage pages, apps, and a USB prompt. The
+new screens are in [FEATURES.md](FEATURES.md#23-the-neuink-interface-030). Reading stats, books and settings carry
+over; the Battery history and the per-app times start empty once.
+
+- USB: a computer at the other end of the cable (not a charger) is detected, and the reader asks once per
+  connection whether to open the SD card as a USB drive; saying no, or leaving USB mode, silences it until the
+  cable has been out for ten seconds. X4 Pro: enumeration by the host (`tud_mounted`); other S3 boards: USB
+  start-of-frame packets.
+- Reader menu: a floating gray card like the Home layout panel (white pill rows, tabs as a black pill, a round back
+  button); orientation and paragraph alignment are rows of picture buttons in the Layout list, no longer
+  behind a submenu (the orientation buttons are one device icon turned in 90 degree steps). Sliders are the
+  Control Center's level sliders with round - and + buttons (`panel::levelSlider`, shared with the quick settings
+  panel). Other short choices that fit become a row of buttons; the picked entry of a list is black. The reader's
+  status bars use the header's level-box battery, smaller.
+- Icons: the toolkit turns any icon in 90 degree steps, so the chevrons (left, up, down), the double chevrons and
+  the down arrow are the one right-facing icon, turned, instead of a copy each. The reader menu's icons are
+  Lucide; the five style-B tab icons and their generator code are gone.
+- Settings > Battery and Storage have an icon and a title in the title bar.
+- Settings > Storage (between Battery and Network): the SD card's used space in large type and one rounded, segmented
+  bar in four grays for Books, Images and screenshots, Fonts and dictionaries, App data and caches, and Other, with a
+  row per category and what is free. The page opens at once; "--" and a spinner on the bar stand in until the scan,
+  which runs in the background, is done. The SD card and used-space rows left About.
+- Settings > Battery: the charge in large type, two runtime estimates (screen on, from the loss between neighbouring
+  points; asleep, from the loss across the gaps where the reader slept), and no explanatory text under the graph.
+- Battery graph and the time and charge per app survive software restarts (RTC_NOINIT instead of RTC_DATA, which
+  a restart resets) and, through a 0.6 KB copy in /.crosspoint/usage.bin written before sleep and before an OTA or SD
+  update restarts, a power-off or a flash.
+- Vega Home: swipe up from the bottom edge for a layout panel (icon size 24/32/42/48, icon shape squircle,
+  rounded square, circle or hexagon, grid 4x3/4x4/3x4/3x3, names on or off, and an experimental true gray
+  for the plates). Library: Recently Opened lists never-opened books after the recent ones, by title; grid
+  covers and page dots are round. Settings: rows keep a fixed size and scroll, and are ordered General,
+  Display, Reader, Battery, Storage, Network, Dictionaries, Controls, Library, Apps, Stats, About.
+- X4 Pro: Settings > Battery shows the charge level, a graph of the last 24 hours (a point every five minutes)
+  with an estimate for the next 24, the time spent in the reader and each app today and over the last week, and
+  the percent of charge each costs per hour (the loss between two gauge reads goes to what was in front; screen
+  changes, charging and sleep never count). It takes the levels from the reads the status bar already does: no
+  extra gauge reads and nothing during deep sleep. About 0.8 KB of RTC memory.
+- Games: fixed the broken Chess, Checkers and Go boards (the board now fits the screen),
+  black chess pieces are filled with gray and outlined, "New" in the title bar is a plain tap
+  (nothing resets until Start), and the new-game popup has a rule above Start and Cancel.
+  Highlights uses gray squircle icons and a gray Study button. Book-cover corners line up
+  with the new dither phase again.
+- New default UI theme, Vega: the last opened book as a card (cover, title, author, pill
+  progress bar) over a paged grid of light-gray squircles for every Home action and app.
+  Swipe or use the buttons to change page. Only this theme lists the apps on Home, with
+  short names (Files, Stats) and two-line names where needed. On touch readers an icon lights
+  only while pressed, and the selection shows only while the buttons are in use. Its title
+  bars (File Manager, Library, Settings, apps...) are light gray, taller, without the black
+  underline, and show the app's icon. Lists in the other apps (Settings, File Manager,
+  Library...) also show a selected row only while the buttons are in use. The status bar has
+  a bigger clock, a Wi-Fi icon while Wi-Fi is on (Lucide wifi when joined, wifi-zero while
+  joining), and a new battery: no outline, rounded, light-gray empty part, the percentage
+  without its sign inside it. The reader's own status bar is unchanged.
+- App and Home icons are Lucide. 24 px is Lucide's own grid, pixel-exact (title bars, Wi-Fi);
+  squircles and tiles use 32 px, where the Library's pillars and the Stats bars are moved onto
+  whole pixels so their gaps are equal.
+- Settings: each group's icon sits on a light-gray squircle (all Lucide now) with a smaller
+  description under the title; new About page (version, build, device, chip, memory,
+  battery, uptime, reading totals; the SD card moved to Storage), which replaces the version line under the group list;
+  Apps has its own entry; General is split into Date and time and Software updates.
+- Shared UI components: switches are a rounded track with a round knob (light gray off,
+  dark on, knob inverted); a value is now a size smaller than its label; submenu rows show a
+  chevron icon instead of ">". Dictionaries, the Apps options and About are made of the
+  shared list instead of their own drawing code (the Apps screen's own boxes, switches and
+  buttons are gone; the games keep theirs). Dictionaries: Remove language is a row now
+  instead of holding a language chip.
+- Vega's Home does a half refresh when entered from another screen, and after every sixth
+  fast refresh within Home, since its gray areas ghost.
+- Settings > Display and Reader are grouped into submenus (Display: Status bar, Screen refresh; Reader:
+  Content, Reading aids, Word lookup); Disable touchscreen moved to Controls > Taps and gestures.
+- The quick settings pane: round light-gray buttons with Lucide icons, the sliders are rounded boxes
+  (light gray, dark up to the level, the percent inside) and the +/- buttons only show while the buttons
+  are being used.
+- The Clock app has no title or status bar (a round exit button on touch screens).
+- Wi-Fi's status bar icon updates when joining or dropping (a comparison in the main loop, no polling).
+- About: the SD card's used space is worked out on request (it reads the whole FAT).
+- Switches in reader menus use the 50% gray, which survives the reader's refresh; the File Browser
+  settings and the reader drawer use the same switch as the lists now.
+- Reading Stats opens a list first: "All Books" on top, then every recent book with its progress, so
+  the stats to see are chosen first. The stats pages use rounded light-gray tiles and rounded bars
+  instead of outlined boxes; the shared action buttons (e.g. the Wi-Fi prompts) follow the same look.
+- Chess pieces are Lucide (48 px on the board, 24 px for the captured pieces): the outline is the
+  white piece and the same shape filled in is the black one. That is about half the size of the old
+  Noto bitmaps (4.3 KB, was 8.9 KB). The checkers crown is Lucide's too.
+- The status bar's "on but not joined" Wi-Fi icon is Lucide's crossed-out Wi-Fi (the single dot was
+  too easy to miss). The title bars' trailing icons (File Manager, Library, OPDS) are Lucide and sit
+  on the title's line. The quick settings pane has no outline. Vega's Home does a half refresh after
+  the pane closes. The games' controls keep a larger gap to the foot of the screen.
+- File Manager and Library: every file type and the menus' icons are Lucide, on gray squircles in the
+  lists; the File Manager's path is a gray pill with a folder icon and its File Transfer button is a
+  gray rounded button; the Library's sorting controls sit on a gray pill instead of between two rules.
+  There is one icon lookup now (homeIconSet.h) instead of three, so Lyra's and the Cover Grid's menu
+  icons are Lucide too; `appsIcon.h` and its generator are gone.
+- The File Transfer menu has Lucide icons on gray squircles. The quick settings pane is one light-gray
+  surface with white controls (no shadow or outline). The Library has air between its title bar and
+  the sort pill; Chess and Checkers shrink their board to keep the buttons clear of the screen's foot.
+- Black chess pieces are the Lucide icon inverted: a black body with the outline in white.
+- Fixed: a gray rounded box now has the same corners wherever it sits (the 25% dither is anchored to
+  the box's own corner instead of the screen's, so a corner no longer loses pixels by parity). Lists
+  draw no selected row while a touch screen is not in button use, also in the File Manager, the Library
+  and the File Transfer menu (a flag in the list component, not an index the caller must clear).
+- Fixed: the quick-settings panel drew a gray bar at the top; the book card's top rows were
+  painted over by the Home header.
+- File Transfer is now part of the File Manager (its settings page) and no longer a Home
+  entry in any theme; "Browse Files" is now called "File Manager" (German: Dateimanager).
+  A File Transfer button sits under the title bar of the File Manager (touch readers); the
+  power-button shortcut and Quick Actions still start File Transfer directly.
+- The apps list is one shared registry (`activities/apps/AppRegistry.h`). The Apps screen
+  has small tiles with 32 px Lucide icons; the large drawn icons and the 84 px chess
+  knight bitmaps and the drawn tool-button icons (undo, hint, flip, erase, notes, fill) are
+  gone: all use Lucide icons. The Clock icon no longer shows today's date. Settings has its
+  own Apps entry (show or hide apps, Clock and Sudoku options). The Clock's Persian date is
+  off by default.
+- The Highlights icon is now an outline (Lucide highlighter) in every theme.
+
+Makes the firmware smaller. The X4 Pro firmware was at 6.29 MB of its 6.55 MB update
+slot (96%), and online (OTA) updates only work while the image fits that slot, so every
+new feature was closer to making updates impossible. This release removes or trims
+features to get room back; each item says why. The image is now 6.07 MB, 217 KB smaller, leaving
+482 KB free.
+
+- Removed Wordle (about 65 KB): the game, its 22,000-word list and its tests. It was the
+  largest single feature that is not part of reading. Sudoku, Chess, Checkers, Go, Tic
+  Tac Toe and the Clock stay. The numbers of the apps in the saved hide/resume files are
+  unchanged, so nothing else needs resetting. An old `wordle.bin` on the SD card is
+  ignored and can be deleted.
+- Hyphenation now ships for English and German only (about 117 KB saved). The patterns
+  for French, Spanish, Italian, Polish, Portuguese, Russian, Swedish and Ukrainian are no
+  longer built into the firmware; books in those languages are laid out without
+  hyphenation, which only changes where long words break at line ends. German is the
+  largest pattern set (206 KB) and stays because NeuInk's main use is English and German
+  books. The generated pattern files are still in the tree, and building with
+  `-DNEUINK_HYPHENATION_ALL=1` brings every language back.
+- The Persian font supplement (Vazirmatn, about 35 KB) is now optional at build time. The
+  X4 Pro build leaves it out with `-DNEUINK_PERSIAN_FONTS=0`; remove that flag to put it
+  back. Without it, Bitter and Lexend Deca have no Persian or Arabic letters of their
+  own, so Persian books use an installed NotoVazir from the SD card, as they did before
+  1.3.1. Persian menus, keyboard, dictionary and right-to-left layout are unchanged.
+  The reason: it duplicates NotoVazir, which can live on the SD card instead of in flash.
+
 ## [NeuInk 0.2.0] - 2026-11-06
 
 Adds switching to VARAGH, CrossInk or CrossPoint from the settings, and repairs online

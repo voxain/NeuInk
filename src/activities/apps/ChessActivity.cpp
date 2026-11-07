@@ -15,12 +15,11 @@
 
 namespace {
 
-constexpr int kSquare = 58;
-constexpr int kPieceInset = 1;  // the piece bitmaps are 56 pixels
+constexpr int kMaxSquare = 58;  // the board shrinks from this to keep the controls clear of the screen's foot
 constexpr int kStripHeight = 30;
 constexpr int kToolHeight = 100;
 constexpr int kToolGap = 8;
-constexpr int kSmallStep = 20;
+constexpr int kSmallStep = 24;
 constexpr uint8_t kFileMagic[4] = {'V', 'C', 'A', '1'};
 // Room for the computer to remember this many positions, from the reader's
 // large memory (PSRAM); boards without it play without. In matches on a PC a
@@ -110,8 +109,11 @@ void ChessActivity::onExit() {
 
 void ChessActivity::layout() {
   const int width = renderer.getScreenWidth();
-  const int size = kSquare * 8;
   topStripY = gameui::contentTop(renderer, mappedInput);
+  // As in Go, the board takes what the strips, the status line and the tool row leave of the height.
+  const int fixedHeight = 2 * (kStripHeight + gameui::kHeaderGap) + 4 + 34 + gameui::kSectionGap + kToolHeight;
+  squareSize = std::clamp((gameui::contentBottom(renderer) - topStripY - fixedHeight) / 8, 40, kMaxSquare);
+  const int size = squareSize * 8;
   board = {(width - size) / 2, topStripY + kStripHeight + gameui::kHeaderGap, size, size};
   bottomStripY = board.y + size + gameui::kHeaderGap;
   statusY = bottomStripY + kStripHeight + 4;
@@ -121,7 +123,7 @@ void ChessActivity::layout() {
     tools[i] = {board.x + i * (toolWidth + kToolGap), toolsY, toolWidth, kToolHeight};
   }
   newGameBox = {board.x + (size - 260) / 2, toolsY + 18, 260, 64};
-  newHold.box = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
+  newButton = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
 
   // The New game panel lies over the middle of the board.
   constexpr int pad = 18;
@@ -296,13 +298,13 @@ gameui::Box ChessActivity::squareBox(const int square) const {
   const int file = square & 7;
   const int column = settings.flipped ? 7 - file : file;
   const int row = settings.flipped ? rank : 7 - rank;
-  return {board.x + column * kSquare, board.y + row * kSquare, kSquare, kSquare};
+  return {board.x + column * squareSize, board.y + row * squareSize, squareSize, squareSize};
 }
 
 int ChessActivity::squareAt(const int x, const int y) const {
   if (!board.contains(x, y)) return -1;
-  const int column = (x - board.x) / kSquare;
-  const int row = (y - board.y) / kSquare;
+  const int column = (x - board.x) / squareSize;
+  const int row = (y - board.y) / squareSize;
   const int file = settings.flipped ? 7 - column : column;
   const int rank = settings.flipped ? row : 7 - row;
   return rank * 8 + file;
@@ -324,17 +326,6 @@ void ChessActivity::loop() {
     }
     return;
   }
-
-  bool repaint = false;
-  if (panel == Panel::Board && game->started() && newHold.update(mappedInput, repaint, &pointer)) {
-    draft = settings;
-    panel = Panel::NewGame;
-    selected = -1;
-    targetCount = 0;
-    requestUpdate();
-    return;
-  }
-  if (repaint) requestUpdate();
 
   int tx = 0;
   int ty = 0;
@@ -382,7 +373,14 @@ void ChessActivity::loop() {
     return;
   }
 
-  if (newHold.box.contains(tx, ty)) return;  // New needs a hold; a tap does nothing
+  if (newButton.contains(tx, ty) && panel == Panel::Board && game->started()) {
+    draft = settings;
+    panel = Panel::NewGame;
+    selected = -1;
+    targetCount = 0;
+    requestUpdate();
+    return;
+  }
   const int square = squareAt(tx, ty);
   if (square >= 0) {
     tapSquare(square);
@@ -461,9 +459,9 @@ void ChessActivity::drawBoard() const {
     if (!content) continue;
     const gameui::Box box = squareBox(square);
     const int kind = artIndex(chess::pieceOf(content));
-    const appart::Bitmap& ink =
-        chess::colourOf(content) == chess::White ? *appart::kPieceWhite[kind] : *appart::kPieceBlack[kind];
-    gameui::stampOver(renderer, ink, *appart::kPieceUnder[kind], box.x + kPieceInset, box.y + kPieceInset);
+    gameui::piece(renderer, *appart::kPieceOutline[kind], *appart::kPieceSilhouette[kind],
+                  chess::colourOf(content) == chess::White, box.x + (box.w - appart::kPieceOutline[kind]->width) / 2,
+                  box.y + (box.h - appart::kPieceOutline[kind]->height) / 2);
   }
 
   if (selected >= 0) {
@@ -513,10 +511,10 @@ void ChessActivity::drawStrip(const int y, const chess::Colour side) const {
   int x = board.x + board.w - count * kSmallStep - 6;
   for (const chess::Piece piece : kOrder) {
     const int kind = artIndex(piece);
-    const appart::Bitmap& art =
-        victim == chess::White ? *appart::kSmallPieceWhite[kind] : *appart::kSmallPieceBlack[kind];
+    const appart::Bitmap& art = *appart::kSmallPieceOutline[kind];
     for (int i = game->lost(victim, piece); i > 0; --i) {
-      gameui::stampOver(renderer, art, *appart::kSmallPieceUnder[kind], x, y + (kStripHeight - art.height) / 2);
+      gameui::piece(renderer, art, *appart::kSmallPieceSilhouette[kind], victim == chess::White, x,
+                    y + (kStripHeight - art.height) / 2);
       x += kSmallStep;
     }
   }
@@ -532,6 +530,7 @@ void ChessActivity::drawNewGamePanel() const {
   for (int i = 0; i < 3; ++i) gameui::choice(renderer, levelBoxes[i], levelName(i), draft.level == i, computer);
   gameui::choice(renderer, colourBoxes[0], tr(STR_CHESS_WHITE), draft.human == chess::White, computer);
   gameui::choice(renderer, colourBoxes[1], tr(STR_CHESS_BLACK), draft.human == chess::Black, computer);
+  gameui::panelRule(renderer, panelBox, startBox.y - 8);
   if (game->started()) gameui::button(renderer, cancelBox, tr(STR_CANCEL), false);
   gameui::button(renderer, startBox, tr(STR_GAME_START), true);
 }
@@ -547,8 +546,9 @@ void ChessActivity::drawPromotionPanel() const {
     const gameui::Box& box = promotionBoxes[i];
     renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 8, true);
     const int kind = artIndex(kChoices[i]);
-    const appart::Bitmap& art = white ? *appart::kPieceWhite[kind] : *appart::kPieceBlack[kind];
-    gameui::stamp(renderer, art, box.x + (box.w - art.width) / 2, box.y + (box.h - art.height) / 2);
+    const appart::Bitmap& art = *appart::kPieceOutline[kind];
+    gameui::piece(renderer, art, *appart::kPieceSilhouette[kind], white, box.x + (box.w - art.width) / 2,
+                  box.y + (box.h - art.height) / 2);
   }
 }
 
@@ -556,7 +556,7 @@ void ChessActivity::render(RenderLock&&) {
   layout();
   renderer.clearScreen();
   gameui::drawHeader(renderer, mappedInput, tr(STR_GAME_CHESS));
-  if (panel == Panel::Board && game->started()) newHold.draw(renderer, tr(STR_GAME_NEW_SHORT), tr(STR_HOLD_FOR_NEW_GAME));
+  if (panel == Panel::Board && game->started()) gameui::cornerButton(renderer, newButton, tr(STR_GAME_NEW_SHORT));
 
   drawStrip(topStripY, settings.flipped ? chess::White : chess::Black);
   drawBoard();
@@ -566,9 +566,9 @@ void ChessActivity::render(RenderLock&&) {
   if (game->started() && game->state() != chess::Game::State::Playing) {
     gameui::button(renderer, newGameBox, tr(STR_GAME_NEW), true);
   } else {
-    gameui::iconButton(renderer, tools[Undo], appart::kIconUndo, tr(STR_SUDOKU_UNDO), false);
-    gameui::iconButton(renderer, tools[Hint], appart::kIconHint, tr(STR_SUDOKU_HINT), false);
-    gameui::iconButton(renderer, tools[Flip], appart::kIconFlip, tr(STR_GAME_FLIP), false);
+    gameui::iconButton(renderer, tools[Undo], icon_undo_32, tr(STR_SUDOKU_UNDO), false);
+    gameui::iconButton(renderer, tools[Hint], icon_hint_32, tr(STR_SUDOKU_HINT), false);
+    gameui::iconButton(renderer, tools[Flip], icon_flip_32, tr(STR_GAME_FLIP), false);
   }
 
   if (panel == Panel::NewGame) drawNewGamePanel();
@@ -591,7 +591,7 @@ void ChessActivity::render(RenderLock&&) {
     } else {
       for (const auto& b : tools) pointer.add(b);
     }
-    if (game->started()) pointer.add(newHold.box);
+    if (game->started()) pointer.add(newButton);
   }
   pointer.draw(renderer);
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

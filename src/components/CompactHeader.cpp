@@ -8,6 +8,7 @@
 
 #include "HeaderDate.h"
 #include "UITheme.h"
+#include "UiAppHelpers.h"
 #include "fontIds.h"
 
 namespace {
@@ -16,11 +17,13 @@ constexpr int kTouchHeaderHeightIncrease = 10;
 constexpr int kHeaderTopGap = 6;
 constexpr int kHeaderTitleLift = 5;
 constexpr int kHeaderBaselineLift = 2;
+constexpr int kHeaderIconGap = 16;
 
 int visibleHeaderHeight(const ThemeMetrics& metrics) { return std::min(metrics.headerHeight, kHeaderHeight); }
 
 int headerHeight(const ThemeMetrics& metrics) {
-  return visibleHeaderHeight(metrics) + (gpio.hasTouch() ? kTouchHeaderHeightIncrease : 0);
+  return visibleHeaderHeight(metrics) + (gpio.hasTouch() ? kTouchHeaderHeightIncrease : 0) +
+         GUI.headerExtraHeight();
 }
 
 int titleBaselineY(const GfxRenderer& renderer, const ThemeMetrics& metrics) {
@@ -44,7 +47,9 @@ void drawTitle(const GfxRenderer& renderer, const char* title, const bool showDa
   const int pageWidth = renderer.getScreenWidth();
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, headerHeight(metrics)}, "");
 
-  const int titleX = metrics.contentSidePadding;
+  const freeink::Icon* appIcon = GUI.headerIcon();
+  const int iconReserve = appIcon ? appIcon->w + kHeaderIconGap : 0;
+  const int titleX = metrics.contentSidePadding + iconReserve;
   const int batteryStartX = pageWidth - metrics.contentSidePadding - metrics.batteryWidth;
   const int dateStartX = showDate ? pageWidth - headerDateReservedWidth(renderer) : pageWidth;
   const int titleRightX = std::min(batteryStartX, dateStartX) - metrics.contentSidePadding;
@@ -52,8 +57,12 @@ void drawTitle(const GfxRenderer& renderer, const char* title, const bool showDa
   const int baselineY = titleBaselineY(renderer, metrics);
   const std::string visibleTitle = renderer.truncatedText(UI_12_FONT_ID, title, maxTitleWidth, EpdFontFamily::BOLD);
 
-  renderer.drawText(UI_12_FONT_ID, titleX, baselineY - renderer.getFontAscenderSize(UI_12_FONT_ID),
-                    visibleTitle.c_str(), true, EpdFontFamily::BOLD);
+  const int titleTopY = baselineY - renderer.getFontAscenderSize(UI_12_FONT_ID);
+  if (appIcon) {
+    drawLucideIcon(renderer, *appIcon, metrics.contentSidePadding,
+                   titleTopY + renderer.getLineHeight(UI_12_FONT_ID) / 2 - appIcon->h / 2);
+  }
+  renderer.drawText(UI_12_FONT_ID, titleX, titleTopY, visibleTitle.c_str(), true, EpdFontFamily::BOLD);
   if (showDate) {
     drawHeaderDateAtBaseline(renderer, pageWidth, baselineY);
   }

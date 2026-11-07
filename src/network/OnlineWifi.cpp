@@ -108,6 +108,10 @@ void setManual(const bool on) {
 
 bool manualOn() { return manual; }
 
+bool connected() { return WiFi.getMode() != WIFI_MODE_NULL && WiFi.status() == WL_CONNECTED; }
+
+int indicatorState() { return !manual ? 0 : (connected() ? 2 : 1); }
+
 void adoptConnection() {
   manual = true;
   if (holding) return;

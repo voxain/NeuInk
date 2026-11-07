@@ -8,7 +8,7 @@
 // screen is open. Three faces - a large digital clock, an analog clock, and a
 // calendar that also carries the Persian day under every date - that a tap on
 // the clock steps through. The arrows (or a swipe) turn the months; a tap on
-// the month's name returns to today. Its settings live in Apps > Manage.
+// the month's name returns to today. Its settings live in Settings > Apps.
 //
 // The time comes from the reader's own clock with the time zone and summer
 // time chosen in Settings; nothing here keeps the device awake.

@@ -17,7 +17,7 @@ This guide covers day-to-day device use. For focused reference material, see [Re
   - [3. Screens](#3-screens)
     - [3.1 Home Screen](#31-home-screen)
     - [3.2 Reading Mode](#32-reading-mode)
-    - [3.3 Browse Files Screen](#33-browse-files-screen)
+    - [3.3 File Manager Screen](#33-file-manager-screen)
     - [3.4 Library Screen](#34-library-screen)
     - [3.5 File Transfer Screen](#35-file-transfer-screen)
     - [3.5.1 Calibre Wireless Transfers](#351-calibre-wireless-transfers)
@@ -110,15 +110,15 @@ Upon turning the device on for the first time, you will be placed on the **[Home
 
 ### 3.1 Home Screen
 
-The Home screen is the main entry point to the firmware. From here you can navigate to **[Reading Mode](#4-reading-mode)** with the most recently read book, the **[Browse Files](#33-browse-files-screen)** screen, the **[Library](#34-library-screen)** screen, the **[File Transfer](#35-file-transfer-screen)** screen, or **[Settings](#36-settings)**.
+The Home screen is the main entry point to the firmware. From here you can navigate to **[Reading Mode](#4-reading-mode)** with the most recently read book, the **[File Manager](#33-file-manager-screen)** (which also holds **[File Transfer](#35-file-transfer-screen)**), the **[Library](#34-library-screen)** screen, or **[Settings](#36-settings)**. The Vega theme also lists every app on Home; with more icons than fit, swipe left or right (or use the buttons) to change page.
 
 ### 3.2 Reading Mode
 
 See [Reading Mode](#4-reading-mode) below for more information.
 
-### 3.3 Browse Files Screen
+### 3.3 File Manager Screen
 
-The Browse Files screen acts as a file and folder browser. The full path to the current directory is shown at the top of the screen. File extensions are displayed alongside each filename, and directories are shown with brackets (e.g. `[folder-name]`). Hidden directories can be shown from settings.
+The File Manager (formerly File Manager) acts as a file and folder browser. A **File Transfer** button sits under the title bar. The full path to the current directory is shown at the top of the screen. File extensions are displayed alongside each filename, and directories are shown with brackets (e.g. `[folder-name]`). Hidden directories can be shown from settings.
 
 - **Navigate List:** Use **Left** (or **Up**), or **Right** (or **Down**) to move the selection cursor up and down through folders and books. You can also long-press these buttons to scroll a full page up or down.
 - **Open Selection:** Press **Confirm** to open a folder or start reading a selected book. Selecting a `.bmp` file will open the image viewer.
@@ -177,7 +177,8 @@ book or image directly from another nearby CrossInk reader without joining a
 Wi-Fi network. See [Nearby File Transfer](./nearby-file-transfer.md) for the
 complete sender and receiver workflow.
 
-On X4 Pro, the screen also includes **USB Drive**. This exposes the reader's SD
+On X4 Pro, plugging the reader into a computer asks whether to open the SD card as a drive (it asks once per
+connection; a charger does not trigger it). The screen also includes **USB Drive**. This exposes the reader's SD
 card to a computer over USB for direct file management. See the
 [USB Drive instructions](./installation.md#usb-drive) for the safe-eject and
 disconnect behavior.
@@ -243,6 +244,7 @@ device model and build.
 - **Refresh Frequency**: Set how often the screen does a full refresh while reading to reduce ghosting; options are every 1, 5, 10, 15, or 30 pages.
 
 - **UI Theme**: Set which UI theme to use:
+  - "Vega" (default) - The last opened book as a card with cover, title, author and progress bar, over a paged grid of squircle icons for every action and app
   - "Classic" - The original CrossInk theme
   - "Minimal" - A minimal theme with a large book cover
   - "Dashboard" - A dashboard-style home layout
@@ -297,7 +299,7 @@ settings.
 
 If a global change does not affect one EPUB, open its Reader Menu **Settings**
 tab and choose **Reset Book Reader Settings**, or use the book action menu in
-**Browse Files** or **Library**. This removes that book's saved reader choices
+**File Manager** or **Library**. This removes that book's saved reader choices
 so it follows the current global defaults again; it keeps reading progress,
 bookmarks, clippings, and stats, and does not reset your other books or global
 settings. Older saved books may need this reset before they can inherit
@@ -398,7 +400,7 @@ which status-bar items are shown.
   - "Sleep" - Put the awake device to sleep without enabling short-press wake
   - "Wake" - When selected as **Short-press Action**, allow a short press to wake the device; does nothing while the device is awake
   - "Next Page" - Turn to the next page while reading
-  - "Toggle Bookmark", "Reading Stats", "Mark Finished", "Refresh", "Change Font", "Guide Dots", "Focus Reading", "Auto Page Turn", "Sync Progress", "File Transfer", "Calibre Wireless", "Join a Network", "Create Hotspot", "Screenshot", "Dark Mode", "Browse Files", "Library", or "Save Clipping" - Run the matching action
+  - "Toggle Bookmark", "Reading Stats", "Mark Finished", "Refresh", "Change Font", "Guide Dots", "Focus Reading", "Auto Page Turn", "Sync Progress", "File Transfer", "Calibre Wireless", "Join a Network", "Create Hotspot", "Screenshot", "Dark Mode", "File Manager", "Library", or "Save Clipping" - Run the matching action
   - "Footnotes" - Select a footnote reference on the current page, with a list
     fallback when needed; see [Footnote Navigation](#footnote-navigation).
 
@@ -639,6 +641,22 @@ Once any of the options above is set up, press **Confirm** while reading to open
 - With **Sync Behavior** set to **Ask every time**, choose **Apply Remote** to jump to remote progress or **Upload Local** to push current progress.
 - With **Sync Behavior** set to **Smart sync**, CrossInk auto-resolves simple cases: upload when no remote progress exists, confirm and leave both unchanged when local and remote progress are already synchronized, upload when local progress is further ahead, or apply remote when remote progress is further ahead.
 
+#### 3.6.8 Battery (X4 Pro)
+
+**Settings > Battery** shows the charge in large type, a graph of the last 24 hours (a point every five
+minutes while the reader is awake; a gap means it was asleep) with a dashed estimate for the next 24, and two
+runtime estimates: how long the charge lasts with the screen on and asleep, worked out from the drain in the last
+24 hours. Below, the time spent in the reader and in each app (today and over the last week) and the percent of
+charge each costs per hour. Nothing extra is read from the battery for this, and the figures survive sleep,
+restarts and updates.
+
+#### 3.6.9 Storage
+
+**Settings > Storage** shows how much of the SD card is used and what fills it: one segmented bar and a row each
+for Books, Images and screenshots, Fonts and dictionaries, App data and caches, Other and Free. The page opens at
+once and shows `--` with a spinner until the card has been scanned in the background, which takes longer the fuller
+the card is.
+
 ### 3.7 Sleep Screen
 
 The **Sleep Screen** setting controls what is displayed when the device goes to sleep:
@@ -679,7 +697,7 @@ In **Page Overlay** mode, white BMP pixels and transparent PNG pixels let the cu
 > - X3: Use a resolution of 528x792 pixels to match the device's screen resolution.
 
 > [!TIP]
-> You can set an image as the sleep screen cover directly from the BMP image viewer in the **[Browse Files](#33-browse-files-screen)** screen.
+> You can set an image as the sleep screen cover directly from the BMP image viewer in the **[File Manager](#33-file-manager-screen)** screen.
 
 ---
 
@@ -693,7 +711,7 @@ sleep screen.
 
 CrossInk supports two ways to choose a custom boot screen:
 
-- **One fixed image:** In **[Browse Files](#33-browse-files-screen)**, open a
+- **One fixed image:** In **[File Manager](#33-file-manager-screen)**, open a
   BMP image from any folder, open its context menu, and choose **Set Boot
   Screen**. This selected image always takes priority over a boot-screen
   folder. To stop using it, open the same image and choose **Clear Boot Screen**.
@@ -874,7 +892,7 @@ If the device goes to sleep or you close the book while viewing a footnote, the 
 ### System Navigation
 
 - **Return to Home:** Press the **Back** button to close the book and return to the **[Home](#31-home-screen)** screen.
-- **Return to Browse Files:** Press and hold the **Back** button to close the book and return to the **[Browse Files](#33-browse-files-screen)** screen.
+- **Return to File Manager:** Press and hold the **Back** button to close the book and return to the **[File Manager](#33-file-manager-screen)** screen.
 - **Reader Menu:** Press **Confirm** to open the **[Reader Menu](#5-reader-menu)**, which includes chapter navigation, reading options, and more.
 
 ### Supported Languages
@@ -917,6 +935,11 @@ TXT and XTC books have their own menus and a smaller set of options; the
 five-tab layout above is for EPUBs. For stats tracking, use **Track Reading
 Stats** in the EPUB **Settings** tab or the XTC Reader Menu. For format-specific
 features, see [Reader Features](./reader-features.md).
+
+On touch screens the menu is a floating gray card at the bottom of the page: the five tabs along its bottom
+edge, white rows with switches, and sliders with round **−** and **+** buttons for exact steps. Orientation and
+Alignment are rows of picture buttons in the Layout tab (the page above previews alignment as you tap); other short
+choices that fit become a row of buttons too, longer ones open a list with the picked entry in black.
 
 Press **Back** at any time to close the menu and return to your current page.
 

@@ -1,0 +1,99 @@
+# Manifest for src/components/icons/homeIcons.h: Lucide 1.70.0 (ISC), the icons of the apps, Home and Settings
+# entries, title bars, the status bar and the games' tool buttons.
+#
+# 24 px is Lucide's own grid, pixel-exact. 32 px is what squircles and tiles use; a 24-unit grid does not
+# divide into 32 pixels, so the one icon whose repeated parts must be evenly spaced (the landmark's pillars)
+# comes from src/components/icons/lucide-snapped/, with those parts moved onto whole pixels.
+#
+# The vendored SDK does not carry the Lucide SVGs: generate with the SVGs of Lucide (npm: lucide-static) and
+# the snapped ones in one folder:
+#   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py --svgdir <folder> \
+#     --manifest src/components/icons/homeIcons.manifest --sizes 24,32 --out src/components/icons/homeIcons.h
+sudoku = grid-3x3
+chess = chess-knight
+checkers = disc-3
+go = circle-dot
+tictactoe = tic-tac-toe
+clock = clock
+highlights = highlighter
+undo = undo-2
+erase = eraser
+notes = pencil
+fill = paint-bucket
+hint = lightbulb
+flip = arrow-down-up
+files = folder
+library = landmark-snapped
+opds = library-big
+stats = chart-column
+settings = settings
+transfer_arrows = arrow-left-right
+wifi_on = wifi
+wifi_off = wifi-off
+crown = crown
+chevron_right = chevron-right
+display = monitor
+reader = book-open
+dictionaries = book-a
+controls = sliders-horizontal
+library_shelf = library
+apps_grid = layout-grid
+about = info
+
+# The quick settings pane's buttons and sliders.
+cc_minus = minus
+cc_plus = plus
+cc_contrast = contrast
+cc_lock = lock
+cc_bulb_off = lightbulb-off
+cc_moon = moon
+cc_more = ellipsis
+cc_focus = a-large-small
+refresh = refresh-cw
+cc_sync = cloud-sync
+cc_power = power
+cc_rotate = rotate-cw
+cc_cold = snowflake
+cc_warm = flame
+
+# The Clock app's exit button.
+exit_x = x
+
+# Trailing icons of the title bars.
+search = search
+more_vertical = ellipsis-vertical
+
+# File types and the rest of the menu icons (one lookup for every list: homeIconSet.h).
+type_book = book
+type_text = file-text
+type_image = image
+type_file = file
+type_recent = history
+type_hotspot = radio-tower
+sort_desc = arrow-down-wide-narrow
+sort_asc = arrow-up-narrow-wide
+book_marked = book-marked
+type_usb = usb
+type_download = download
+battery = battery-medium
+# The reader's panel: its tabs, back and backspace buttons, and the picture buttons for paragraph alignment and
+# orientation. The orientation buttons draw the one device icon turned in 90 degree steps (RadioOption::iconRotation).
+tab_font = case-sensitive
+tab_layout = text-align-start
+tab_more = ellipsis
+tab_bookmark = bookmark
+backspace = delete
+align_left = align-left
+align_center = align-center
+align_right = align-right
+align_justify = align-justify
+align_book = book-type
+orient = smartphone
+# Turned in 90 degree steps where the other directions are needed (see components/icons/turnedIcons.h): the chevron
+# for left, up and down, the double chevron for the four directions, the arrow for down.
+chevrons_right = chevrons-right
+arrow_up = arrow-up
+# Settings > Storage: its row, the scan's spinner and the categories without a file-type icon.
+storage = hard-drive
+loader = loader-circle
+database = database

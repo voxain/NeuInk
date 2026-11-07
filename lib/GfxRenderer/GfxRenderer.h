@@ -81,6 +81,14 @@ class GfxRenderer {
   // Optional logical-space clip used while a TextBlock is rendered inside a
   // table cell. Glyph bitmaps and background fills both pass through this
   // guard, so an emergency oversized codepoint cannot paint into a neighbour.
+  // Parity of the origin a gray dither is anchored to: 0 (the screen's own origin) for plain fills, the box's corner
+  // while a rounded box is filled, so every box gets the same corners wherever it sits.
+  // True gray (experimental): while set, every light-gray fill is also recorded here (one bit per framebuffer pixel)
+  // and any other write clears its bit, so displayTrueGray() knows which pixels are really gray.
+  mutable uint8_t* grayMask_ = nullptr;
+  void grayMaskSet(int x, int y) const;
+  mutable uint8_t ditherPhaseX_ = 0;
+  mutable uint8_t ditherPhaseY_ = 0;
   mutable bool textClipActive_ = false;
   mutable bool thickenGlyphs_ = false;
   mutable int textClipLeft_ = 0;
@@ -300,6 +308,12 @@ class GfxRenderer {
   void maskRoundedRectOutsideCorners(int x, int y, int width, int height, int radius, Color color = Color::White) const;
   void fillRect(int x, int y, int width, int height, bool state = true) const;
   void fillRectDither(int x, int y, int width, int height, Color color) const;
+  // Anchors the gray dithers to a point (its parity) until set back to (0, 0), the screen's own origin. A rounded box
+  // does so for itself; shapes drawn over one (a cover's corner cut-outs) use the box's corner to match its pattern.
+  void setDitherOrigin(const int x, const int y) const {
+    ditherPhaseX_ = static_cast<uint8_t>(x & 1);
+    ditherPhaseY_ = static_cast<uint8_t>(y & 1);
+  }
   void fillRoundedRect(int x, int y, int width, int height, int cornerRadius, Color color) const;
   void fillRoundedRect(int x, int y, int width, int height, int cornerRadius, bool roundTopLeft, bool roundTopRight,
                        bool roundBottomLeft, bool roundBottomRight, Color color) const;
@@ -411,6 +425,13 @@ class GfxRenderer {
   void writeGrayscalePlaneStrip(bool lsbPlane, const uint8_t* scratch, int yStart, int numRows) const;
   bool shouldSkipImageBlanking() const;
   bool supportsStripGrayscale() const;
+  // True gray (experimental), for the Home grid. beginGrayMask() starts recording the light-gray fills of the frame
+  // about to be drawn (it needs a framebuffer's worth of memory and does nothing without it); displayTrueGray() then
+  // shows the frame with those areas as the panel's real half-gray, in a second pass, and falls back to the usual
+  // displayBuffer() where the panel cannot. endGrayMask() frees the memory.
+  void beginGrayMask() const;
+  void endGrayMask() const;
+  bool displayTrueGray();
   bool storeBwBuffer();    // Returns true if buffer was stored successfully
   void restoreBwBuffer();  // Restore and free the stored buffer
   void cleanupGrayscaleWithFrameBuffer() const;

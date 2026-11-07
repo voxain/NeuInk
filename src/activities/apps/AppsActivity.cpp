@@ -3,8 +3,6 @@
 #include <I18n.h>
 
 #include <cstdio>
-#include <cstring>
-#include <initializer_list>
 #include <memory>
 
 #include "CheckersActivity.h"
@@ -14,171 +12,22 @@
 #include "MappedInputManager.h"
 #include "SudokuActivity.h"
 #include "TicTacToeActivity.h"
-#include "WordleActivity.h"
+#include "activities/settings/RowListActivity.h"
+#include "components/UiAppHelpers.h"
+#include "components/icons/homeIconSet.h"
 #include "fontIds.h"
 
 namespace {
 
-constexpr int kColumns = 2;
+constexpr int kColumns = 3;
 constexpr int kTileMargin = 16;
-constexpr int kTileGap = 16;
-// Three rows of tiles fill the screen between the shared top and foot margins.
-constexpr int kTileHeight = 219;
-constexpr int kIconSize = 100;
-constexpr int kIconTop = 21;
-constexpr int kNameTop = 135;
-constexpr int kStatusTop = 171;
-constexpr int kRowHeight = 72;
-constexpr int kRowGap = 12;
-constexpr uint8_t kFileMagic[3] = {'V', 'A', 'P'};
-
-// Three rows of three letter tiles in the game's own three looks, the last row solved.
-void drawWordleIcon(const GfxRenderer& renderer, const int x, const int y) {
-  enum Look : uint8_t { Open, Grey, Black };
-  static constexpr Look kLooks[9] = {Open, Grey, Black, Grey, Black, Open, Black, Black, Black};
-  constexpr int gap = 5;
-  constexpr int tile = (kIconSize - 2 * gap) / 3;
-  constexpr int radius = 5;
-  for (int i = 0; i < 9; ++i) {
-    const int tileX = x + (i % 3) * (tile + gap);
-    const int tileY = y + (i / 3) * (tile + gap);
-    if (kLooks[i] == Black) {
-      renderer.fillRoundedRect(tileX, tileY, tile, tile, radius, Color::Black);
-      continue;
-    }
-    if (kLooks[i] == Grey) renderer.fillRoundedRect(tileX, tileY, tile, tile, radius, Color::LightGray);
-    renderer.drawRoundedRect(tileX, tileY, tile, tile, 2, radius, true);
-  }
-}
-
-// One box of a Sudoku grid, heavy frame, with a few digits in it.
-void drawSudokuIcon(const GfxRenderer& renderer, const int x, const int y) {
-  constexpr int cell = kIconSize / 3;
-  constexpr int size = cell * 3;
-  for (int i = 0; i <= 3; ++i) {
-    const int thickness = (i == 0 || i == 3) ? 3 : 1;
-    renderer.fillRect(x + i * cell - thickness / 2, y - 1, thickness, size + 3, true);
-    renderer.fillRect(x - 1, y + i * cell - thickness / 2, size + 3, thickness, true);
-  }
-  static constexpr uint8_t kDigits[9] = {5, 0, 3, 0, 7, 0, 6, 0, 9};
-  for (int i = 0; i < 9; ++i) {
-    if (kDigits[i] == 0) continue;
-    gameui::bigDigit(renderer, kDigits[i], true, {x + (i % 3) * cell, y + (i / 3) * cell, cell, cell},
-                     gameui::Ink::Black);
-  }
-}
-
-// Four squares of a board, two of them hatched, under whatever stands on them.
-void drawBoardCorner(const GfxRenderer& renderer, const int x, const int y) {
-  constexpr int half = kIconSize / 2;
-  gameui::hatch(renderer, {x + half, y, half, half});
-  gameui::hatch(renderer, {x, y + half, half, half});
-  renderer.drawRect(x - 2, y - 2, kIconSize + 4, kIconSize + 4, 2, true);
-}
-
-void drawChessIcon(const GfxRenderer& renderer, const int x, const int y) {
-  drawBoardCorner(renderer, x, y);
-  const appart::Bitmap& knight = appart::kMenuKnight;
-  gameui::stampOver(renderer, knight, appart::kMenuKnightUnder, x + (kIconSize - knight.width) / 2,
-                    y + (kIconSize - knight.height) / 2);
-}
-
-void drawCheckersIcon(const GfxRenderer& renderer, const int x, const int y) {
-  drawBoardCorner(renderer, x, y);
-  constexpr int half = kIconSize / 2;
-  constexpr int radius = half / 2 - 5;
-  // A dark piece and a light one on the two hatched squares.
-  const int darkX = x + half + half / 2;
-  const int darkY = y + half / 2;
-  gameui::disc(renderer, darkX, darkY, radius + 2, false);
-  gameui::disc(renderer, darkX, darkY, radius, true);
-  gameui::ring(renderer, darkX, darkY, radius - 5, 2, false);
-  const int lightX = x + half / 2;
-  const int lightY = y + half + half / 2;
-  gameui::disc(renderer, lightX, lightY, radius + 2, false);
-  gameui::ring(renderer, lightX, lightY, radius, 3, true);
-  gameui::ring(renderer, lightX, lightY, radius - 6, 1, true);
-}
-
-// The grid with a few marks in it.
-void drawTicTacToeIcon(const GfxRenderer& renderer, const int x, const int y) {
-  constexpr int cell = kIconSize / 3;
-  for (int i = 1; i < 3; ++i) {
-    renderer.fillRect(x + i * cell - 1, y + 2, 3, kIconSize - 4, true);
-    renderer.fillRect(x + 2, y + i * cell - 1, kIconSize - 4, 3, true);
-  }
-  for (const int at : {0, 8}) {
-    const int left = x + (at % 3) * cell + 8;
-    const int top = y + (at / 3) * cell + 6;
-    renderer.drawLine(left, top, left + cell - 16, top + cell - 16, 5, true);
-    renderer.drawLine(left, top + cell - 16, left + cell - 16, top, 5, true);
-  }
-  for (const int at : {2, 4}) {
-    gameui::ring(renderer, x + (at % 3) * cell + cell / 2, y + (at / 3) * cell + cell / 2, 10, 4, true);
-  }
-}
-
-// A corner of a Go board with a few stones on it.
-void drawGoIcon(const GfxRenderer& renderer, const int x, const int y) {
-  constexpr int lines = 5;
-  constexpr int step = kIconSize / lines;
-  constexpr int first = step / 2;
-  for (int i = 0; i < lines; ++i) {
-    renderer.fillRect(x + first, y + first + i * step, step * (lines - 1) + 1, i == 0 ? 3 : 2, true);
-    renderer.fillRect(x + first + i * step, y + first, i == 0 ? 3 : 2, step * (lines - 1) + 1, true);
-  }
-  const auto stone = [&](const int column, const int row, const bool black) {
-    const int cx = x + first + column * step;
-    const int cy = y + first + row * step;
-    gameui::disc(renderer, cx, cy, step / 2 - 1, black);
-    gameui::ring(renderer, cx, cy, step / 2 - 1, black ? 1 : 3, true);
-  };
-  stone(1, 1, true);
-  stone(2, 1, false);
-  stone(2, 2, true);
-  stone(3, 2, false);
-  stone(1, 3, false);
-}
-
-// A calendar leaf showing today: the month across the top, the day below.
-void drawClockIcon(const GfxRenderer& renderer, const int x, const int y) {
-  renderer.drawRoundedRect(x, y, kIconSize, kIconSize, 3, 12, true);
-  renderer.fillRoundedRect(x, y, kIconSize, 30, 12, true, true, false, false, Color::Black);
-  calmath::DateTime time;
-  if (!clockface::now(time)) {
-    gameui::centredText(renderer, UI_12_FONT_ID, {x, y + 30, kIconSize, kIconSize - 30}, "--", true,
-                        EpdFontFamily::BOLD);
-    return;
-  }
-  // The first three letters of the month.
-  char month[16];
-  snprintf(month, sizeof(month), "%s", clockface::monthName(time.date.month));
-  size_t length = 0;
-  for (int characters = 0; month[length] != '\0'; ++length) {
-    if ((static_cast<uint8_t>(month[length]) & 0xC0) != 0x80 && characters++ == 3) break;
-  }
-  month[length] = '\0';
-  gameui::centredText(renderer, SMALL_FONT_ID, {x, y + 2, kIconSize, 26}, month, false, EpdFontFamily::BOLD);
-  char day[4];
-  snprintf(day, sizeof(day), "%d", static_cast<int>(time.date.day));
-  const gameui::DigitSet digits{appart::kClockSmallGlyphs, appart::kClockSmallBits, appart::kClockSmallRows};
-  gameui::digitText(renderer, digits, day, x + kIconSize / 2, y + 30 + (kIconSize - 30 - digits.rows) / 2, 4);
-}
-
-void drawSwitch(const GfxRenderer& renderer, const int x, const int y, const bool on) {
-  constexpr int width = 66;
-  constexpr int height = 36;
-  if (on) {
-    renderer.fillRoundedRect(x, y, width, height, height / 2, Color::Black);
-    gameui::disc(renderer, x + width - height / 2, y + height / 2, 13, false);
-  } else {
-    renderer.drawRoundedRect(x, y, width, height, 2, height / 2, true);
-    gameui::disc(renderer, x + height / 2, y + height / 2, 12, true);
-  }
-}
-
-// The names the app screens give themselves, in the order of AppId.
-constexpr const char* kActivityNames[] = {"Wordle", "Sudoku", "Chess", "Checkers", "Clock", "TicTacToe", "Go"};
+constexpr int kTileGap = 12;
+// Small tiles: the 32 px icon, the name and one status line.
+constexpr int kTileHeight = 112;
+constexpr int kIconSize = 32;
+constexpr int kIconTop = 14;
+constexpr int kNameTop = 54;
+constexpr int kStatusTop = 82;
 
 }  // namespace
 
@@ -186,29 +35,22 @@ AppsActivity::AppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInpu
     : Activity("Apps", renderer, mappedInput), resumeId(resumeId) {}
 
 uint8_t AppsActivity::resumeIdFor(const std::string& activityName) {
-  static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == kAppCount, "one name for every app");
   if (activityName == "Apps") return kResumeList;
-  for (int app = 0; app < kAppCount; ++app) {
-    if (activityName == kActivityNames[app]) return static_cast<uint8_t>(kResumeList + 1 + app);
-  }
-  return kResumeNone;
+  const apps::Info* app = apps::findByActivityName(activityName);
+  return app ? static_cast<uint8_t>(kResumeList + 1 + app->id) : kResumeNone;
 }
 
 void AppsActivity::onEnter() {
   Activity::onEnter();
   pointer.begin(mappedInput);
-  uint8_t bytes[4];
-  if (gameui::readSave(kSavePath, bytes, sizeof(bytes)) && memcmp(bytes, kFileMagic, 3) == 0) hiddenMask = bytes[3];
-  mode = Mode::Tiles;
-  clockface::loadOptions(clockOptions);
-  SudokuActivity::loadOptions(sudokuOptions);
+  hiddenMask = apps::hiddenMask();
 
   // Woken from a sleep that began inside an app: straight back into it. The
   // tiles are read and drawn when that app is left.
   const int resumeApp = static_cast<int>(resumeId) - (kResumeList + 1);
   resumeId = kResumeNone;
-  if (resumeApp >= 0 && resumeApp < kAppCount && !hidden(resumeApp)) {
-    open(static_cast<AppId>(resumeApp));
+  if (const apps::Info* app = apps::find(static_cast<AppId>(resumeApp)); app && !hidden(app->id)) {
+    open(*app);
     return;
   }
 
@@ -216,28 +58,8 @@ void AppsActivity::onEnter() {
   requestUpdate();
 }
 
-void AppsActivity::saveHidden() const {
-  const uint8_t bytes[4] = {kFileMagic[0], kFileMagic[1], kFileMagic[2], hiddenMask};
-  gameui::writeSave(kSavePath, bytes, sizeof(bytes));
-}
-
 void AppsActivity::readStatus() {
   char line[96];
-
-  wordle::Game wordleGame;
-  uint8_t wordleBytes[wordle::Game::kSaveBytes];
-  if (gameui::readSave(WordleActivity::kSavePath, wordleBytes, sizeof(wordleBytes))) {
-    wordleGame.load(wordleBytes, sizeof(wordleBytes));
-  }
-  if (wordleGame.started() && wordleGame.state() == wordle::Game::State::Playing && wordleGame.guessCount() > 0) {
-    snprintf(line, sizeof(line), tr(STR_WORDLE_IN_PROGRESS), wordleGame.guessCount() + 1);
-  } else if (wordleGame.stats().played > 0) {
-    snprintf(line, sizeof(line), tr(STR_WORDLE_RECORD), static_cast<unsigned>(wordleGame.stats().played),
-             static_cast<unsigned>(wordleGame.stats().streak));
-  } else {
-    line[0] = '\0';
-  }
-  status[Wordle] = line;
 
   {
     // Larger than the main task's stack should carry next to the lines above.
@@ -256,115 +78,36 @@ void AppsActivity::readStatus() {
         line[0] = '\0';
       }
     }
-    status[Sudoku] = line;
+    status[apps::Sudoku] = line;
   }
 
   ChessActivity::statusLine(line, sizeof(line));
-  status[Chess] = line;
+  status[apps::Chess] = line;
   CheckersActivity::statusLine(line, sizeof(line));
-  status[Checkers] = line;
+  status[apps::Checkers] = line;
   ClockActivity::statusLine(line, sizeof(line));
-  status[Clock] = line;
+  status[apps::Clock] = line;
   TicTacToeActivity::statusLine(line, sizeof(line));
-  status[TicTacToe] = line;
+  status[apps::TicTacToe] = line;
   GoActivity::statusLine(line, sizeof(line));
-  status[Go] = line;
+  status[apps::Go] = line;
 }
 
 void AppsActivity::layout() {
   const int width = renderer.getScreenWidth();
   const int top = gameui::contentTop(renderer, mappedInput);
   const int tileWidth = (width - 2 * kTileMargin - (kColumns - 1) * kTileGap) / kColumns;
-  int visible = 0;
-  for (const int app : kOrder) visible += hidden(app) ? 0 : 1;
-  // Up to three rows keep the full tiles; a fourth row makes them shorter
-  // (icon and name, no status line) so all of them fit.
-  const int tileRows = (visible + kColumns - 1) / kColumns;
-  const int tileHeight =
-      tileRows <= 3 ? kTileHeight
-                    : (gameui::contentBottom(renderer) - top - (tileRows - 1) * kTileGap) / tileRows;
   shownCount = 0;
-  int row = 0;
-  for (const int app : kOrder) {
-    rows[app] = {kTileMargin, top + row++ * (kRowHeight + kRowGap), width - 2 * kTileMargin, kRowHeight};
-    if (hidden(app)) continue;
+  for (const apps::Info& app : apps::kAll) {
+    if (hidden(app.id)) continue;
     tiles[shownCount] = {kTileMargin + (shownCount % kColumns) * (tileWidth + kTileGap),
-                         top + (shownCount / kColumns) * (tileHeight + kTileGap), tileWidth, tileHeight};
-    shown[shownCount++] = app;
+                         top + (shownCount / kColumns) * (kTileHeight + kTileGap), tileWidth, kTileHeight};
+    shown[shownCount++] = app.id;
   }
-  manageBox = gameui::headerCornerBox(renderer, mappedInput, tr(STR_APPS_MANAGE));
-
-  clockSettingsBox = settingsButtonFor(Clock);
-  sudokuSettingsBox = settingsButtonFor(Sudoku);
-  for (int row = 0; row < kClockRowCount; ++row) {
-    clockRows[row] = {kTileMargin, top + row * (84 + kRowGap), width - 2 * kTileMargin, 84};
-  }
-  for (int row = 0; row < kSudokuRowsPerPage; ++row) {
-    sudokuRows[row] = {kTileMargin, top + row * (84 + kRowGap), width - 2 * kTileMargin, 84};
-  }
-  // Previous and next page at the foot, with "1 / 2" between them. Wide, so the
-  // button pointer goes from "<" to ">" rather than up to the last row.
-  const int pageY = gameui::contentBottom(renderer) - 56;
-  pageBoxes[0] = {kTileMargin, pageY, 160, 56};
-  pageBoxes[1] = {width - kTileMargin - 160, pageY, 160, 56};
 }
 
-gameui::Box AppsActivity::settingsButtonFor(const AppId app) const {
-  const gameui::Box& row = rows[app];
-  const int settingsWidth = renderer.getTextWidth(UI_10_FONT_ID, tr(STR_SETTINGS_SHORT), EpdFontFamily::BOLD) + 40;
-  return {row.x + row.w - 66 - 22 - 14 - settingsWidth, row.y + (row.h - 50) / 2, settingsWidth, 50};
-}
-
-void AppsActivity::changeClockSetting(const int row) {
-  switch (row) {
-    case FaceRow:
-      // The face with Persian days needs the Persian date on.
-      do {
-        clockOptions.face = static_cast<uint8_t>((clockOptions.face + 1) % clockface::kFaceCount);
-      } while (clockOptions.face == clockface::PersianDays && !clockOptions.persianDate);
-      break;
-    case PersianRow:
-      clockOptions.persianDate = !clockOptions.persianDate;
-      if (!clockOptions.persianDate && clockOptions.face == clockface::PersianDays) {
-        clockOptions.face = clockface::Digital;
-      }
-      break;
-    case WeekStartRow:
-      clockOptions.weekStart = static_cast<uint8_t>((clockOptions.weekStart + 1) % clockface::kWeekStartCount);
-      break;
-    default:
-      clockOptions.weekNumber = !clockOptions.weekNumber;
-      break;
-  }
-  clockface::saveOptions(clockOptions);
-}
-
-void AppsActivity::open(const AppId app) {
-  std::unique_ptr<Activity> activity;
-  switch (app) {
-    case Wordle:
-      activity = std::make_unique<WordleActivity>(renderer, mappedInput);
-      break;
-    case Sudoku:
-      activity = std::make_unique<SudokuActivity>(renderer, mappedInput);
-      break;
-    case Chess:
-      activity = std::make_unique<ChessActivity>(renderer, mappedInput);
-      break;
-    case Checkers:
-      activity = std::make_unique<CheckersActivity>(renderer, mappedInput);
-      break;
-    case TicTacToe:
-      activity = std::make_unique<TicTacToeActivity>(renderer, mappedInput);
-      break;
-    case Go:
-      activity = std::make_unique<GoActivity>(renderer, mappedInput);
-      break;
-    default:
-      activity = std::make_unique<ClockActivity>(renderer, mappedInput);
-      break;
-  }
-  startActivityForResult(std::move(activity), [this](const ActivityResult&) {
+void AppsActivity::open(const apps::Info& app) {
+  startActivityForResult(app.create(renderer, mappedInput), [this](const ActivityResult&) {
     readStatus();
     requestUpdate();
   });
@@ -373,12 +116,6 @@ void AppsActivity::open(const AppId app) {
 void AppsActivity::loop() {
   if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    if (mode != Mode::Tiles) {
-      // One step back: from an app's settings to the switches, from there to the tiles.
-      mode = mode == Mode::Manage ? Mode::Tiles : Mode::Manage;
-      requestUpdate();
-      return;
-    }
     setResult(ActivityResult{});
     finish();
     return;
@@ -394,244 +131,163 @@ void AppsActivity::loop() {
   }
   if (moved) requestUpdate();
   if (!hit) return;
-  if (mode == Mode::ClockSettings) {
-    for (int row = 0; row < kClockRowCount; ++row) {
-      if (!clockRows[row].contains(tx, ty)) continue;
-      changeClockSetting(row);
-      requestUpdate();
-      return;
-    }
-    return;
-  }
-  if (mode == Mode::SudokuSettings) {
-    for (int i = 0; i < 2; ++i) {
-      if (!pageBoxes[i].contains(tx, ty)) continue;
-      sudokuPage = (sudokuPage + (i == 0 ? kSudokuPages - 1 : 1)) % kSudokuPages;
-      requestUpdate();
-      return;
-    }
-    for (int row = 0; row < kSudokuRowsPerPage; ++row) {
-      const int option = sudokuPage * kSudokuRowsPerPage + row;
-      if (option >= SudokuActivity::kOptionCount || !sudokuRows[row].contains(tx, ty)) continue;
-      sudokuOptions.on[option] = !sudokuOptions.on[option];
-      SudokuActivity::saveOptions(sudokuOptions);
-      requestUpdate();
-      return;
-    }
-    return;
-  }
-  if (mode == Mode::Manage) {
-    if (clockSettingsBox.grown(6).contains(tx, ty)) {
-      mode = Mode::ClockSettings;
-      requestUpdate();
-      return;
-    }
-    if (sudokuSettingsBox.grown(6).contains(tx, ty)) {
-      mode = Mode::SudokuSettings;
-      sudokuPage = 0;
-      requestUpdate();
-      return;
-    }
-    for (int app = 0; app < kAppCount; ++app) {
-      if (!rows[app].contains(tx, ty)) continue;
-      hiddenMask ^= static_cast<uint8_t>(1u << app);
-      saveHidden();
-      requestUpdate();
-      return;
-    }
-    return;
-  }
-  if (manageBox.grown(6).contains(tx, ty)) {
-    mode = Mode::Manage;
-    requestUpdate();
-    return;
-  }
   for (int i = 0; i < shownCount; ++i) {
     if (tiles[i].contains(tx, ty)) {
-      open(static_cast<AppId>(shown[i]));
+      open(*apps::find(static_cast<AppId>(shown[i])));
       return;
     }
-  }
-}
-
-void AppsActivity::drawIcon(const int app, const int x, const int y) const {
-  switch (app) {
-    case Wordle:
-      drawWordleIcon(renderer, x, y);
-      break;
-    case Sudoku:
-      drawSudokuIcon(renderer, x, y);
-      break;
-    case Chess:
-      drawChessIcon(renderer, x, y);
-      break;
-    case Checkers:
-      drawCheckersIcon(renderer, x, y);
-      break;
-    case TicTacToe:
-      drawTicTacToeIcon(renderer, x, y);
-      break;
-    case Go:
-      drawGoIcon(renderer, x, y);
-      break;
-    default:
-      drawClockIcon(renderer, x, y);
-      break;
   }
 }
 
 void AppsActivity::drawTiles() const {
-  const char* names[kAppCount] = {tr(STR_GAME_WORDLE),   tr(STR_GAME_SUDOKU), tr(STR_GAME_CHESS),
-                                  tr(STR_GAME_CHECKERS), tr(STR_APP_CLOCK),   tr(STR_GAME_TICTACTOE),
-                                  tr(STR_GAME_GO)};
   for (int i = 0; i < shownCount; ++i) {
-    const int app = shown[i];
+    const apps::Info& app = *apps::find(static_cast<AppId>(shown[i]));
     const gameui::Box& tile = tiles[i];
     renderer.drawRoundedRect(tile.x, tile.y, tile.w, tile.h, 2, 12, true);
-    const bool compact = tile.h < kTileHeight;
-    const int iconTop = compact ? (tile.h - kIconSize - 34) / 2 : kIconTop;
-    drawIcon(app, tile.x + (tile.w - kIconSize) / 2, tile.y + iconTop);
-    gameui::centredText(renderer, UI_12_FONT_ID,
-                        {tile.x, tile.y + (compact ? iconTop + kIconSize + 4 : kNameTop), tile.w, 30}, names[app],
+    if (const freeink::Icon* icon = homeIcon(app.icon, kIconSize)) {
+      drawLucideIcon(renderer, *icon, tile.x + (tile.w - kIconSize) / 2, tile.y + kIconTop);
+    }
+    gameui::centredText(renderer, UI_10_FONT_ID, {tile.x, tile.y + kNameTop, tile.w, 26},
+                        renderer.truncatedText(UI_10_FONT_ID, I18N.get(app.name), tile.w - 12, EpdFontFamily::BOLD).c_str(),
                         true, EpdFontFamily::BOLD);
-    if (!compact && !status[app].empty()) {
+    if (!status[app.id].empty()) {
       gameui::centredText(renderer, SMALL_FONT_ID, {tile.x, tile.y + kStatusTop, tile.w, 22},
-                          renderer.truncatedText(SMALL_FONT_ID, status[app].c_str(), tile.w - 16).c_str());
+                          renderer.truncatedText(SMALL_FONT_ID, status[app.id].c_str(), tile.w - 12).c_str());
     }
   }
   if (shownCount == 0) {
-    gameui::centredText(renderer, UI_10_FONT_ID, {0, tiles[0].y + 40, renderer.getScreenWidth(), 30},
+    gameui::centredText(renderer, UI_10_FONT_ID, {0, gameui::contentTop(renderer, mappedInput) + 40, renderer.getScreenWidth(), 30},
                         tr(STR_APPS_ALL_HIDDEN));
   }
-}
-
-void AppsActivity::drawManage() const {
-  const char* names[kAppCount] = {tr(STR_GAME_WORDLE),   tr(STR_GAME_SUDOKU), tr(STR_GAME_CHESS),
-                                  tr(STR_GAME_CHECKERS), tr(STR_APP_CLOCK),   tr(STR_GAME_TICTACTOE),
-                                  tr(STR_GAME_GO)};
-  for (int app = 0; app < kAppCount; ++app) {
-    const gameui::Box& row = rows[app];
-    renderer.drawRoundedRect(row.x, row.y, row.w, row.h, 2, 12, true);
-    const gameui::Box label{row.x + 24, row.y + 6, 190, row.h - 12};
-    renderer.drawText(UI_12_FONT_ID, label.x, gameui::centredTextY(renderer, UI_12_FONT_ID, label), names[app], true,
-                      EpdFontFamily::BOLD);
-    if (hidden(app)) gameui::fade(renderer, label);
-    drawSwitch(renderer, row.x + row.w - 66 - 22, row.y + (row.h - 36) / 2, !hidden(app));
-    if (app == Clock) gameui::button(renderer, clockSettingsBox, tr(STR_SETTINGS_SHORT), false);
-    if (app == Sudoku) gameui::button(renderer, sudokuSettingsBox, tr(STR_SETTINGS_SHORT), false);
-  }
-  const int y = rows[kOrder[kAppCount - 1]].y + kRowHeight + 14;
-  int lineY = y;
-  for (const auto& line : renderer.wrappedText(SMALL_FONT_ID, tr(STR_APPS_HIDDEN_NOTE),
-                                               renderer.getScreenWidth() - 60, 3)) {
-    gameui::centredText(renderer, SMALL_FONT_ID, {0, lineY, renderer.getScreenWidth(), 24}, line.c_str());
-    lineY += 24;
-  }
-}
-
-void AppsActivity::drawClockSettings() const {
-  const char* faces[clockface::kFaceCount] = {tr(STR_CLOCK_FACE_DIGITAL), tr(STR_CLOCK_FACE_ANALOG),
-                                              tr(STR_CLOCK_FACE_PERSIAN)};
-  // The weekdays are numbered from Monday.
-  const int firstDay = clockOptions.weekStart == clockface::Saturday
-                           ? 5
-                           : (clockOptions.weekStart == clockface::Sunday ? 6 : 0);
-  const char* labels[kClockRowCount] = {tr(STR_CLOCK_FACE), tr(STR_CLOCK_PERSIAN_DATE), tr(STR_CLOCK_WEEK_START),
-                                        tr(STR_CLOCK_WEEK_NUMBER)};
-  const char* values[kClockRowCount] = {faces[clockOptions.shownFace()],
-                                        clockOptions.persianDate ? tr(STR_STATE_ON) : tr(STR_STATE_OFF),
-                                        clockface::weekdayName(firstDay),
-                                        clockOptions.weekNumber ? tr(STR_STATE_ON) : tr(STR_STATE_OFF)};
-  for (int row = 0; row < kClockRowCount; ++row) {
-    const gameui::Box& box = clockRows[row];
-    renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 12, true);
-    renderer.drawText(UI_12_FONT_ID, box.x + 24, gameui::centredTextY(renderer, UI_12_FONT_ID, box), labels[row], true,
-                      EpdFontFamily::BOLD);
-    renderer.drawText(UI_10_FONT_ID, box.x + box.w - 24 - renderer.getTextWidth(UI_10_FONT_ID, values[row]),
-                      gameui::centredTextY(renderer, UI_10_FONT_ID, box), values[row]);
-  }
-  int y = clockRows[kClockRowCount - 1].y + 84 + 14;
-  for (const char* note : {tr(STR_CLOCK_TAP_ROW), tr(STR_CLOCK_FORMAT_NOTE)}) {
-    for (const auto& line : renderer.wrappedText(SMALL_FONT_ID, note, renderer.getScreenWidth() - 60, 3)) {
-      gameui::centredText(renderer, SMALL_FONT_ID, {0, y, renderer.getScreenWidth(), 24}, line.c_str());
-      y += 24;
-    }
-  }
-}
-
-void AppsActivity::drawSudokuSettings() const {
-  const char* labels[SudokuActivity::kOptionCount] = {
-      tr(STR_SUDOKU_OPT_EXPLAIN), tr(STR_SUDOKU_OPT_DAILY),     tr(STR_SUDOKU_OPT_LIVE),
-      tr(STR_SUDOKU_OPT_REPEATS), tr(STR_SUDOKU_OPT_PAINT),     tr(STR_SUDOKU_OPT_FILL_LAST),
-      tr(STR_SUDOKU_OPT_LIMIT),   tr(STR_SUDOKU_OPT_RESTART),   tr(STR_SUDOKU_OPT_STATS)};
-  const char* descriptions[SudokuActivity::kOptionCount] = {
-      tr(STR_SUDOKU_OPT_EXPLAIN_DESC), tr(STR_SUDOKU_OPT_DAILY_DESC),     tr(STR_SUDOKU_OPT_LIVE_DESC),
-      tr(STR_SUDOKU_OPT_REPEATS_DESC), tr(STR_SUDOKU_OPT_PAINT_DESC),     tr(STR_SUDOKU_OPT_FILL_LAST_DESC),
-      tr(STR_SUDOKU_OPT_LIMIT_DESC),   tr(STR_SUDOKU_OPT_RESTART_DESC),   tr(STR_SUDOKU_OPT_STATS_DESC)};
-  int bottom = sudokuRows[0].y;
-  for (int row = 0; row < kSudokuRowsPerPage; ++row) {
-    const int option = sudokuPage * kSudokuRowsPerPage + row;
-    if (option >= SudokuActivity::kOptionCount) break;
-    const gameui::Box& box = sudokuRows[row];
-    renderer.drawRoundedRect(box.x, box.y, box.w, box.h, 2, 12, true);
-    // The name and, under it, one line on what the switch does.
-    const int textWidth = box.w - 24 - 66 - 22 - 12;
-    renderer.drawText(UI_12_FONT_ID, box.x + 24, gameui::centredTextY(renderer, UI_12_FONT_ID, {box.x, box.y + 8, box.w, 36}),
-                      renderer.truncatedText(UI_12_FONT_ID, labels[option], textWidth, EpdFontFamily::BOLD).c_str(),
-                      true, EpdFontFamily::BOLD);
-    renderer.drawText(SMALL_FONT_ID, box.x + 24,
-                      gameui::centredTextY(renderer, SMALL_FONT_ID, {box.x, box.y + 46, box.w, 28}),
-                      renderer.truncatedText(SMALL_FONT_ID, descriptions[option], textWidth).c_str());
-    drawSwitch(renderer, box.x + box.w - 66 - 22, box.y + (box.h - 36) / 2, sudokuOptions.on[option]);
-    bottom = box.y + box.h;
-  }
-  int y = bottom + 14;
-  for (const auto& line : renderer.wrappedText(SMALL_FONT_ID, tr(STR_CLOCK_TAP_ROW), renderer.getScreenWidth() - 60, 2)) {
-    gameui::centredText(renderer, SMALL_FONT_ID, {0, y, renderer.getScreenWidth(), 24}, line.c_str());
-    y += 24;
-  }
-  gameui::button(renderer, pageBoxes[0], "<", false, UI_12_FONT_ID);
-  gameui::button(renderer, pageBoxes[1], ">", false, UI_12_FONT_ID);
-  char page[16];
-  snprintf(page, sizeof(page), "%d / %d", sudokuPage + 1, kSudokuPages);
-  gameui::centredText(renderer, UI_12_FONT_ID, {0, pageBoxes[0].y, renderer.getScreenWidth(), pageBoxes[0].h}, page,
-                      true, EpdFontFamily::BOLD);
 }
 
 void AppsActivity::render(RenderLock&&) {
   layout();
   renderer.clearScreen();
-  const char* title = mode == Mode::ClockSettings    ? tr(STR_CLOCK_SETTINGS)
-                      : mode == Mode::SudokuSettings ? tr(STR_SUDOKU_SETTINGS)
-                      : mode == Mode::Manage         ? tr(STR_APPS_MANAGE_TITLE)
-                                                     : tr(STR_APPS);
-  gameui::drawHeader(renderer, mappedInput, title);
-  if (mode == Mode::ClockSettings) {
-    drawClockSettings();
-  } else if (mode == Mode::SudokuSettings) {
-    drawSudokuSettings();
-  } else if (mode == Mode::Manage) {
-    drawManage();
-  } else {
-    gameui::cornerButton(renderer, manageBox, tr(STR_APPS_MANAGE));
-    drawTiles();
-  }
+  gameui::drawHeader(renderer, mappedInput, tr(STR_APPS));
+  drawTiles();
   pointer.clear();
-  if (mode == Mode::ClockSettings) {
-    for (const auto& row : clockRows) pointer.add(row);
-  } else if (mode == Mode::SudokuSettings) {
-    for (int row = 0; row < kSudokuRowsPerPage; ++row) {
-      if (sudokuPage * kSudokuRowsPerPage + row < SudokuActivity::kOptionCount) pointer.add(sudokuRows[row]);
-    }
-    for (const auto& box : pageBoxes) pointer.add(box);
-  } else if (mode == Mode::Manage) {
-    for (const auto& row : rows) pointer.add(row);
-    pointer.add(clockSettingsBox);
-    pointer.add(sudokuSettingsBox);
-  } else {
-    for (int i = 0; i < shownCount; ++i) pointer.add(tiles[i]);
-    pointer.add(manageBox);
-  }
+  for (int i = 0; i < shownCount; ++i) pointer.add(tiles[i]);
   pointer.draw(renderer);
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);
+}
+
+// ---- Settings > Apps -------------------------------------------------------------------------------------
+
+namespace {
+
+using Row = RowListActivity::Row;
+
+Row toggleRow(std::string label, const bool checked, std::function<void()> onTap, std::string subtitle = {}) {
+  Row row;
+  row.kind = Row::Kind::Toggle;
+  row.label = std::move(label);
+  row.checked = checked;
+  row.onTap = std::move(onTap);
+  row.subtitle = std::move(subtitle);
+  return row;
+}
+
+Row valueRow(std::string label, std::string value, std::function<void()> onTap) {
+  Row row;
+  row.label = std::move(label);
+  row.value = std::move(value);
+  row.onTap = std::move(onTap);
+  return row;
+}
+
+std::unique_ptr<Activity> clockPage(GfxRenderer& renderer, MappedInputManager& input) {
+  return std::make_unique<LambdaRowList>(renderer, input, "ClockSettings", tr(STR_CLOCK_SETTINGS), [](std::vector<Row>& rows, RowListActivity&) {
+    clockface::Options options;
+    clockface::loadOptions(options);
+    const auto change = [](const std::function<void(clockface::Options&)>& edit) {
+      clockface::Options current;
+      clockface::loadOptions(current);
+      edit(current);
+      clockface::saveOptions(current);
+    };
+    const char* faces[clockface::kFaceCount] = {tr(STR_CLOCK_FACE_DIGITAL), tr(STR_CLOCK_FACE_ANALOG),
+                                                tr(STR_CLOCK_FACE_PERSIAN)};
+    // The weekdays are numbered from Monday.
+    const int firstDay = options.weekStart == clockface::Saturday ? 5 : (options.weekStart == clockface::Sunday ? 6 : 0);
+    rows.clear();
+    rows.push_back(valueRow(tr(STR_CLOCK_FACE), faces[options.shownFace()], [change] {
+      change([](clockface::Options& o) {
+        // The face with Persian days needs the Persian date on.
+        do {
+          o.face = static_cast<uint8_t>((o.face + 1) % clockface::kFaceCount);
+        } while (o.face == clockface::PersianDays && !o.persianDate);
+      });
+    }));
+    rows.push_back(toggleRow(tr(STR_CLOCK_PERSIAN_DATE), options.persianDate, [change] {
+      change([](clockface::Options& o) {
+        o.persianDate = !o.persianDate;
+        if (!o.persianDate && o.face == clockface::PersianDays) o.face = clockface::Digital;
+      });
+    }));
+    rows.push_back(valueRow(tr(STR_CLOCK_WEEK_START), clockface::weekdayName(firstDay), [change] {
+      change([](clockface::Options& o) { o.weekStart = static_cast<uint8_t>((o.weekStart + 1) % clockface::kWeekStartCount); });
+    }));
+    rows.push_back(toggleRow(tr(STR_CLOCK_WEEK_NUMBER), options.weekNumber, [change] {
+      change([](clockface::Options& o) { o.weekNumber = !o.weekNumber; });
+    }, tr(STR_CLOCK_FORMAT_NOTE)));
+  });
+}
+
+std::unique_ptr<Activity> sudokuPage(GfxRenderer& renderer, MappedInputManager& input) {
+  return std::make_unique<LambdaRowList>(renderer, input, "SudokuSettings", tr(STR_SUDOKU_SETTINGS), [](std::vector<Row>& rows, RowListActivity&) {
+    SudokuActivity::Options options;
+    SudokuActivity::loadOptions(options);
+    const char* labels[SudokuActivity::kOptionCount] = {
+        tr(STR_SUDOKU_OPT_EXPLAIN), tr(STR_SUDOKU_OPT_DAILY),     tr(STR_SUDOKU_OPT_LIVE),
+        tr(STR_SUDOKU_OPT_REPEATS), tr(STR_SUDOKU_OPT_PAINT),     tr(STR_SUDOKU_OPT_FILL_LAST),
+        tr(STR_SUDOKU_OPT_LIMIT),   tr(STR_SUDOKU_OPT_RESTART),   tr(STR_SUDOKU_OPT_STATS)};
+    const char* descriptions[SudokuActivity::kOptionCount] = {
+        tr(STR_SUDOKU_OPT_EXPLAIN_DESC), tr(STR_SUDOKU_OPT_DAILY_DESC),     tr(STR_SUDOKU_OPT_LIVE_DESC),
+        tr(STR_SUDOKU_OPT_REPEATS_DESC), tr(STR_SUDOKU_OPT_PAINT_DESC),     tr(STR_SUDOKU_OPT_FILL_LAST_DESC),
+        tr(STR_SUDOKU_OPT_LIMIT_DESC),   tr(STR_SUDOKU_OPT_RESTART_DESC),   tr(STR_SUDOKU_OPT_STATS_DESC)};
+    rows.clear();
+    for (int i = 0; i < SudokuActivity::kOptionCount; ++i) {
+      rows.push_back(toggleRow(labels[i], options.on[i], [i] {
+        SudokuActivity::Options current;
+        SudokuActivity::loadOptions(current);
+        current.on[i] = !current.on[i];
+        SudokuActivity::saveOptions(current);
+      }, descriptions[i]));
+    }
+  });
+}
+
+}  // namespace
+
+std::unique_ptr<Activity> AppsActivity::makeSettingsPage(GfxRenderer& renderer, MappedInputManager& input) {
+  return std::make_unique<LambdaRowList>(
+      renderer, input, "AppsSettings", tr(STR_APPS), [&renderer, &input](std::vector<Row>& rows, RowListActivity& page) {
+        rows.clear();
+        Row header;
+        header.kind = Row::Kind::Header;
+        header.label = tr(STR_APPS_MANAGE_TITLE);
+        rows.push_back(std::move(header));
+        const uint8_t mask = apps::hiddenMask();
+        for (const apps::Info& app : apps::kAll) {
+          rows.push_back(toggleRow(I18N.get(app.name), (mask & (1u << app.id)) == 0, [id = app.id] {
+            apps::saveHiddenMask(static_cast<uint8_t>(apps::hiddenMask() ^ (1u << id)));
+          }));
+        }
+        rows.back().subtitle = tr(STR_APPS_HIDDEN_NOTE);
+
+        Row options;
+        options.kind = Row::Kind::Header;
+        options.label = tr(STR_SETTINGS_TITLE);
+        rows.push_back(std::move(options));
+        const auto addPage = [&](const char* label, std::unique_ptr<Activity> (*make)(GfxRenderer&, MappedInputManager&)) {
+          Row row;
+          row.kind = Row::Kind::Chevron;
+          row.label = label;
+          row.onTap = [&renderer, &input, &page, make] { page.openChild(make(renderer, input)); };
+          rows.push_back(std::move(row));
+        };
+        addPage(tr(STR_APP_CLOCK), clockPage);
+        addPage(tr(STR_GAME_SUDOKU), sudokuPage);
+      });
 }

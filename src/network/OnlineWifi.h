@@ -26,6 +26,11 @@ void tick();
 // book or not, until switched off here or the device sleeps.
 void setManual(bool on);
 bool manualOn();
+// Joined to a network right now (what the status bar's Wi-Fi icon shows).
+bool connected();
+// What the status bar shows: 0 nothing, 1 Wi-Fi switched on but not joined, 2 joined. Costs nothing while
+// Wi-Fi is off, and the main loop only looks at it for a change (no polling of its own).
+int indicatorState();
 // The Wi-Fi list connected by hand: keep that connection as the manual one.
 void adoptConnection();
 // For a lookup: waits until Wi-Fi is connected, joining first if need be.

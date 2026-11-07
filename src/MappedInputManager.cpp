@@ -106,6 +106,13 @@ size_t buttonIndex(MappedInputManager::Button button) { return static_cast<size_
 
 void MappedInputManager::update() const {
   gpio.update();
+  if (gpio.wasAnyPressed()) {
+    buttonNavSeen = true;
+  } else {
+    int touchX = 0;
+    int touchY = 0;
+    if (wasScreenTouchDown(touchX, touchY)) buttonNavSeen = false;
+  }
   expireReleaseSuppressions();
   if (!gpio.isPressed(HalGPIO::BTN_UP) && !gpio.wasReleased(HalGPIO::BTN_UP)) suppressPhysicalUpRelease = false;
   if (!gpio.isPressed(HalGPIO::BTN_DOWN) && !gpio.wasReleased(HalGPIO::BTN_DOWN)) suppressPhysicalDownRelease = false;

@@ -6,11 +6,20 @@
 #include <cstdio>
 
 #include "MappedInputManager.h"
+#include "components/UiAppHelpers.h"
+#include "components/icons/homeIcons.h"
 #include "fontIds.h"
 
 namespace {
 
 constexpr uint32_t kCheckEveryMs = 2000;
+// No title bar and no status bar here, as in the reader: the clock has the whole screen. A round exit button
+// (touch screens; the Back button does it on the others) sits in the top left corner above the clock.
+constexpr int kExitD = 44;
+constexpr int kExitMargin = 10;
+constexpr int kClockTop = kExitMargin + kExitD + 4;
+constexpr int kExitHitW = 80;  // the touch target is bigger than the button
+constexpr int kExitHitH = 72;
 
 }  // namespace
 
@@ -42,7 +51,7 @@ calmath::Date ClockActivity::shownMonth() const {
 }
 
 void ClockActivity::loop() {
-  if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
+  if (mappedInput.wasTapInRect(0, 0, kExitHitW, kExitHitH) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     setResult(ActivityResult{});
     finish();
@@ -100,7 +109,7 @@ void ClockActivity::loop() {
   int ty = 0;
   if (!mappedInput.wasScreenTapped(tx, ty)) return;
   const clockface::Layout layout =
-      clockface::appLayout(options, gameui::headerBottom(renderer, mappedInput), shownMonth());
+      clockface::appLayout(options, kClockTop, shownMonth());
   const int width = renderer.getScreenWidth();
   if (ty < layout.monthY - 6) {
     nextFace();
@@ -119,7 +128,10 @@ void ClockActivity::loop() {
 
 void ClockActivity::render(RenderLock&&) {
   renderer.clearScreen();
-  gameui::drawHeader(renderer, mappedInput, "");
+  if (mappedInput.hasTouchHardware()) {
+    renderer.fillRoundedRect(kExitMargin, kExitMargin, kExitD, kExitD, kExitD / 2, Color::LightGray);
+    drawLucideIcon(renderer, icon_exit_x_24, kExitMargin + (kExitD - 24) / 2, kExitMargin + (kExitD - 24) / 2);
+  }
   const int width = renderer.getScreenWidth();
   if (!clockSet) {
     int y = renderer.getScreenHeight() / 3;
@@ -133,7 +145,7 @@ void ClockActivity::render(RenderLock&&) {
     return;
   }
 
-  clockface::drawApp(renderer, options, gameui::headerBottom(renderer, mappedInput), current, shownMonth(),
+  clockface::drawApp(renderer, options, kClockTop, current, shownMonth(),
                      monthOffset == 0);
   // Fast repaints leave a trace of the old digits; every ten minutes the
   // screen is repainted cleanly instead.

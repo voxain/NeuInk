@@ -1,0 +1,18 @@
+# Manifest for src/components/icons/homeGridIcons.h: the Home grid's icons (apps and Home entries) at the larger
+# sizes the Home layout panel offers. The same Lucide icons as homeIcons.manifest; generate like it with
+#   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py --svgdir <folder> \
+#     --manifest src/components/icons/homeGridIcons.manifest --sizes 42,48 --out src/components/icons/homeGridIcons.h
+sudoku = grid-3x3
+chess = chess-knight
+checkers = disc-3
+go = circle-dot
+tictactoe = tic-tac-toe
+clock = clock
+highlights = highlighter
+files = folder
+library = landmark-snapped
+opds = library-big
+stats = chart-column
+settings = settings
+apps_grid = layout-grid
+type_book = book

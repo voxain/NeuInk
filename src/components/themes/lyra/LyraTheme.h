@@ -121,8 +121,14 @@ class LyraTheme : public BaseTheme {
                            const char* currentChapterTitle = nullptr) const override;
   void drawEmptyRecents(const GfxRenderer& renderer, const Rect rect) const;
   bool showsFileIcons() const override { return true; }
+  // Returns nullptr when the icon or requested bitmap size is not available.
+  static const freeink::Icon* iconForName(UIIcon icon, uint32_t size);
 
  protected:
+  // Draws a book's cover thumbnail (or the empty-cover placeholder) with a frame at x, y and returns its width. framed: draw the thin black frame around it.
+  static int drawCoverThumb(const GfxRenderer& renderer, const RecentBook& book, int x, int y, int height,
+                            int defaultWidth, bool framed = true);
+
   void drawListWithMetrics(const GfxRenderer& renderer, Rect rect, int itemCount, int selectedIndex,
                            const std::function<std::string(int index)>& rowTitle,
                            const std::function<std::string(int index)>& rowSubtitle,
@@ -132,6 +138,4 @@ class LyraTheme : public BaseTheme {
                            const std::function<bool(int index)>& isHeader, const ThemeMetrics& metrics,
                            bool invertSelectedRows, int rowHeightScale = 1, bool showSelection = true) const;
 
-  // Returns nullptr when the icon or requested bitmap size is not available.
-  static const freeink::Icon* iconForName(UIIcon icon, uint32_t size);
 };

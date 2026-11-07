@@ -50,7 +50,7 @@ struct LiveLightSwipeState {
 #endif
 
 enum class RequestUpdateResult { Rendered, Rejected };
-enum class HomeMenuItem { NONE, FILE_BROWSER, LIBRARY, OPDS_BROWSER, FILE_TRANSFER, SETTINGS_MENU };
+enum class HomeMenuItem { NONE, FILE_BROWSER, LIBRARY, OPDS_BROWSER, SETTINGS_MENU };
 
 /**
  * ActivityManager
@@ -143,6 +143,8 @@ class ActivityManager {
   void goToJoinNetworkFileTransfer(const std::string& returnBookPath = {});
   void goToHotspotFileTransfer(const std::string& returnBookPath = {});
   void goToUsbDrive();
+  // A computer was plugged in: asks whether to enter USB file transfer mode, on top of what is open.
+  void offerUsbDrive();
   bool resumeFileTransferFromNetworkBoot(uint32_t payload);
   void goToNearbyStatsSync();
   bool goToNearbyBookSend(std::string path, bool returnToReader);
@@ -165,6 +167,9 @@ class ActivityManager {
   // NeuInk: the Apps list, or (with one app's resume number) that app on top
   // of the list. Leaving the list leads Home.
   void goToApps(uint8_t resumeId = 0);
+  // The name of the screen being shown ("" before the first one); themes pick a title bar icon by it.
+  const std::string& currentActivityName() const;
+  bool currentIsReader() const;
   // The resume number of the app that is open (see AppsActivity::resumeIdFor),
   // 0 when none is.
   uint8_t sleepResumeApp() const;

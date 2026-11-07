@@ -11,9 +11,43 @@ whole icon library.
 
 The local manifests in `src/components/icons/` can use either source:
 
-- **Lucide:** `freeink-sdk/libs/assets/Icons/lucide/icons`
+- **Lucide:** the SVGs of the `lucide-static` npm package (the version named at the top of
+  `homeIcons.manifest`). The vendored SDK does not carry them: fetch them into a scratch folder, never into the
+  repository.
 - **Tabler outline:** `assets/tabler-icons/icons/outline`
 - **Tabler filled:** `assets/tabler-icons/icons/filled`
+
+## Lucide icons for the apps, Home, Settings and the reader panel
+
+These all live in one manifest, `src/components/icons/homeIcons.manifest`, at 24 and 32 px, and one header,
+`homeIcons.h`. To add one:
+
+1. Add `alias = lucide-name` to the manifest. 24 px is Lucide's own grid, pixel-exact; 32 px is for squircles
+   and tiles.
+2. Put the Lucide SVGs (and `src/components/icons/lucide-snapped/*.svg`) in one scratch folder and generate:
+
+   ```sh
+   npm pack lucide-static@<version> && tar xzf lucide-static-*.tgz   # in the scratch folder
+   python3 freeink-sdk/libs/assets/Icons/tools/gen_icons.py --svgdir <folder> \
+     --manifest src/components/icons/homeIcons.manifest --sizes 24,32 \
+     --out src/components/icons/homeIcons.h
+   ```
+
+   The generator calls `rsvg-convert`. Where only Inkscape is installed, a small `rsvg-convert` script in front of
+   `PATH` that runs `inkscape --export-type=png --export-width=N --export-height=N --export-filename=- file.svg`
+   does the same job.
+3. Use the symbol `icon_<alias>_24` (or `_32`) through `freeink::ui::bitmapFromIcon()`, or `homeIcon(UIIcon, size)`
+   for the ones that have a `UIIcon`.
+
+The reader panel's tabs, its back and backspace buttons and the picture buttons of the alignment and orientation
+choices (`align_*`, `orient_*`) come from here.
+
+## Legacy "style B" headers
+
+The other headers (`listIcons.h`, `keyboardIcons.h`, `touchHeaderIcons.h`, the frontlight and stats ones) were drawn
+by `scripts/generate_neuink_icons.py`, which redraws them from vectors. They are still used by the other themes and
+screens; when the last user of one of their icons is gone, remove the icon from the header, the script's `SYMBOLS`
+and its manifest line.
 
 NeuInk does not include the Tabler icon source (the icons it uses are already
 converted). To generate a new Tabler icon, add it first:

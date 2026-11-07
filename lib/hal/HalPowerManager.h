@@ -36,6 +36,11 @@ class HalPowerManager {
   // CPU clock. The C3's 10 MHz low clock cannot carry it.
   bool wifiBlocksLowPower() const;
 
+  // Called with the level every time the gauge is really read (the status bar's, the charging poll's and the speed
+  // log's reads are the only ones), so a statistic can follow the level without reading the gauge itself.
+  using BatteryObserver = void (*)(uint16_t percent);
+  static inline BatteryObserver batteryObserver = nullptr;
+
   mutable int _batteryCachedPercent = 0;  // Last read battery percentage * 10 (0-1000); callers divide by 10 (ADC/X4
                                           // path only — I2C/X3 path stores 0-100 directly)
   mutable unsigned long _batteryLastPollMs = 0;  // Timestamp of last battery read in milliseconds
@@ -85,6 +90,7 @@ class HalPowerManager {
 
   // Get battery percentage (range 0-100)
   uint16_t getBatteryPercentage() const;
+  static void setBatteryObserver(void (*observer)(uint16_t percent)) { batteryObserver = observer; }
 
   // Battery voltage in millivolts, read fresh (one short I2C or ADC read).
   // 0 when the board cannot read it. Used by the speed log, which samples

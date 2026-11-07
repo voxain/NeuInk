@@ -19,6 +19,8 @@ struct ButtonProps {
   // Icon draw size: 0 = the bitmap's native pixels; >0 scales to a square of
   // this size (nearest-neighbor), so one asset serves several button sizes.
   int16_t iconSize = 0;
+  // The icon turned in 90 degree steps, drawn that way (no second bitmap needed).
+  Rotation iconRotation = Rotation::None;
   uint8_t radius = 0;
   // Extra hit area beyond the visual rect, per edge. Use this to give
   // adjacent controls contiguous, non-overlapping tap bands (split the gap
@@ -73,7 +75,7 @@ void button(Frame<MaxInteractions>& frame, Rect rect, const ButtonProps& props) 
     int16_t totalW = static_cast<int16_t>(iconW + props.gap + labelSize.width);
     int16_t x = static_cast<int16_t>(content.x + (content.width - totalW) / 2);
     Rect iconRect{x, static_cast<int16_t>(content.y + (content.height - iconH) / 2), iconW, iconH};
-    frame.target().bitmap(iconRect, icon, iconMode, style.foreground);
+    frame.target().bitmap(iconRect, icon, iconMode, style.foreground, props.iconRotation);
     Rect textRect{static_cast<int16_t>(x + iconW + props.gap), content.y,
                   static_cast<int16_t>(content.right() - x - iconW - props.gap), content.height};
     TextStyle textStyle = textStyleWithForeground(props.text, style.foreground);
@@ -81,7 +83,7 @@ void button(Frame<MaxInteractions>& frame, Rect rect, const ButtonProps& props) 
     frame.target().text(textRect, props.label, textStyle);
   } else if (icon) {
     Rect iconRect = centeredRect(content, Size{iconW, iconH});
-    frame.target().bitmap(iconRect, icon, iconMode, style.foreground);
+    frame.target().bitmap(iconRect, icon, iconMode, style.foreground, props.iconRotation);
   } else if (props.label) {
     TextStyle textStyle = textStyleWithForeground(props.text, style.foreground);
     textStyle.align = TextAlign::Center;

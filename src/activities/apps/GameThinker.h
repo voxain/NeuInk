@@ -19,7 +19,10 @@ class GameThinker {
   // Starts `work(context)` on the worker task. timeLimitMs bounds the thinking
   // through shouldStop(). Returns false while an earlier job is still running
   // or when the task cannot be created.
-  bool start(Work work, void* context, uint32_t timeLimitMs);
+  // `core` pins the task; kAutoCore puts it on core 0 of a two-core board, which is where the main loop (and with it
+  // the touch input) runs as well: a job that works for long without sleeping should ask for the other one.
+  static constexpr BaseType_t kAutoCore = -1;
+  bool start(Work work, void* context, uint32_t timeLimitMs, BaseType_t core = kAutoCore);
   bool running() const { return state_.load(std::memory_order_acquire) == State::Running; }
   // True once after a job has finished.
   bool takeFinished();

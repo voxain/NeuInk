@@ -173,7 +173,7 @@ Defaults:
 
 - Short-press Power Button Action: Ignore
 - Long-press Power Button Action: Sleep/Wake
-- Long-press Back Button Action: Browse Files
+- Long-press Back Button Action: File Manager
 - Long Press Menu Button Action: Ignore
 
 Available actions include:
@@ -199,7 +199,7 @@ Available actions include:
 - Tilt Page Turn (X3 only)
 - Footnotes
 - Dark Mode
-- Browse Files
+- File Manager
 - Library
 - Create Clipping
 - Look Up Word

@@ -109,7 +109,7 @@ void TicTacToeActivity::layout() {
   bottomStripY = board.y + size + gameui::kHeaderGap;
   statusY = bottomStripY + kStripHeight + 4;
   tallyY = gameui::contentBottom(renderer) - kTallyHeight;
-  newHold.box = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
+  newButton = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
 
   constexpr int pad = 18;
   constexpr int titleHeight = 40;
@@ -176,15 +176,6 @@ void TicTacToeActivity::loop() {
     return;
   }
 
-  bool repaint = false;
-  if (panel == Panel::Board && game.started() && newHold.update(mappedInput, repaint, &pointer)) {
-    draft = settings;
-    panel = Panel::NewGame;
-    requestUpdate();
-    return;
-  }
-  if (repaint) requestUpdate();
-
   int tx = 0;
   int ty = 0;
   bool moved = false;
@@ -195,6 +186,13 @@ void TicTacToeActivity::loop() {
   }
   if (moved) requestUpdate();
   if (!hit) return;
+
+  if (newButton.contains(tx, ty) && panel == Panel::Board && game.started()) {
+    draft = settings;
+    panel = Panel::NewGame;
+    requestUpdate();
+    return;
+  }
 
   if (panel == Panel::NewGame) {
     const bool computer = draft.opponent == Computer;
@@ -352,6 +350,7 @@ void TicTacToeActivity::drawNewGamePanel() const {
   for (int i = 0; i < 3; ++i) gameui::choice(renderer, levelBoxes[i], levelName(i), draft.level == i, computer);
   gameui::choice(renderer, sideBoxes[0], tr(STR_TTT_X_FIRST), draft.human == tictactoe::X, computer);
   gameui::choice(renderer, sideBoxes[1], "O", draft.human == tictactoe::O, computer);
+  gameui::panelRule(renderer, panelBox, startBox.y - 8);
   if (game.started()) gameui::button(renderer, cancelBox, tr(STR_CANCEL), false);
   gameui::button(renderer, startBox, tr(STR_GAME_START), true);
 }
@@ -360,7 +359,7 @@ void TicTacToeActivity::render(RenderLock&&) {
   layout();
   renderer.clearScreen();
   gameui::drawHeader(renderer, mappedInput, tr(STR_GAME_TICTACTOE));
-  if (panel == Panel::Board && game.started()) newHold.draw(renderer, tr(STR_GAME_NEW_SHORT), tr(STR_HOLD_FOR_NEW_GAME));
+  if (panel == Panel::Board && game.started()) gameui::cornerButton(renderer, newButton, tr(STR_GAME_NEW_SHORT));
 
   const Mark bottom = settings.opponent == Computer ? static_cast<Mark>(settings.human) : tictactoe::X;
   drawStrip(topStripY, tictactoe::other(bottom));
@@ -386,7 +385,7 @@ void TicTacToeActivity::render(RenderLock&&) {
     pointer.add(startBox);
   } else {
     for (int cell = 0; cell < 9; ++cell) pointer.add({board.x + (cell % 3) * kCell, board.y + (cell / 3) * kCell, kCell, kCell});
-    if (game.started()) pointer.add(newHold.box);
+    if (game.started()) pointer.add(newButton);
   }
   pointer.draw(renderer);
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr int kSquare = 58;
+constexpr int kMaxSquare = 58;  // the board shrinks from this to keep the controls clear of the screen's foot
 constexpr int kStripHeight = 30;
 constexpr int kToolHeight = 100;
 constexpr int kToolGap = 8;
@@ -107,8 +107,11 @@ void CheckersActivity::onExit() {
 
 void CheckersActivity::layout() {
   const int width = renderer.getScreenWidth();
-  const int size = kSquare * 8;
   topStripY = gameui::contentTop(renderer, mappedInput);
+  // As in Go, the board takes what the strips, the status line and the tool row leave of the height.
+  const int fixedHeight = 2 * (kStripHeight + gameui::kHeaderGap) + 4 + 34 + gameui::kSectionGap + kToolHeight;
+  squareSize = std::clamp((gameui::contentBottom(renderer) - topStripY - fixedHeight) / 8, 40, kMaxSquare);
+  const int size = squareSize * 8;
   board = {(width - size) / 2, topStripY + kStripHeight + gameui::kHeaderGap, size, size};
   bottomStripY = board.y + size + gameui::kHeaderGap;
   statusY = bottomStripY + kStripHeight + 4;
@@ -118,7 +121,7 @@ void CheckersActivity::layout() {
     tools[i] = {board.x + i * (toolWidth + kToolGap), toolsY, toolWidth, kToolHeight};
   }
   newGameBox = {board.x + (size - 260) / 2, toolsY + 18, 260, 64};
-  newHold.box = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
+  newButton = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
 
   constexpr int pad = 18;
   constexpr int titleHeight = 40;
@@ -293,13 +296,13 @@ void CheckersActivity::undoMove() {
 gameui::Box CheckersActivity::squareBox(const int square) const {
   const int row = flipped() ? 7 - (square >> 3) : square >> 3;
   const int column = flipped() ? 7 - (square & 7) : square & 7;
-  return {board.x + column * kSquare, board.y + row * kSquare, kSquare, kSquare};
+  return {board.x + column * squareSize, board.y + row * squareSize, squareSize, squareSize};
 }
 
 int CheckersActivity::squareAt(const int x, const int y) const {
   if (!board.contains(x, y)) return -1;
-  const int column = (x - board.x) / kSquare;
-  const int row = (y - board.y) / kSquare;
+  const int column = (x - board.x) / squareSize;
+  const int row = (y - board.y) / squareSize;
   return flipped() ? (7 - row) * 8 + (7 - column) : row * 8 + column;
 }
 
@@ -319,15 +322,6 @@ void CheckersActivity::loop() {
     }
     return;
   }
-
-  bool repaint = false;
-  if (panel == Panel::Board && game->started() && newHold.update(mappedInput, repaint, &pointer)) {
-    draft = settings;
-    panel = Panel::NewGame;
-    requestUpdate();
-    return;
-  }
-  if (repaint) requestUpdate();
 
   int tx = 0;
   int ty = 0;
@@ -358,7 +352,12 @@ void CheckersActivity::loop() {
     return;
   }
 
-  if (newHold.box.contains(tx, ty)) return;  // New needs a hold; a tap does nothing
+  if (newButton.contains(tx, ty) && panel == Panel::Board && game->started()) {
+    draft = settings;
+    panel = Panel::NewGame;
+    requestUpdate();
+    return;
+  }
   const int square = squareAt(tx, ty);
   if (square >= 0) {
     tapSquare(square);
@@ -420,9 +419,8 @@ void CheckersActivity::drawPiece(const gameui::Box& box, const uint8_t content) 
     gameui::ring(renderer, cx, cy, radius - 6, 2, false);
   }
   if (checkers::isKing(content)) {
-    const appart::Bitmap& crown = appart::kSmallPieceBlackQueen;
     if (!light) gameui::disc(renderer, cx, cy, radius - 8, true);
-    gameui::stamp(renderer, crown, cx - crown.width / 2, cy - crown.height / 2, light);
+    drawLucideIcon(renderer, icon_crown_24, cx - 12, cy - 12, light);
   }
 }
 
@@ -487,6 +485,7 @@ void CheckersActivity::drawNewGamePanel() const {
   for (int i = 0; i < 3; ++i) gameui::choice(renderer, levelBoxes[i], levelName(i), draft.level == i, computer);
   gameui::choice(renderer, sideBoxes[0], tr(STR_CHECKERS_DARK_FIRST), draft.human == checkers::Dark, computer);
   gameui::choice(renderer, sideBoxes[1], tr(STR_CHECKERS_LIGHT), draft.human == checkers::Light, computer);
+  gameui::panelRule(renderer, panelBox, startBox.y - 8);
   if (game->started()) gameui::button(renderer, cancelBox, tr(STR_CANCEL), false);
   gameui::button(renderer, startBox, tr(STR_GAME_START), true);
 }
@@ -495,7 +494,7 @@ void CheckersActivity::render(RenderLock&&) {
   layout();
   renderer.clearScreen();
   gameui::drawHeader(renderer, mappedInput, tr(STR_GAME_CHECKERS));
-  if (panel == Panel::Board && game->started()) newHold.draw(renderer, tr(STR_GAME_NEW_SHORT), tr(STR_HOLD_FOR_NEW_GAME));
+  if (panel == Panel::Board && game->started()) gameui::cornerButton(renderer, newButton, tr(STR_GAME_NEW_SHORT));
 
   const checkers::Side bottom = flipped() ? checkers::Dark : checkers::Light;
   drawStrip(topStripY, otherSide(bottom));
@@ -506,8 +505,8 @@ void CheckersActivity::render(RenderLock&&) {
   if (game->started() && game->state() != checkers::Game::State::Playing) {
     gameui::button(renderer, newGameBox, tr(STR_GAME_NEW), true);
   } else {
-    gameui::iconButton(renderer, tools[Undo], appart::kIconUndo, tr(STR_SUDOKU_UNDO), false);
-    gameui::iconButton(renderer, tools[Hint], appart::kIconHint, tr(STR_SUDOKU_HINT), false);
+    gameui::iconButton(renderer, tools[Undo], icon_undo_32, tr(STR_SUDOKU_UNDO), false);
+    gameui::iconButton(renderer, tools[Hint], icon_hint_32, tr(STR_SUDOKU_HINT), false);
   }
 
   if (panel == Panel::NewGame) drawNewGamePanel();
@@ -529,7 +528,7 @@ void CheckersActivity::render(RenderLock&&) {
     } else {
       for (const auto& b : tools) pointer.add(b);
     }
-    if (game->started()) pointer.add(newHold.box);
+    if (game->started()) pointer.add(newButton);
   }
   pointer.draw(renderer);
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

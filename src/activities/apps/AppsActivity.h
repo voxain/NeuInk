@@ -1,17 +1,18 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
-#include "ClockFace.h"
+#include "AppRegistry.h"
 #include "GameUi.h"
-#include "SudokuActivity.h"
 #include "activities/Activity.h"
 
-// Home > Apps: a tile per built-in app with its icon, its name and a short
-// line about what is going on in it. Manage (top right) lists every app with a
-// switch; an app that is switched off is only hidden from the tiles - it stays
-// in the firmware and costs no memory or battery while it is not open. The
-// Clock's and Sudoku's rows also lead to their settings.
+// The Apps screen (themes whose Home does not list the apps itself): a small tile
+// per built-in app with its icon, its name and a short line about what is going
+// on in it. Which apps show, and the Clock's and Sudoku's options, are in
+// Settings > Apps (makeSettingsPage): an app that is switched off is only hidden
+// from the tiles - it stays in the firmware and costs no memory or battery while
+// it is not open.
 class AppsActivity final : public Activity {
  public:
   // What sleep notes about the screen it began on, so that waking returns there
@@ -23,6 +24,9 @@ class AppsActivity final : public Activity {
   // is neither the list nor an app.
   static uint8_t resumeIdFor(const std::string& activityName);
 
+  // Settings > Apps: switches for the apps, and the pages of the apps' own options.
+  static std::unique_ptr<Activity> makeSettingsPage(GfxRenderer& renderer, MappedInputManager& mappedInput);
+
   // resumeId: one app's resume number opens that app on top of the list.
   AppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, uint8_t resumeId = kResumeNone);
 
@@ -31,49 +35,19 @@ class AppsActivity final : public Activity {
   void render(RenderLock&&) override;
 
  private:
-  // The numbers are kept in files (resume, hidden apps): a new app gets the next one.
-  enum AppId { Wordle = 0, Sudoku = 1, Chess = 2, Checkers = 3, Clock = 4, TicTacToe = 5, Go = 6, kAppCount = 7 };
-  // The order of the tiles and of the rows in Manage: the games, then the Clock.
-  static constexpr AppId kOrder[kAppCount] = {Wordle, Sudoku, Chess, Checkers, Go, TicTacToe, Clock};
-  static constexpr char kSavePath[] = "/.crosspoint/games/apps.bin";
+  using AppId = apps::Id;
 
   void layout();
   void readStatus();
-  void open(AppId app);
+  void open(const apps::Info& app);
   bool hidden(int app) const { return (hiddenMask & (1u << app)) != 0; }
-  void saveHidden() const;
-  void drawIcon(int app, int x, int y) const;
   void drawTiles() const;
-  void drawManage() const;
-  void drawClockSettings() const;
-  void changeClockSetting(int row);
-  void drawSudokuSettings() const;
-  // The Settings button on an app's row in Manage, left of its switch.
-  gameui::Box settingsButtonFor(AppId app) const;
 
-  enum class Mode : uint8_t { Tiles, Manage, ClockSettings, SudokuSettings };
-  enum ClockRow { FaceRow = 0, PersianRow = 1, WeekStartRow = 2, WeekNumberRow = 3, kClockRowCount = 4 };
-  // The Sudoku switches fill two pages.
-  static constexpr int kSudokuRowsPerPage = 5;
-  static constexpr int kSudokuPages =
-      (SudokuActivity::kOptionCount + kSudokuRowsPerPage - 1) / kSudokuRowsPerPage;
-
-  Mode mode = Mode::Tiles;
   uint8_t resumeId;
-  clockface::Options clockOptions;
-  gameui::Box clockSettingsBox;
-  gameui::Box clockRows[kClockRowCount];
-  SudokuActivity::Options sudokuOptions;
-  int sudokuPage = 0;
-  gameui::Box sudokuSettingsBox;
-  gameui::Box sudokuRows[kSudokuRowsPerPage];
-  gameui::Box pageBoxes[2];  // previous, next
   uint8_t hiddenMask = 0;
   int shownCount = 0;
-  int shown[kAppCount] = {};
-  gameui::Box tiles[kAppCount];
-  gameui::Box rows[kAppCount];
-  gameui::Box manageBox;
+  int shown[apps::kIdCount] = {};
+  gameui::Box tiles[apps::kIdCount];
   gameui::ButtonPointer pointer;
-  std::string status[kAppCount];
+  std::string status[apps::kIdCount];
 };

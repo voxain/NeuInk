@@ -366,7 +366,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     MINIMAL = 5,
     DASHBOARD = 6,
     COVER_GRID = 7,
-    UI_THEME_COUNT = 8
+    VEGA = 8,
+    UI_THEME_COUNT = 9
   };
   enum RECENT_BOOKS_VIEW { RECENT_BOOKS_LIST = 0, RECENT_BOOKS_GRID = 1, RECENT_BOOKS_VIEW_COUNT };
 
@@ -680,9 +681,18 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Long-press page turn button behavior
   uint8_t longPressButtonBehavior = OFF;
   // UI Theme
-  uint8_t uiTheme = LYRA;
+  uint8_t uiTheme = VEGA;
   // Recently Opened layout in Library; keep the original raw values for older settings.
   uint8_t recentBooksView = RECENT_BOOKS_LIST;
+  // Vega Home grid (the pane under the bottom-edge swipe): icon size (0 = 32, 1 = 42, 2 = 48, 3 = 24 px),
+  // columns x rows (0 = 4x3, 1 = 4x4, 2 = 3x4, 3 = 3x3) and whether the names show under the icons.
+  uint8_t homeIconSize = 0;
+  uint8_t homeGrid = 0;
+  uint8_t homeShowNames = 1;
+  // Shape of the icon plates (0 = squircle, 1 = rounded square, 2 = circle, 3 = hexagon) and whether their gray is true
+  // gray (an extra panel pass, experimental) instead of a dither.
+  uint8_t homeIconShape = 0;
+  uint8_t homeTrueGray = 0;
   // UI scale (list fonts + row heights); touch boards default one step larger
   uint8_t uiScale = defaultUiScale();
   // Sunlight fading compensation

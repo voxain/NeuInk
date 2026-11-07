@@ -85,7 +85,7 @@ class GoActivity final : public Activity {
   bool dirty = false;
   int ghost = -1;  // the faint stone: where a second tap (or Confirm) places
 
-  gameui::HoldButton newHold;
+  gameui::Box newButton;  // "New" in the title bar: a tap opens the New game panel
   gameui::Box board;
   gameui::Box tools[kToolCount];
   gameui::Box newGameBox;

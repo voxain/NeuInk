@@ -93,7 +93,7 @@ class ChessActivity final : public Activity {
   int promotionFrom = -1;
   int promotionTo = -1;
 
-  gameui::HoldButton newHold;
+  gameui::Box newButton;  // "New" in the title bar: a tap opens the New game panel
   gameui::Box board;
   gameui::Box tools[kToolCount];
   gameui::Box newGameBox;  // shown in place of the tools once a game is over
@@ -105,6 +105,7 @@ class ChessActivity final : public Activity {
   gameui::Box startBox;
   gameui::Box promotionBoxes[4];
   int topStripY = 0;
+  int squareSize = 0;  // a board square's side, set by layout()
   int bottomStripY = 0;
   int statusY = 0;
   gameui::ButtonPointer pointer;  // NeuInk: apps on button readers

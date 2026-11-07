@@ -21,6 +21,11 @@
 #include "BleSettingsActivity.h"
 #include "ButtonRemapActivity.h"
 #include "ClearCacheActivity.h"
+#include "AboutPage.h"
+#include "BatteryActivity.h"
+#include "StorageActivity.h"
+#include "components/icons/homeIcons.h"
+#include "activities/apps/AppsActivity.h"
 #include "ClockOffsetActivity.h"
 #include "ClockSyncActivity.h"
 #include "LanguageDownloadActivity.h"
@@ -56,6 +61,7 @@
 #include "components/UiAppHelpers.h"
 #include "components/icons/frontlightHeaderIcons.h"
 #include "components/icons/listIcons.h"
+#include "components/icons/turnedIcons.h"
 #include "components/icons/readingStatsIcons.h"
 #include "fontIds.h"
 #include "util/DictionaryRegistry.h"
@@ -75,11 +81,17 @@ enum SettingsGroup : int {
   GroupGeneral,
   GroupDisplay,
   GroupReader,
+#if NEUINK_BATTERY_HISTORY
+  GroupBattery,  // opens the Battery page directly (X4 Pro)
+#endif
+  GroupStorage,  // opens the Storage page directly
+  GroupNetwork,
   GroupDictionaries,  // opens the Dictionaries screen directly
   GroupControls,
   GroupLibrary,
+  GroupApps,  // opens the Apps options page directly
   GroupReadingStats,
-  GroupNetwork,
+  GroupAbout,  // opens the About page directly
   GroupCount
 };
 struct SettingsGroupInfo {
@@ -88,19 +100,24 @@ struct SettingsGroupInfo {
   const freeink::Icon* icon;
 };
 const SettingsGroupInfo SETTINGS_GROUPS[GroupCount] = {
-    {StrId::STR_SETTINGS_GENERAL, StrId::STR_SETTINGS_GENERAL_DESC, &icon_cog_32},
-    {StrId::STR_CAT_DISPLAY, StrId::STR_SETTINGS_DISPLAY_DESC, &icon_image_32},
-    {StrId::STR_CAT_READER, StrId::STR_SETTINGS_READER_DESC, &icon_book_open_32},
-    {StrId::STR_DICTIONARIES, StrId::STR_SETTINGS_DICTIONARIES_DESC, &icon_case_sensitive_32},
-    {StrId::STR_CAT_CONTROLS, StrId::STR_SETTINGS_CONTROLS_DESC, &icon_sliders_horizontal_32},
-    {StrId::STR_LIBRARY, StrId::STR_SETTINGS_LIBRARY_DESC, &icon_folder_32},
-    {StrId::STR_READING_STATS, StrId::STR_SETTINGS_STATS_DESC, &icon_reading_stats_32},
-    {StrId::STR_SETTINGS_NETWORK, StrId::STR_SETTINGS_NETWORK_DESC, &icon_wifi_32},
+    {StrId::STR_SETTINGS_GENERAL, StrId::STR_SETTINGS_GENERAL_DESC, &icon_settings_32},
+    {StrId::STR_CAT_DISPLAY, StrId::STR_SETTINGS_DISPLAY_DESC, &icon_display_32},
+    {StrId::STR_CAT_READER, StrId::STR_SETTINGS_READER_DESC, &icon_reader_32},
+#if NEUINK_BATTERY_HISTORY
+    {StrId::STR_BATTERY, StrId::STR_SETTINGS_BATTERY_DESC, &icon_battery_32},
+#endif
+    {StrId::STR_STORAGE, StrId::STR_SETTINGS_STORAGE_DESC, &icon_storage_32},
+    {StrId::STR_SETTINGS_NETWORK, StrId::STR_SETTINGS_NETWORK_DESC, &icon_wifi_on_32},
+    {StrId::STR_DICTIONARIES, StrId::STR_SETTINGS_DICTIONARIES_DESC, &icon_dictionaries_32},
+    {StrId::STR_CAT_CONTROLS, StrId::STR_SETTINGS_CONTROLS_DESC, &icon_controls_32},
+    {StrId::STR_LIBRARY, StrId::STR_SETTINGS_LIBRARY_DESC, &icon_library_shelf_32},
+    {StrId::STR_APPS, StrId::STR_SETTINGS_APPS_DESC, &icon_apps_grid_32},
+    {StrId::STR_READING_STATS, StrId::STR_SETTINGS_STATS_DESC, &icon_stats_32},
+    {StrId::STR_ABOUT, StrId::STR_SETTINGS_ABOUT_DESC, &icon_about_32},
 };
 }  // namespace
 
 namespace {
-constexpr int systemVersionFooterBottomInset = 15;
 // Faster Screen Link confirmation window: unconfirmed, it switches back.
 constexpr uint32_t FAST_SCREEN_LINK_CONFIRM_MS = 10000;
 constexpr size_t controlsParentBaseCount = 4;
@@ -165,15 +182,6 @@ std::string formatCompactDuration(const uint32_t seconds) {
   return buf;
 }
 
-void drawSystemVersionFooter(const GfxRenderer& renderer, const int pageWidth, const int pageHeight,
-                             const ThemeMetrics& metrics) {
-  // The product name and the version, plain. Check for Updates shows the same version.
-  const std::string label = std::string(tr(STR_CROSSINK)) + " " + CROSSINK_VERSION;
-  const int bottomLineY =
-      pageHeight - metrics.buttonHintsHeight - metrics.verticalSpacing - systemVersionFooterBottomInset;
-  renderer.drawCenteredText(SMALL_FONT_ID, bottomLineY, label.c_str());
-}
-
 bool isNightTimeSetting(const SettingInfo& setting) {
   return setting.value16Ptr == &CrossPointSettings::frontlightNightStart ||
          setting.value16Ptr == &CrossPointSettings::frontlightNightEnd;
@@ -214,27 +222,6 @@ std::string formatSettingValue(const SettingInfo& setting) {
     return formatUtcOffset(SETTINGS.*(setting.valuePtr));
   }
   return std::to_string(SETTINGS.*(setting.valuePtr));
-}
-
-fui::BitmapRef swipeActionIcon(const StrId nameId) {
-  switch (nameId) {
-    case StrId::STR_LEFT_EDGE_UP:
-    case StrId::STR_RIGHT_EDGE_UP:
-      return fui::bitmapFromIcon(icon_arrow_up_24);
-    case StrId::STR_LEFT_EDGE_DOWN:
-    case StrId::STR_RIGHT_EDGE_DOWN:
-      return fui::bitmapFromIcon(icon_arrow_down_24);
-    case StrId::STR_TWO_FINGER_SWIPE_UP:
-      return fui::bitmapFromIcon(icon_arrows_up_24);
-    case StrId::STR_TWO_FINGER_SWIPE_DOWN:
-      return fui::bitmapFromIcon(icon_arrows_down_24);
-    case StrId::STR_TWO_FINGER_SWIPE_LEFT:
-      return fui::bitmapFromIcon(icon_arrows_left_24);
-    case StrId::STR_TWO_FINGER_SWIPE_RIGHT:
-      return fui::bitmapFromIcon(icon_arrows_right_24);
-    default:
-      return {};
-  }
 }
 
 fui::BitmapRef frontlightScheduleEndpointIcon(const SettingInfo& setting) {
@@ -292,6 +279,13 @@ void SettingsActivity::rebuildSettingsLists() {
   controlsTwoFingerSwipeSettings.clear();
   controlsEdgeGestureSettings.clear();
   generalSettings.clear();
+  generalDateTimeSettings.clear();
+  readerContentSettings.clear();
+  readerAidsSettings.clear();
+  readerLookupSettings.clear();
+  displayStatusBarSettings.clear();
+  displayScreenRefreshSettings.clear();
+  generalUpdatesSettings.clear();
   networkSettings.clear();
   systemFilesCacheSettings.clear();
   fileBrowserSettings.clear();
@@ -313,32 +307,33 @@ void SettingsActivity::rebuildSettingsLists() {
   dictionaryRegistry.refreshIfDirty();
   const auto allSettings = getSettingsList(needsFonts ? &sdFontSystem.registry() : nullptr, &dictionaryRegistry);
   displaySettings = buildGroupedDisplaySettingsList(allSettings);
+  displayStatusBarSettings = buildDisplayStatusBarSettingsList(allSettings);
+  displayScreenRefreshSettings = buildDisplayScreenRefreshSettingsList(allSettings);
 #ifndef SIMULATOR
   if (BoardConfig::isX4Pro() || CROSSINK_APP_DEVICE_X4CLASSIC) {
-    displaySettings.erase(
-        std::remove_if(displaySettings.begin(), displaySettings.end(),
+    displayScreenRefreshSettings.erase(
+        std::remove_if(displayScreenRefreshSettings.begin(), displayScreenRefreshSettings.end(),
                        [](const SettingInfo& setting) { return setting.valuePtr == &CrossPointSettings::fadingFix; }),
-        displaySettings.end());
+        displayScreenRefreshSettings.end());
   }
   const bool offerFastScreenLink = display.supportsFastLink();
 #else
   const bool offerFastScreenLink = false;
 #endif
   if (!offerFastScreenLink) {
-    displaySettings.erase(std::remove_if(displaySettings.begin(), displaySettings.end(),
+    displayScreenRefreshSettings.erase(std::remove_if(displayScreenRefreshSettings.begin(), displayScreenRefreshSettings.end(),
                                          [](const SettingInfo& setting) {
                                            return setting.valuePtr == &CrossPointSettings::fastScreenLink;
                                          }),
-                          displaySettings.end());
+                          displayScreenRefreshSettings.end());
   }
   displaySleepSettings = buildDisplaySleepSettingsList(allSettings);
   displayFrontlightSettings = buildDisplayFrontlightSettingsList(allSettings);
   controlsControlCenterSettings = buildControlsControlCenterSettingsList(allSettings);
-  readerSettings = buildReaderSettingsParentList(allSettings);
-  // Dictionaries has its own group here; the in-book menu keeps the row.
-  readerSettings.erase(std::remove_if(readerSettings.begin(), readerSettings.end(),
-                                      [](const SettingInfo& s) { return s.action == SettingAction::Dictionaries; }),
-                       readerSettings.end());
+  readerSettings = buildGroupedReaderSettingsList(allSettings);
+  readerContentSettings = buildReaderContentSettingsList(allSettings);
+  readerAidsSettings = buildReaderAidsSettingsList(allSettings);
+  readerLookupSettings = buildReaderLookupSettingsList(allSettings);
   readerFontSettings = buildReaderFontSettingsList(allSettings);
 #if CROSSINK_SCALABLE_FONTS
   if (needsFonts && sdFontSystem.isScalableFamily(SETTINGS.sdFontFamilyName)) {
@@ -352,6 +347,8 @@ void SettingsActivity::rebuildSettingsLists() {
   readerPageLayoutSettings = buildReaderPageLayoutSettingsList(allSettings);
   readerScreenMarginSettings = buildReaderScreenMarginSettingsList(allSettings);
   generalSettings = buildGeneralSettingsList(allSettings);
+  generalDateTimeSettings = buildGeneralDateTimeSettingsList(allSettings);
+  generalUpdatesSettings = buildGeneralUpdatesSettingsList();
   networkSettings = buildNetworkSettingsList();
   systemFilesCacheSettings = buildSystemFilesCacheSettingsList(allSettings);
   systemReadingStatsSettings = buildSystemReadingStatsSettingsList(allSettings);
@@ -414,13 +411,20 @@ void SettingsActivity::setCurrentSettingsForCategory() {
 
   switch (selectedCategoryIndex) {
     case GroupGeneral:
-      currentSettings = &generalSettings;
+      currentSettings = activeSubmenu == SettingAction::GeneralDateTime
+                            ? &generalDateTimeSettings
+                            : (activeSubmenu == SettingAction::GeneralUpdates ? &generalUpdatesSettings
+                                                                              : &generalSettings);
       break;
     case GroupDisplay:
       if (activeSubmenu == SettingAction::DisplaySleepScreen) {
         currentSettings = &displaySleepSettings;
       } else if (activeSubmenu == SettingAction::DisplayFrontlight) {
         currentSettings = &displayFrontlightSettings;
+      } else if (activeSubmenu == SettingAction::DisplayStatusBar) {
+        currentSettings = &displayStatusBarSettings;
+      } else if (activeSubmenu == SettingAction::DisplayScreenRefresh) {
+        currentSettings = &displayScreenRefreshSettings;
       } else {
         currentSettings = &displaySettings;
       }
@@ -435,6 +439,15 @@ void SettingsActivity::setCurrentSettingsForCategory() {
           break;
         case SettingAction::ScreenMargin:
           currentSettings = &readerScreenMarginSettings;
+          break;
+        case SettingAction::ReaderContent:
+          currentSettings = &readerContentSettings;
+          break;
+        case SettingAction::ReaderAids:
+          currentSettings = &readerAidsSettings;
+          break;
+        case SettingAction::ReaderLookup:
+          currentSettings = &readerLookupSettings;
           break;
         default:
           currentSettings = &readerSettings;
@@ -500,6 +513,20 @@ void SettingsActivity::enterCategory(int categoryIndex) {
 
 StrId SettingsActivity::activeSubmenuTitleId() const {
   switch (activeSubmenu) {
+    case SettingAction::ReaderContent:
+      return StrId::STR_READER_CONTENT;
+    case SettingAction::ReaderAids:
+      return StrId::STR_READER_AIDS;
+    case SettingAction::ReaderLookup:
+      return StrId::STR_READER_LOOKUP;
+    case SettingAction::DisplayStatusBar:
+      return StrId::STR_DISPLAY_STATUS_BAR;
+    case SettingAction::DisplayScreenRefresh:
+      return StrId::STR_DISPLAY_SCREEN_REFRESH;
+    case SettingAction::GeneralDateTime:
+      return StrId::STR_DATE_AND_TIME;
+    case SettingAction::GeneralUpdates:
+      return StrId::STR_SOFTWARE_UPDATES;
     case SettingAction::DisplaySleepScreen:
       return StrId::STR_DISPLAY_SLEEP_SCREEN;
     case SettingAction::DisplayFrontlight:
@@ -845,6 +872,25 @@ void SettingsActivity::openGroup(const int group) {
                              SETTINGS.saveToFile();
                              requestUpdate();
                            });
+    return;
+  }
+#if NEUINK_BATTERY_HISTORY
+  if (group == GroupBattery) {
+    startActivityForResult(std::make_unique<BatteryActivity>(renderer, mappedInput),
+                           [this](const ActivityResult&) { requestUpdate(); });
+    return;
+  }
+#endif
+  if (group == GroupStorage) {
+    startActivityForResult(std::make_unique<StorageActivity>(renderer, mappedInput),
+                           [this](const ActivityResult&) { requestUpdate(); });
+    return;
+  }
+  if (group == GroupApps || group == GroupAbout) {
+    // Their own pages, made of the shared list rows.
+    startActivityForResult(group == GroupApps ? AppsActivity::makeSettingsPage(renderer, mappedInput)
+                                              : makeAboutPage(renderer, mappedInput),
+                           [this](const ActivityResult&) { requestUpdate(); });
     return;
   }
   enterCategory(group);
@@ -1318,6 +1364,13 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::SystemGlobalStats:
       case SettingAction::DisplaySleepScreen:
       case SettingAction::DisplayFrontlight:
+      case SettingAction::GeneralDateTime:
+      case SettingAction::GeneralUpdates:
+      case SettingAction::ReaderContent:
+      case SettingAction::ReaderAids:
+      case SettingAction::ReaderLookup:
+      case SettingAction::DisplayStatusBar:
+      case SettingAction::DisplayScreenRefresh:
       case SettingAction::None:
         // Do nothing
         break;
@@ -1539,7 +1592,8 @@ void SettingsActivity::buildSettingsScreen(UiApp::ScreenType& screen) {
     values[i] = settingValueText(settings[i]);
     const bool isSectionHeader = settings[i].type == SettingType::SECTION_HEADER;
     fui::ListItem item;
-    const fui::BitmapRef directionIcon = swipeActionIcon(settings[i].nameId);
+    const TurnedIcon swipe = turned::swipeAction(settings[i].nameId);
+    const fui::BitmapRef directionIcon = swipe.icon ? fui::bitmapFromIcon(*swipe.icon) : fui::BitmapRef{};
     const fui::BitmapRef endpointIcon = frontlightScheduleEndpointIcon(settings[i]);
     const fui::BitmapRef itemIcon = directionIcon ? directionIcon : endpointIcon;
     const char* sectionLabel =
@@ -1549,6 +1603,7 @@ void SettingsActivity::buildSettingsScreen(UiApp::ScreenType& screen) {
     item.label = isSectionHeader ? uiListSectionHeaderLabel(values[i], sectionLabel)
                                  : (directionIcon ? "" : I18N.get(settings[i].nameId));
     item.icon = itemIcon;
+    item.iconRotation = directionIcon ? swipe.rotation : fui::Rotation::None;
     if (!isSectionHeader && !values[i].empty()) item.value = values[i].c_str();
     item.isHeader = isSectionHeader;
     item.toggle = !isSectionHeader && settings[i].type == SettingType::TOGGLE;
@@ -1586,11 +1641,6 @@ void SettingsActivity::buildSettingsScreen(UiApp::ScreenType& screen) {
 void SettingsActivity::buildGroupList(UiApp::ScreenType& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
-  // Room for the version footer under the list.
-  screen.insetContent(fui::Insets{0, 0,
-                                  static_cast<int16_t>(renderer.getLineHeight(SMALL_FONT_ID) + metrics.verticalSpacing +
-                                                       systemVersionFooterBottomInset),
-                                  0});
   fui::ListItem items[GroupCount];
   for (int i = 0; i < GroupCount; ++i) {
     items[i].label = I18N.get(SETTINGS_GROUPS[i].name);
@@ -1606,12 +1656,15 @@ void SettingsActivity::buildGroupList(UiApp::ScreenType& screen) {
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.labelText = screen.theme().titleText;
   props.labelText.bold = true;
-  props.subtitleText = screen.theme().bodyText;
+  props.subtitleText = screen.theme().smallText;
+  props.iconPlate = 53;  // each icon on a light-gray squircle
+  props.textGap = 14;    // a little more air between the icon and the text
   const fui::Rect body = screen.body();
   configureUiList(props, screen.theme(), body, UiListRowType::WithSubtitle);
-  // The eight groups share the whole screen: bigger rows read and tap more easily.
-  const int fillHeight = (body.height - props.rowGap * (GroupCount - 1)) / GroupCount;
-  if (fillHeight > props.rowHeight) props.rowHeight = static_cast<int16_t>(fillHeight);
+  // About nine groups fill the screen, whatever its size, at a comfortable height; with more they scroll.
+  constexpr int kGroupsOnScreen = 9;
+  const int fillHeight = (body.height - props.rowGap * (kGroupsOnScreen - 1)) / kGroupsOnScreen;
+  props.rowHeight = static_cast<int16_t>(std::clamp(fillHeight, static_cast<int>(props.rowHeight), 96));
   const auto rows = fui::listVisibleRows(body, props.rowHeight, props.rowGap);
   visibleRows = rows > 0 ? rows : 1;
   topIndex = scrollListBy(topIndex, 0, visibleRows, GroupCount);
@@ -1624,8 +1677,6 @@ void SettingsActivity::render(RenderLock&&) {
 
   renderer.clearScreen();
 
-  const auto pageWidth = renderer.getScreenWidth();
-  const auto& metrics = UITheme::getInstance().getMetrics();
   const char* title = isFileBrowserView() ? tr(STR_FILE_BROWSER_SETTINGS)
                       : inGroupList()       ? tr(STR_SETTINGS_TITLE)
                                             : I18N.get(SETTINGS_GROUPS[selectedCategoryIndex].name);
@@ -1639,11 +1690,6 @@ void SettingsActivity::render(RenderLock&&) {
   uiReady = false;
   app.render();
   uiReady = true;
-
-  // Keep build information discoverable without crowding the common header.
-  if (inGroupList()) {
-    drawSystemVersionFooter(renderer, pageWidth, renderer.getScreenHeight(), metrics);
-  }
 
   const auto confirmLabel =
       inGroupList()

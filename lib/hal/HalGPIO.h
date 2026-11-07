@@ -156,6 +156,10 @@ class HalGPIO {
   // Check if USB is connected
   bool isUsbConnected() const;
 
+  // Whether a computer (a USB host that enumerates or clocks the bus) is at the other end of the cable, as against
+  // a charger, which only supplies power. False on boards that cannot tell.
+  bool isUsbHostConnected() const;
+
   // Return the latest loop-owned sample. Before the first update(), fall back
   // to a direct probe so setup-time callers still report external power.
   bool isUsbConnectedCached() const;

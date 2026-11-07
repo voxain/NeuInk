@@ -480,6 +480,11 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["librarySortDescending"] = librarySortDescending;
   doc["libraryListExpanded"] = libraryListExpanded;
   doc["recentBooksView"] = recentBooksView;
+  doc["homeIconSize"] = homeIconSize;
+  doc["homeGrid"] = homeGrid;
+  doc["homeShowNames"] = homeShowNames;
+  doc["homeIconShape"] = homeIconShape;
+  doc["homeTrueGray"] = homeTrueGray;
   doc["libraryShowSeries"] = libraryShowSeries;
   doc["libraryShowGenre"] = libraryShowGenre;
   doc["libraryShowEpub"] = libraryShowEpub;
@@ -677,6 +682,11 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc, bool importingCrossPoint
   // A missing or corrupt legacy choice uses List, even if this object loaded another document earlier.
   recentBooksView = RECENT_BOOKS_LIST;
   readLibraryChoice("recentBooksView", recentBooksView, RECENT_BOOKS_VIEW_COUNT);
+  readLibraryChoice("homeIconSize", homeIconSize, 4);
+  readLibraryChoice("homeGrid", homeGrid, 4);
+  readLibraryChoice("homeShowNames", homeShowNames, 2);
+  readLibraryChoice("homeIconShape", homeIconShape, 4);
+  readLibraryChoice("homeTrueGray", homeTrueGray, 2);
   readLibraryChoice("libraryShowSeries", libraryShowSeries, 2);
   readLibraryChoice("libraryShowGenre", libraryShowGenre, 2);
   readLibraryChoice("libraryShowEpub", libraryShowEpub, 2);

@@ -15,7 +15,7 @@
 #include "components/TouchHeaderBackButton.h"
 #include "components/TouchRegistry.h"
 #include "components/UITheme.h"
-#include "components/icons/listIcons.h"
+#include "components/icons/turnedIcons.h"
 #include "fontIds.h"
 
 namespace {
@@ -229,8 +229,11 @@ void drawCenteredLabel(const GfxRenderer& renderer, const int fontId, const int 
                     bold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
 }
 
+// One figure on a rounded light-gray tile, centred in its cell.
 void drawStatCell(const GfxRenderer& renderer, const int x, const int w, const int y, const int h, const char* value,
                   const char* label) {
+  constexpr int tileGap = 5;
+  renderer.fillRoundedRect(x + tileGap, y + tileGap, w - 2 * tileGap, h - 2 * tileGap, 14, Color::LightGray);
   const int valueLineH = renderer.getLineHeight(UI_12_FONT_ID);
   const int labelLineH = renderer.getLineHeight(SMALL_FONT_ID);
   const int totalTextH = valueLineH + 4 + labelLineH;
@@ -241,8 +244,7 @@ void drawStatCell(const GfxRenderer& renderer, const int x, const int w, const i
 
 void drawSectionCard(const GfxRenderer& renderer, const int x, const int y, const int w, const int h, const char* title,
                      const StatsLayout& layout) {
-  renderer.drawRect(x, y, w, h);
-  renderer.drawLine(x, y + layout.sectionTitleH, x + w, y + layout.sectionTitleH);
+  renderer.fillRoundedRect(x, y, w, h, 16, Color::LightGray);
   drawCenteredLabel(renderer, layout.sectionTitleFontId, x, w,
                     y + (layout.sectionTitleH - renderer.getLineHeight(layout.sectionTitleFontId)) / 2, title, true);
 }
@@ -280,9 +282,12 @@ void drawHorizontalBars(GfxRenderer& renderer, const int x, const int y, const i
     const int labelY = rowTop + (rowContentH - labelLineH) / 2;
     const int barY = rowTop + (rowContentH - layout.barH) / 2;
     renderer.drawText(layout.chartLabelFontId, x + labelLeftPadding, labelY, I18N.get(labels[i]));
+    // A white rounded track with a black rounded bar in it.
+    renderer.fillRoundedRect(barX, barY, barW, layout.barH, layout.barH / 2, Color::White);
     if (maxValue > 0 && values[i] > 0) {
-      const int fillW = std::max(2, static_cast<int>((static_cast<uint64_t>(barW) * values[i]) / maxValue));
-      renderer.fillRect(barX, barY, fillW, layout.barH, true);
+      const int fillW = std::clamp(static_cast<int>((static_cast<uint64_t>(barW) * values[i]) / maxValue), layout.barH,
+                                   std::max(layout.barH, barW));
+      renderer.fillRoundedRect(barX, barY, fillW, layout.barH, layout.barH / 2, Color::Black);
     }
   }
 }
@@ -291,8 +296,6 @@ void drawPerBookStatsCard(GfxRenderer& renderer, const int x, const int y, const
                           const std::string& bookTitle, const BookReadingStats& stats, const float progressPercent,
                           const bool hasEstimatedTimeLeft, const uint32_t estimatedTimeLeftSeconds,
                           const StatsLayout& layout, const char* titleSuffix = nullptr) {
-  renderer.drawRect(x, y, w, h);
-  renderer.drawLine(x, y + layout.topCardTitleH, x + w, y + layout.topCardTitleH);
   const int titleY = y + (layout.topCardTitleH - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
   int titleWidth = w - 20;
   if (titleSuffix && titleSuffix[0] != '\0') {
@@ -393,8 +396,6 @@ void drawPerBookStatsCard(GfxRenderer& renderer, const int x, const int y, const
 
 void drawGlobalStatsCard(GfxRenderer& renderer, const int x, const int y, const int w, const int h, const char* title,
                          const GlobalReadingStats& stats, const StatsLayout& layout) {
-  renderer.drawRect(x, y, w, h);
-  renderer.drawLine(x, y + layout.topCardTitleH, x + w, y + layout.topCardTitleH);
   const bool showRtcStats = shouldShowRtcBasedStats();
   drawCenteredLabel(renderer, UI_10_FONT_ID, x, w,
                     y + (layout.topCardTitleH - renderer.getLineHeight(UI_10_FONT_ID)) / 2, title, true);
@@ -449,24 +450,22 @@ void drawDateField(const GfxRenderer& renderer, const int x, const int y, const 
   if (touchTarget >= 0) {
     TouchRegistry::getInstance().add(Rect(x, y, w, h), touchTarget, TouchRegistry::Item);
   }
-  renderer.fillRectDither(x, y, w, h, selected ? Color::LightGray : Color::White);
-  renderer.drawRect(x, y, w, h, true);
-  if (selected) {
-    renderer.drawRect(x + 1, y + 1, w - 2, h - 2, true);
-  }
-  drawCenteredLabel(renderer, UI_12_FONT_ID, x, w, y + 5, text);
+  // White on the gray card; the field being edited is black.
+  renderer.fillRoundedRect(x, y, w, h, 10, selected ? Color::Black : Color::White);
+  renderer.drawText(UI_12_FONT_ID, x + (w - renderer.getTextWidth(UI_12_FONT_ID, text)) / 2, y + 5, text, !selected);
 }
 
 void drawDateAdjustButton(const GfxRenderer& renderer, const int x, const int y, const int size,
-                          const freeink::Icon& icon, const int touchTarget) {
+                          const TurnedIcon& turnedIcon, const int touchTarget) {
+  const freeink::Icon& icon = *turnedIcon.icon;
   TouchRegistry::getInstance().add(Rect(x, y, size, size), touchTarget, TouchRegistry::Item);
-  renderer.drawRect(x, y, size, size, true);
+  renderer.fillRoundedRect(x, y, size, size, size / 2, Color::White);
   const freeink::ui::BitmapRef bitmap{icon.bits, icon.w, icon.h, freeink::ui::BitmapFormat::Mask1, true};
   freeink::ui::forEachBitmapPixel(
       freeink::ui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(size),
                         static_cast<int16_t>(size)},
       bitmap, freeink::ui::BitmapMode::Center,
-      [&renderer](const int16_t px, const int16_t py) { renderer.drawPixel(px, py, true); });
+      [&renderer](const int16_t px, const int16_t py) { renderer.drawPixel(px, py, true); }, turnedIcon.rotation);
 }
 }  // namespace
 
@@ -685,7 +684,7 @@ void renderEditBookDatesPage(GfxRenderer& renderer, const MappedInputManager* ma
   const std::string visibleTitle =
       renderer.truncatedText(UI_12_FONT_ID, bookTitle.c_str(), pageWidth - 80, EpdFontFamily::BOLD);
   renderer.drawCenteredText(UI_12_FONT_ID, 96, visibleTitle.c_str(), true, EpdFontFamily::BOLD);
-  renderer.drawRect(cardX, cardY, cardW, cardH);
+  renderer.fillRoundedRect(cardX, cardY, cardW, cardH, 16, Color::LightGray);
 
   const int sectionGap = 104;
   const int row1Y = cardY + 66;
@@ -748,9 +747,9 @@ void renderEditBookDatesPage(GfxRenderer& renderer, const MappedInputManager* ma
   if (showTouchControls) {
     const int fieldH = renderer.getLineHeight(UI_12_FONT_ID) + 10;
     drawDateAdjustButton(renderer, adjustButtonX, row1Y + (fieldH - adjustButtonSize) / 2, adjustButtonSize,
-                         icon_chevron_up_32, BookStatsTouchTarget::DateAdjustUp);
+                         turned::chevronUp(), BookStatsTouchTarget::DateAdjustUp);
     drawDateAdjustButton(renderer, adjustButtonX, row2Y + (fieldH - adjustButtonSize) / 2, adjustButtonSize,
-                         icon_chevron_down_32, BookStatsTouchTarget::DateAdjustDown);
+                         turned::chevronDown(), BookStatsTouchTarget::DateAdjustDown);
 
     constexpr int actionHeight = TouchActionButtons::kDefaultHeight;
     constexpr int actionGap = TouchActionButtons::kDefaultGap;

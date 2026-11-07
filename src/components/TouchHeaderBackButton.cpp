@@ -20,6 +20,7 @@ namespace {
 constexpr int actionSize = 52;
 constexpr int touchSize = 68;
 constexpr int titleGap = 8;
+constexpr int iconTitleGap = 16;  // between the app's icon and its title
 constexpr int defaultRightReserve = 52;
 
 int effectiveVerticalOffset(const Layout& layout, const Rect& header, const int requestedOffset) {
@@ -47,6 +48,11 @@ Layout layout(const Rect& header) {
           actionX + actionWidth + titleGap};
 }
 
+int titleCenterY(const Rect& header, const int verticalOffset) {
+  const Layout back = layout(header);
+  return back.iconRect.y + effectiveVerticalOffset(back, header, verticalOffset) + back.iconRect.height / 2;
+}
+
 Rect standardHeaderRect(const GfxRenderer& renderer) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   return Rect{0, metrics.topPadding, renderer.getScreenWidth(), metrics.headerHeight};
@@ -65,6 +71,16 @@ Rect compactHeaderRect(const GfxRenderer& renderer) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   return Rect{0, metrics.topPadding, renderer.getScreenWidth(),
               CompactHeader::headerBottomY(metrics) - metrics.topPadding};
+}
+
+Rect drawPageHeader(GfxRenderer& renderer, const MappedInputManager& input, const char* title) {
+  const Rect header = headerRect(renderer, input);
+  if (input.hasTouchHardware()) {
+    draw(renderer, header, title, false);  // binds the UI fonts: a bare target draws no text
+  } else {
+    GUI.drawHeader(renderer, header, title);
+  }
+  return header;
 }
 
 bool wasTapped(const MappedInputManager& input, const Rect& header) {
@@ -97,8 +113,14 @@ void draw(GfxRenderer& renderer, fui::GfxRendererTarget& target, const Rect& hea
   titleStyle.align = fui::TextAlign::Left;
   titleStyle.maxLines = 1;
   const int reservedRight = rightReserve > 0 ? rightReserve : defaultRightReserve;
-  const int titleWidth = std::max(0, header.x + header.width - reservedRight - back.titleX);
-  target.text(fui::Rect{static_cast<int16_t>(back.titleX), static_cast<int16_t>(back.iconRect.y),
+  // The open app's icon sits between the back arrow and the title.
+  const freeink::Icon* appIcon = title != nullptr && title[0] != '\0' ? GUI.headerIcon() : nullptr;
+  const int titleX = back.titleX + (appIcon ? appIcon->w + iconTitleGap : 0);
+  const int titleWidth = std::max(0, header.x + header.width - reservedRight - titleX);
+  if (appIcon) {
+    drawLucideIcon(renderer, *appIcon, back.titleX, back.iconRect.y + (back.iconRect.height - appIcon->h) / 2);
+  }
+  target.text(fui::Rect{static_cast<int16_t>(titleX), static_cast<int16_t>(back.iconRect.y),
                         static_cast<int16_t>(titleWidth), static_cast<int16_t>(back.iconRect.height)},
               title, titleStyle);
 

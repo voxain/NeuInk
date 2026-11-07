@@ -15,19 +15,13 @@
 
 namespace {
 
-constexpr int kSide = 20;
-constexpr int kChipHeight = 40;
-constexpr int kChipGap = 10;
-constexpr int kRowHeight = 58;
-constexpr unsigned long kRemoveHoldMs = 800;
-
 // Keep Wi-Fi on next to a book only where the memory allows it (as before).
 constexpr bool kWifiRowShown = HalPowerManager::LOW_POWER_FREQ >= 80;
 
 }  // namespace
 
 DictionariesActivity::DictionariesActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-    : Activity("Dictionaries", renderer, mappedInput) {}
+    : RowListActivity(renderer, mappedInput, "Dictionaries", tr(STR_DICTIONARIES)) {}
 
 void DictionariesActivity::onEnter() {
   Activity::onEnter();
@@ -61,12 +55,12 @@ void DictionariesActivity::onEnter() {
   }
   if (chosenLanguages().empty()) SETTINGS.readingLanguages = 1;  // English
   selected = 0;
-  requestUpdate();
+  RowListActivity::onEnter();
 }
 
 void DictionariesActivity::onExit() {
   dictionaryRegistry.clear();
-  Activity::onExit();
+  RowListActivity::onExit();
 }
 
 void DictionariesActivity::chooseOffline(const onlinedict::Lang lang, const std::string& path) {
@@ -105,35 +99,7 @@ std::string DictionariesActivity::offlineName(const onlinedict::Lang lang) const
   return tr(STR_DICT_NONE);
 }
 
-void DictionariesActivity::layout() {
-  const int width = renderer.getScreenWidth();
-  int x = kSide;
-  int y = gameui::contentTop(renderer, mappedInput) + 6;
-  const auto chosen = chosenLanguages();
-  chipCount = 0;
-  // One chip per language, then "+"; chips wrap onto a second line.
-  for (size_t i = 0; i <= chosen.size(); ++i) {
-    const char* label = i < chosen.size() ? onlinedict::nativeName(chosen[i]) : "+";
-    const int w = i < chosen.size() ? renderer.getTextWidth(UI_10_FONT_ID, label, EpdFontFamily::BOLD) + 30
-                                    : kChipHeight;
-    if (x + w > width - kSide) {
-      x = kSide;
-      y += kChipHeight + kChipGap;
-    }
-    chipBoxes[chipCount++] = {x, y, w, kChipHeight};
-    x += w + kChipGap;
-  }
-  y += kChipHeight + 16;
-  for (int row = 0; row < kRowCount; ++row) {
-    if (row == KeepWifi) y += 34;  // the "Online" section label
-    rowBoxes[row] = {0, y, width, kRowHeight};
-    y += kRowHeight;
-    if (row == Offline && !hasCardDictionary(current())) y += 44;  // the note under it
-  }
-  hintY = y + 10;
-}
-
-void DictionariesActivity::openPicker(const Row row) {
+void DictionariesActivity::openPicker(const int row) {
   const onlinedict::Lang lang = current();
   std::vector<std::string> options;
   pickerValues.clear();
@@ -155,7 +121,7 @@ void DictionariesActivity::openPicker(const Row row) {
     popup.show(StrId::STR_DICT_OFFLINE, options, currentIndex, [this, lang](const int index) {
       const int card = pickerValues[index];
       chooseOffline(lang, card < 0 ? std::string() : dictionaries[card].path);
-      requestUpdate();
+      refresh();
     });
     requestUpdate();  // without it the popup is open but never drawn, and eats every tap
     return;
@@ -184,8 +150,19 @@ void DictionariesActivity::openPicker(const Row row) {
                } else {
                  OnlineDictionary::setSources(lang, first, picked);
                }
-               requestUpdate();
+               refresh();
              });
+  requestUpdate();
+}
+
+void DictionariesActivity::openLanguagePicker() {
+  const auto chosen = chosenLanguages();
+  std::vector<std::string> options;
+  for (const auto lang : chosen) options.push_back(onlinedict::nativeName(lang));
+  popup.show(StrId::STR_LANGUAGE, options, selected, [this](const int index) {
+    selected = index;
+    refresh();
+  });
   requestUpdate();
 }
 
@@ -206,7 +183,7 @@ void DictionariesActivity::openAddLanguage() {
     for (size_t i = 0; i < chosen.size(); ++i) {
       if (static_cast<int>(chosen[i]) == lang) selected = static_cast<int>(i);
     }
-    requestUpdate();
+    refresh();
   });
   requestUpdate();
 }
@@ -218,14 +195,12 @@ void DictionariesActivity::removeLanguage(const int index) {
       static_cast<uint16_t>(SETTINGS.readingLanguages & ~(1u << static_cast<uint8_t>(chosen[index])));
   SETTINGS.saveToFile();
   selected = 0;
-  requestUpdate();
 }
 
 void DictionariesActivity::toggleWifi() {
   if (SETTINGS.onlineDictWifiAlwaysOn != 0) {
     SETTINGS.onlineDictWifiAlwaysOn = 0;
     SETTINGS.saveToFile();
-    requestUpdate();
     return;
   }
   // Same warning as before: Wi-Fi next to a book costs battery.
@@ -236,160 +211,52 @@ void DictionariesActivity::toggleWifi() {
                              SETTINGS.onlineDictWifiAlwaysOn = 1;
                              SETTINGS.saveToFile();
                            }
-                           requestUpdate();
+                           refresh();
                          });
 }
 
-void DictionariesActivity::loop() {
-  if (popup.handleInput(mappedInput, [this] { requestUpdate(); })) return;
-  if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
-      mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    setResult(ActivityResult{});
-    finish();
-    return;
-  }
-  const int languages = chipCount - 1;
-  if (mappedInput.wasReleased(MappedInputManager::Button::Left) && selected > 0) {
-    --selected;
-    requestUpdate();
-  }
-  if (mappedInput.wasReleased(MappedInputManager::Button::Right) && selected + 1 < languages) {
-    ++selected;
-    requestUpdate();
-  }
 
-  const int lastRow = kWifiRowShown ? KeepWifi : OnlineSecond;
-  if (mappedInput.wasReleased(MappedInputManager::Button::Down) && focusRow < lastRow) {
-    ++focusRow;
-    requestUpdate();
-  }
-  if (mappedInput.wasReleased(MappedInputManager::Button::Up) && focusRow > 0) {
-    --focusRow;
-    requestUpdate();
-  }
-  if (focusRow >= 0 && mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-    if (focusRow == KeepWifi) {
-      toggleWifi();
-    } else {
-      openPicker(static_cast<Row>(focusRow));
-    }
-    return;
-  }
-
-  int x = 0;
-  int y = 0;
-  // Hold a language to remove it.
-  if (mappedInput.isScreenTouchLongPress(x, y, kRemoveHoldMs)) {
-    if (!longPressHandled) {
-      for (int i = 0; i < languages; ++i) {
-        if (!chipBoxes[i].contains(x, y)) continue;
-        longPressHandled = true;
-        mappedInput.suppressCurrentTouchContact();
-        removeLanguage(i);
-        return;
-      }
-    }
-    return;
-  }
-  longPressHandled = false;
-  if (!mappedInput.wasScreenTapped(x, y)) return;
-  for (int i = 0; i < chipCount; ++i) {
-    if (!chipBoxes[i].contains(x, y)) continue;
-    if (i == languages) {
-      openAddLanguage();
-    } else {
-      selected = i;
-      requestUpdate();
-    }
-    return;
-  }
-  for (int row = 0; row < kRowCount; ++row) {
-    if (row == KeepWifi && !kWifiRowShown) continue;
-    if (!rowBoxes[row].contains(x, y)) continue;
-    if (row == KeepWifi) {
-      toggleWifi();
-    } else {
-      openPicker(static_cast<Row>(row));
-    }
-    return;
-  }
-}
-
-void DictionariesActivity::render(RenderLock&&) {
-  layout();
-  renderer.clearScreen();
-  gameui::drawHeader(renderer, mappedInput, tr(STR_DICTIONARIES));
-  const int width = renderer.getScreenWidth();
-  const auto chosen = chosenLanguages();
+void DictionariesActivity::buildRows(std::vector<Row>& rows) {
   const onlinedict::Lang lang = current();
-
-  for (int i = 0; i < chipCount; ++i) {
-    const gameui::Box& chip = chipBoxes[i];
-    const bool on = i == selected;
-    const char* label = i < static_cast<int>(chosen.size()) ? onlinedict::nativeName(chosen[i]) : "+";
-    renderer.fillRoundedRect(chip.x, chip.y, chip.w, chip.h, chip.h / 2, on ? Color::Black : Color::White);
-    renderer.drawRoundedRect(chip.x, chip.y, chip.w, chip.h, 2, chip.h / 2, true);
-    gameui::centredText(renderer, UI_10_FONT_ID, chip, label, !on, EpdFontFamily::BOLD);
-  }
-
-  const auto drawRow = [&](const gameui::Box& box, const char* label, const char* value) {
-    const int textY = box.y + (box.h - renderer.getLineHeight(UI_12_FONT_ID)) / 2;
-    renderer.drawText(UI_12_FONT_ID, kSide + 8, textY, label);
-    const int labelW = renderer.getTextWidth(UI_12_FONT_ID, label);
-    const int chevronX = width - kSide - 8;
-    renderer.drawLine(chevronX - 6, box.y + box.h / 2 - 7, chevronX, box.y + box.h / 2, 2, true);
-    renderer.drawLine(chevronX, box.y + box.h / 2, chevronX - 6, box.y + box.h / 2 + 7, 2, true);
-    const std::string shown =
-        renderer.truncatedText(UI_10_FONT_ID, value, chevronX - 18 - (kSide + 8 + labelW + 16));
-    const int valueW = renderer.getTextWidth(UI_10_FONT_ID, shown.c_str());
-    renderer.drawText(UI_10_FONT_ID, chevronX - 14 - valueW,
-                      box.y + (box.h - renderer.getLineHeight(UI_10_FONT_ID)) / 2, shown.c_str());
+  const auto chosen = chosenLanguages();
+  const auto add = [&rows](Row::Kind kind, std::string label, std::string value, std::function<void()> onTap,
+                           std::string subtitle = {}) {
+    Row row;
+    row.kind = kind;
+    row.label = std::move(label);
+    row.value = std::move(value);
+    row.subtitle = std::move(subtitle);
+    row.onTap = std::move(onTap);
+    rows.push_back(std::move(row));
   };
+  rows.clear();
 
-  const std::string offline = offlineName(lang);
-  drawRow(rowBoxes[Offline], tr(STR_DICT_OFFLINE), offline.c_str());
+  add(Row::Kind::Header, tr(STR_LANGUAGE), "", nullptr);
+  add(Row::Kind::Value, onlinedict::nativeName(lang), "", chosen.size() > 1 ? std::function<void()>([this] { openLanguagePicker(); }) : nullptr);
+  add(Row::Kind::Chevron, tr(STR_DICT_ADD_LANGUAGE), "", [this] { openAddLanguage(); });
+  if (chosen.size() > 1) add(Row::Kind::Chevron, tr(STR_DICT_REMOVE_LANGUAGE), "", [this] { removeLanguage(selected); });
+
+  add(Row::Kind::Header, onlinedict::nativeName(lang), "", nullptr);
+  std::string note;
   if (!hasCardDictionary(lang)) {
-    char note[160];
     // No dictionary folder on the card yet: name the one the scan looks for.
     const std::string& root = dictionaryRegistry.root();
-    snprintf(note, sizeof(note), tr(STR_DICT_NO_CARD_DICT), onlinedict::nativeName(lang),
+    char text[160];
+    snprintf(text, sizeof(text), tr(STR_DICT_NO_CARD_DICT), onlinedict::nativeName(lang),
              root.empty() ? "/dictionaries" : root.c_str());
-    int noteY = rowBoxes[Offline].y + kRowHeight - 4;
-    for (const auto& line : renderer.wrappedText(SMALL_FONT_ID, note, width - 2 * (kSide + 8), 2)) {
-      renderer.drawText(SMALL_FONT_ID, kSide + 8, noteY, line.c_str());
-      noteY += renderer.getLineHeight(SMALL_FONT_ID) + 2;
-    }
+    note = text;
   }
-  drawRow(rowBoxes[OnlineFirst], tr(STR_DICT_ONLINE_FIRST),
-          onlinedict::providerName(OnlineDictionary::preferredProvider(lang)));
+  add(Row::Kind::Value, tr(STR_DICT_OFFLINE), offlineName(lang), [this] { openPicker(Offline); }, note);
+  add(Row::Kind::Value, tr(STR_DICT_ONLINE_FIRST), onlinedict::providerName(OnlineDictionary::preferredProvider(lang)),
+      [this] { openPicker(OnlineFirst); });
   const onlinedict::Provider second = OnlineDictionary::secondProvider(lang);
-  drawRow(rowBoxes[OnlineSecond], tr(STR_DICT_ONLINE_SECOND),
-          second == onlinedict::Provider::None ? tr(STR_SRC_NONE) : onlinedict::providerName(second));
+  add(Row::Kind::Value, tr(STR_DICT_ONLINE_SECOND),
+      second == onlinedict::Provider::None ? tr(STR_SRC_NONE) : onlinedict::providerName(second),
+      [this] { openPicker(OnlineSecond); });
 
   if (kWifiRowShown) {
-    const gameui::Box& box = rowBoxes[KeepWifi];
-    renderer.drawText(SMALL_FONT_ID, kSide + 8, box.y - 26, tr(STR_DICT_SECTION_ONLINE), true, EpdFontFamily::BOLD);
-    renderer.drawText(UI_12_FONT_ID, kSide + 8, box.y + (box.h - renderer.getLineHeight(UI_12_FONT_ID)) / 2,
-                      tr(STR_KEEP_WIFI_IN_BOOKS));
-    // A switch like the other settings: knob right and filled when on.
-    const bool on = SETTINGS.onlineDictWifiAlwaysOn != 0;
-    const int sx = width - kSide - 8 - 40;
-    const int sy = box.y + box.h / 2 - 10;
-    renderer.drawRect(sx, sy, 40, 20, 2, true);
-    renderer.fillRect(on ? sx + 22 : sx + 3, sy + 3, 15, 14, true);
+    add(Row::Kind::Header, tr(STR_DICT_SECTION_ONLINE), "", nullptr);
+    add(Row::Kind::Toggle, tr(STR_KEEP_WIFI_IN_BOOKS), "", [this] { toggleWifi(); });
+    rows.back().checked = SETTINGS.onlineDictWifiAlwaysOn != 0;
   }
-
-  int y = hintY;
-  for (const auto& line : renderer.wrappedText(SMALL_FONT_ID, tr(STR_DICT_LANG_HINT), width - 2 * (kSide + 8), 3)) {
-    renderer.drawText(SMALL_FONT_ID, kSide + 8, y, line.c_str());
-    y += renderer.getLineHeight(SMALL_FONT_ID) + 2;
-  }
-
-  if (focusRow >= 0) {
-    const gameui::Box& box = rowBoxes[focusRow];
-    renderer.fillRect(kSide - 8, box.y + 10, 4, box.h - 20, true);
-  }
-
-  if (popup.isActive()) popup.render(renderer);
-  renderer.displayBuffer();
 }

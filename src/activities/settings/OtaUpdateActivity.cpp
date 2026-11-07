@@ -1,3 +1,4 @@
+#include "util/UsageSnapshot.h"
 #include "OtaUpdateActivity.h"
 
 #include <GfxRenderer.h>
@@ -352,6 +353,9 @@ void OtaUpdateActivity::loop() {
   }
 
   if (state == SHUTTING_DOWN) {
+#if NEUINK_BATTERY_HISTORY
+    UsageSnapshot::save();  // the new firmware may lay RTC memory out differently, or a flash may wipe it
+#endif
     ESP.restart();
   }
 }

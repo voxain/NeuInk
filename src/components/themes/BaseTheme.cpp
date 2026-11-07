@@ -20,11 +20,13 @@
 #include "I18n.h"
 #include "RecentBooksStore.h"
 #include "activities/reader/BookReadingStats.h"
+#include "components/LevelBox.h"
 #include "components/TouchActionButtons.h"
 #include "components/TouchRegistry.h"
 #include "components/UIScale.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
+#include "components/UiAppHelpers.h"
 #include "fontIds.h"
 
 // Internal constants
@@ -119,6 +121,46 @@ void BaseTheme::drawBatteryRight(const GfxRenderer& renderer, Rect rect, const b
   const Rect iconRect{rect.x, y, rect.width, rect.height};
   drawBatteryOutline(renderer, rect.x, y, rect.width, rect.height, foregroundBlack);
   fillBatteryIcon(renderer, iconRect, percentage, foregroundBlack);
+}
+
+namespace {
+constexpr int readerBoltWidth = 8;
+
+bool batteryCharging() { return gpio.isUsbConnected() && powerManager.getBatteryPercentage() < 100; }
+
+std::string batteryPercentText() { return std::to_string(std::min<int>(powerManager.getBatteryPercentage(), 100)) + "%"; }
+}  // namespace
+
+int BaseTheme::readerBatteryWidth(const GfxRenderer& renderer, const bool showPercentage) const {
+  const int base = UITheme::getInstance().getMetrics().batteryWidth;
+  const int bolt = batteryCharging() ? readerBoltWidth + batteryPercentSpacing : 0;
+  const int text = showPercentage ? batteryPercentSpacing + renderer.getTextWidth(SMALL_FONT_ID, batteryPercentText().c_str()) : 0;
+  return base + bolt + text;
+}
+
+void BaseTheme::drawReaderBattery(const GfxRenderer& renderer, const int x, const int y, const bool showPercentage,
+                                  const bool percentageFirst, const bool foregroundBlack) const {
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const int bodyW = metrics.batteryWidth - 3;  // the nub is 3 px
+  const int centerY = y + 11;                  // on the text's line, as the header's battery
+  const std::string text = batteryPercentText();
+  const int textW = showPercentage ? renderer.getTextWidth(SMALL_FONT_ID, text.c_str()) : 0;
+  const int textSpace = showPercentage ? textW + batteryPercentSpacing : 0;
+  const bool charging = batteryCharging();
+  const int boltSpace = charging ? readerBoltWidth + batteryPercentSpacing : 0;
+
+  const int boxX = x + (percentageFirst ? textSpace + boltSpace : boltSpace);
+  if (showPercentage) {
+    renderer.drawText(SMALL_FONT_ID, percentageFirst ? x : boxX + metrics.batteryWidth + batteryPercentSpacing, y,
+                      text.c_str(), foregroundBlack);
+  }
+  if (charging) {
+    drawBatteryLightningBolt(renderer, percentageFirst ? x + textSpace : x, centerY - 6, foregroundBlack);
+  }
+  // Light gray track on white; on the dark page a darker one, so the white fill still reads as the level.
+  levelbox::battery(renderer, boxX, centerY, bodyW, metrics.batteryHeight - 1, 6,
+                    powerManager.getBatteryPercentage(), nullptr, SMALL_FONT_ID,
+                    foregroundBlack ? Color::LightGray : Color::DarkGray, foregroundBlack ? Color::Black : Color::White);
 }
 
 int BaseTheme::homeHeaderClockTextYOffset(const GfxRenderer& renderer) {
@@ -447,6 +489,13 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   props.titleText.align = showHeaderClock && hasVisibleTitle ? fui::TextAlign::Left : tokens.headerTitleAlign;
   props.subtitleText = tokens.smallText;
   props.styles = tokens.popup;
+  if (headerBand() && title != nullptr) {
+    props.styles.normal.background = fui::Paint::dither(fui::Color::LightGray);
+  }
+  const freeink::Icon* appIcon = hasVisibleTitle ? headerIcon() : nullptr;
+  constexpr int16_t appIconGap = 16;
+  if (appIcon != nullptr) props.leftReserve = static_cast<int16_t>(appIcon->w + appIconGap);
+  int titleCenterY = rect.y + rect.height / 2;
   props.sidePadding = tokens.headerSidePadding;
   const bool batteryLeft = metrics.headerBatterySide == 1;
   const bool batteryDetached = metrics.headerBatteryDetached;
@@ -460,6 +509,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     const int titleLineHeight = ui.target.lineHeight(fui::GfxRendererTarget::FONT_TITLE);
     const int titleTop = static_cast<int>(band.height) - tokens.headerUnderline - tokens.spaceMd - titleLineHeight;
     props.titleOffsetY = static_cast<int16_t>(titleTop - (static_cast<int>(band.height) - titleLineHeight) / 2);
+    titleCenterY = rect.y + titleTop + titleLineHeight / 2;
   } else {
     const int16_t reserve = static_cast<int16_t>(batteryReserve + tokens.spaceMd);
     if (batteryLeft) {
@@ -473,6 +523,9 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     props.styles.normal.borderWidth = tokens.headerUnderline;
   }
   fui::header(ui.frame, band, props);
+  if (appIcon != nullptr) {
+    drawLucideIcon(renderer, *appIcon, rect.x + tokens.headerSidePadding, titleCenterY - appIcon->h / 2);
+  }
 
   if (!showStatus) return;
 
@@ -498,14 +551,21 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
                                    : static_cast<int16_t>(band.right() - batteryEdgeInset - metrics.batteryWidth -
                                                           (batteryDetached ? 0 : batteryNubWidth));
   const Rect batteryRect{batteryIconX, batteryY, metrics.batteryWidth, metrics.batteryHeight};
-  if (batteryLeft) {
-    drawBatteryLeft(renderer, batteryRect, showBatteryPercentage);
-  } else {
-    drawBatteryRight(renderer, batteryRect, showBatteryPercentage);
-  }
+  drawHeaderStatus(renderer, batteryRect, batteryLeft, showBatteryPercentage, headerBand() && title != nullptr);
 
   drawTopStatusBarClock(renderer, rect.y, nullptr, readerContext, clockYOffset);
 }
+
+void BaseTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, const bool batteryLeft,
+                                 const bool showPercentage, const bool /*onBand*/) const {
+  if (batteryLeft) {
+    drawBatteryLeft(renderer, batteryRect, showPercentage);
+  } else {
+    drawBatteryRight(renderer, batteryRect, showPercentage);
+  }
+}
+
+int BaseTheme::statusClockFontId() const { return SMALL_FONT_ID; }
 
 void BaseTheme::drawSubHeader(const GfxRenderer& renderer, Rect rect, const char* label, const char* rightLabel) const {
   constexpr int underlineHeight = 2;  // Height of selection underline
@@ -983,15 +1043,7 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
     }
   };
   const auto measureItem = [&](const ReaderStatusBarItem item, const int maxWidth) {
-    if (item == ReaderStatusBarItem::Battery) {
-      int width = metrics.batteryWidth;
-      if (batteryPercent) {
-        char percent[8];
-        snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(powerManager.getBatteryPercentage()));
-        width += batteryPercentSpacing + renderer.getTextWidth(SMALL_FONT_ID, percent);
-      }
-      return width;
-    }
+    if (item == ReaderStatusBarItem::Battery) return readerBatteryWidth(renderer, batteryPercent);
     char scratch[48];
     const char* value = itemText(item, scratch, sizeof(scratch));
     return value && value[0] ? std::min(maxWidth, renderer.getTextWidth(SMALL_FONT_ID, value)) : 0;
@@ -999,19 +1051,12 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
   const auto drawItem = [&](const ReaderStatusBarItem item, const int x, const int allowedWidth,
                             const bool alignRight) {
     if (item == ReaderStatusBarItem::Battery) {
-      if (allowedWidth < metrics.batteryWidth) return;
-      char percent[8];
-      snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(powerManager.getBatteryPercentage()));
-      const bool showPercent = batteryPercent && allowedWidth >= metrics.batteryWidth + batteryPercentSpacing +
-                                                                     renderer.getTextWidth(SMALL_FONT_ID, percent);
-      if (top && alignRight) {
-        drawBatteryRight(
-            renderer, Rect{x + allowedWidth - metrics.batteryWidth, textY, metrics.batteryWidth, metrics.batteryHeight},
-            showPercent, foregroundBlack);
-      } else {
-        drawBatteryLeft(renderer, Rect{x, textY, metrics.batteryWidth, metrics.batteryHeight}, showPercent,
+      const bool showPercent = batteryPercent && allowedWidth >= readerBatteryWidth(renderer, true);
+      const int width = readerBatteryWidth(renderer, showPercent);
+      if (allowedWidth < width) return;
+      const bool onRight = top && alignRight;
+      drawReaderBattery(renderer, onRight ? x + allowedWidth - width : x, textY, showPercent, onRight,
                         foregroundBlack);
-      }
       return;
     }
     char scratch[48];
@@ -1087,14 +1132,15 @@ void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, con
     return;
   }
 
-  const int textWidth = renderer.getTextWidth(SMALL_FONT_ID, timeText);
-  const int lineHeight = renderer.getLineHeight(SMALL_FONT_ID);
+  const int fontId = statusClockFontId();
+  const int textWidth = renderer.getTextWidth(fontId, timeText);
+  const int lineHeight = renderer.getLineHeight(fontId);
   const int textX = (renderer.getScreenWidth() - textWidth) / 2;
   const int effectiveTextYOffset = textYOffset + UITheme::getTopStatusBarInset(renderer) +
                                    (readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
   const int baseTopY = topY >= 0 ? topY : metrics.topPadding;
   const int textY = baseTopY + (statusBarHeight - lineHeight) / 2 + effectiveTextYOffset;
-  renderer.drawText(SMALL_FONT_ID, textX, textY, timeText, !darkMode);
+  renderer.drawText(fontId, textX, textY, timeText, !darkMode);
 }
 
 void BaseTheme::drawHelpText(const GfxRenderer& renderer, Rect rect, const char* label) const {

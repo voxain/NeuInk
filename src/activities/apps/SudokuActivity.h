@@ -119,7 +119,7 @@ class SudokuActivity final : public Activity {
   int cellSize = 0;
   gameui::Box digitKeys[9];
   gameui::Box tools[kToolCount];
-  gameui::HoldButton newHold;
+  gameui::Box newButton;  // "New" in the title bar: a tap opens the New game panel
   gameui::Box panelBox;
   gameui::Box levelBoxes[kLevelBoxCount];
   gameui::Box cancelBox;

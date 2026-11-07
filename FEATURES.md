@@ -46,7 +46,8 @@ NotoVazir font from the SD-card zip is optional (see [section 1](#notovazir-font
 20. [Icons, rotation and battery icon](#20-icons-rotation-and-battery-icon)
 21. [Readers without touch](#21-readers-without-touch)
 22. [For developers](#22-for-developers)
-23. [Planned](#23-planned)
+23. [The NeuInk interface (0.3.0)](#23-the-neuink-interface-030)
+24. [Planned](#24-planned)
 
 ---
 
@@ -659,16 +660,9 @@ you only tap it.
   <img src="docs/images/neuink/v1.3.1/apps-manage.png" width="230" alt="Manage apps with a switch per app and Settings for Sudoku and Clock">
 </p>
 
-### Wordle
+### Wordle (removed)
 
-- Find the five-letter English word in six tries. Black = right letter in the
-  right place, grey = in the word but elsewhere, faded = not in the word. The
-  keyboard keys carry the same marks.
-- Tap any box of the row you are typing to put the next letter there.
-- About 1,900 everyday answers; about 22,000 English words are accepted as
-  guesses.
-- **Give up** (top right) has to be held. After a round: your statistics, and
-  **Look up word** opens the answer in your English dictionary.
+NeuInk removed Wordle to keep firmware updates small enough for online (OTA) installs; see the changelog.
 
 ### Sudoku
 
@@ -1048,7 +1042,65 @@ How to install on these readers: [README, Readers without touch](README.md#reade
 
 ---
 
-## 23. Planned
+## 23. The NeuInk interface (0.3.0)
+
+NeuInk's own redesign, on the X4 Pro. The screens in sections 1 to 22 show VARAGH 1.3.1; these show NeuInk 0.3.0.
+
+- **Vega theme (the default).** Home is the last book as a card over a paged grid of rounded icons (Home actions
+  and apps). A swipe up from the bottom edge opens a panel for icon size (24 to 48), shape (squircle, rounded,
+  circle, hexagon), grid (4x3 to 3x3) and whether names show. Title bars are light gray with the app's icon.
+- **Reader menu.** A floating gray card: tabs as a black pill, white rows, switches, sliders like the Control
+  Center's with round steps, and Orientation and Alignment as picture buttons in the list. The icons are Lucide,
+  turned in software where one icon serves several directions.
+- **Battery.** The charge in large type, a 24-hour graph with an estimate for the next 24, runtime with the screen
+  on and asleep, and time and charge per app and for the reader. It is kept in RTC memory and a small file, so
+  it survives sleep, restarts, updates and a power-off.
+- **Storage.** One segmented bar and a row per category, scanned in the background.
+- **USB.** A computer at the other end of the cable (not a charger) makes the reader offer the SD card as a drive.
+
+<table>
+  <tr>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/vega-homescreen.png" width="230" alt="Home"><br><sub>Home</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/vega-homescreen-big-icons.png" width="230" alt="Home with large icons"><br><sub>Home, large icons</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/vega-customization-pane.png" width="230" alt="The Home layout panel"><br><sub>Home layout panel</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/reader-settings.png" width="230" alt="The reader menu, Font tab"><br><sub>Reader menu</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/reader-orientation-settings.png" width="230" alt="The reader menu, Layout tab"><br><sub>Layout tab</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/control-center.png" width="230" alt="The Control Center"><br><sub>Control Center</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/battery-stats.png" width="230" alt="Battery"><br><sub>Battery</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/settings-storage.png" width="230" alt="Storage"><br><sub>Storage</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/reading-stats.png" width="230" alt="Reading stats"><br><sub>Reading stats</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/settings-app.png" width="230" alt="Settings"><br><sub>Settings</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/file-transfer.png" width="230" alt="File transfer"><br><sub>File transfer</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/switch-firmware-menu.png" width="230" alt="Switch to another firmware"><br><sub>Switch firmware</sub></td>
+  </tr>
+</table>
+
+The apps in 0.3.0:
+
+<table>
+  <tr>
+    <td align="center" width="25%" valign="top"><img src="docs/images/neuink/v0.3.0/sudoku.png" width="170" alt="Sudoku"><br><sub>Sudoku</sub></td>
+    <td align="center" width="25%" valign="top"><img src="docs/images/neuink/v0.3.0/chess.png" width="170" alt="Chess"><br><sub>Chess</sub></td>
+    <td align="center" width="25%" valign="top"><img src="docs/images/neuink/v0.3.0/checkers.png" width="170" alt="Checkers"><br><sub>Checkers</sub></td>
+    <td align="center" width="25%" valign="top"><img src="docs/images/neuink/v0.3.0/go.png" width="170" alt="Go"><br><sub>Go</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="25%" valign="top"><img src="docs/images/neuink/v0.3.0/tictactoe.png" width="170" alt="Tic Tac Toe"><br><sub>Tic Tac Toe</sub></td>
+    <td align="center" width="25%" valign="top"><img src="docs/images/neuink/v0.3.0/calendar.png" width="170" alt="Clock with a calendar"><br><sub>Clock</sub></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
+---
+
+## 24. Planned
 
 - English, German and Persian dictionaries built from Wiktionary, trimmed for
   the reader and published separately under CC BY-SA 4.0.

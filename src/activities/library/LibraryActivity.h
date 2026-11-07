@@ -62,6 +62,10 @@ class LibraryActivity final : public Activity {
   uint16_t filteredCount = 0;
   uint16_t recentRows[RecentBooksStore::MAX_RECENT_BOOKS]{};
   size_t recentCount = 0;
+  // The recent books' ordinals, ascending: the other books follow the recent ones in Recently Opened, by title
+  // (the title order is the ordinal order, so the k-th of them is k plus the recent ones below it).
+  uint16_t openedOrdinals[RecentBooksStore::MAX_RECENT_BOOKS]{};
+  uint16_t unopenedCount = 0;
   // SDK rowProvider consumes the strings before asking for the next row.
   // Reuse one row instead of retaining every title/author in the library.
   RecentBook rowScratch;
@@ -92,6 +96,7 @@ class LibraryActivity final : public Activity {
   library::SortOrder indexOrder() const;
   int rowCount() const;
   uint16_t ordinalForRow(int row);
+  uint16_t sourceOrdinal(uint16_t row);
   bool readBook(int row, RecentBook& book, bool fullPath = true);
   uint32_t groupForRow(int row);
   uint16_t dateGroupForRow(int row);

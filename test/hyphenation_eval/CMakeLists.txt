@@ -13,6 +13,7 @@ target_include_directories(HyphenationEvaluationTest PRIVATE
 )
 
 target_compile_definitions(HyphenationEvaluationTest PRIVATE
+  NEUINK_HYPHENATION_ALL=1
   HYPHENATION_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources"
 )
 

@@ -12,7 +12,7 @@
 #include "MappedInputManager.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
-#include "components/icons/listIcons.h"
+#include "components/icons/turnedIcons.h"
 #include "fontIds.h"
 
 namespace {
@@ -316,7 +316,8 @@ void ClockOffsetActivity::render(RenderLock&&) {
     Rect upRect;
     Rect downRect;
     getTouchControlRects(upRect, downRect);
-    auto drawTouchButton = [&](const Rect& rect, const freeink::Icon& icon) {
+    auto drawTouchButton = [&](const Rect& rect, const TurnedIcon& turnedIcon) {
+      const freeink::Icon& icon = *turnedIcon.icon;
       renderer.fillRectDither(rect.x, rect.y, rect.width, rect.height, Color::White);
       renderer.drawRect(rect.x, rect.y, rect.width, rect.height, true);
       const freeink::ui::BitmapRef bitmap{icon.bits, icon.w, icon.h, freeink::ui::BitmapFormat::Mask1, true};
@@ -324,10 +325,10 @@ void ClockOffsetActivity::render(RenderLock&&) {
           freeink::ui::Rect{static_cast<int16_t>(rect.x), static_cast<int16_t>(rect.y),
                             static_cast<int16_t>(rect.width), static_cast<int16_t>(rect.height)},
           bitmap, freeink::ui::BitmapMode::Center,
-          [this](const int16_t px, const int16_t py) { renderer.drawPixel(px, py, true); });
+          [this](const int16_t px, const int16_t py) { renderer.drawPixel(px, py, true); }, turnedIcon.rotation);
     };
-    drawTouchButton(upRect, icon_chevron_up_32);
-    drawTouchButton(downRect, icon_chevron_down_32);
+    drawTouchButton(upRect, turned::chevronUp());
+    drawTouchButton(downRect, turned::chevronDown());
   }
 
   // Live preview of the resulting wall-clock time, so users can verify against a watch.

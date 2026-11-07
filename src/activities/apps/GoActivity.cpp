@@ -120,9 +120,12 @@ int GoActivity::pointAt(const int x, const int y) const {
 void GoActivity::layout() {
   const int width = renderer.getScreenWidth();
   const int size = game->started() ? game->size() : settings.size;
-  const int sp = (width - 2 * kBoardMargin) / size;
-  const int boardPx = sp * size;
   topStripY = gameui::contentTop(renderer, mappedInput);
+  // The board takes what the strips, the status line and the tool row leave of the height, as well as the width.
+  const int fixedHeight = 2 * (kStripHeight + gameui::kHeaderGap) + 4 + 34 + gameui::kSectionGap + kToolHeight;
+  const int sp = std::min((width - 2 * kBoardMargin) / size,
+                          (gameui::contentBottom(renderer) - topStripY - fixedHeight) / size);
+  const int boardPx = sp * size;
   board = {(width - boardPx) / 2, topStripY + kStripHeight + gameui::kHeaderGap, boardPx, boardPx};
   bottomStripY = board.y + boardPx + gameui::kHeaderGap;
   statusY = bottomStripY + kStripHeight + 4;
@@ -132,7 +135,7 @@ void GoActivity::layout() {
     tools[i] = {board.x + i * (toolWidth + kToolGap), toolsY, toolWidth, kToolHeight};
   }
   newGameBox = {board.x + (boardPx - 260) / 2, toolsY + 14, 260, 64};
-  newHold.box = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
+  newButton = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
 
   constexpr int pad = 18;
   constexpr int titleHeight = 40;
@@ -294,15 +297,6 @@ void GoActivity::loop() {
     return;
   }
 
-  bool repaint = false;
-  if (panel == Panel::Board && game->started() && newHold.update(mappedInput, repaint, &pointer)) {
-    draft = settings;
-    panel = Panel::NewGame;
-    requestUpdate();
-    return;
-  }
-  if (repaint) requestUpdate();
-
   // On button readers the pointer below moves over the points instead.
   if (panel == Panel::Board && !pointer.enabled) {
     using B = MappedInputManager::Button;
@@ -346,7 +340,12 @@ void GoActivity::loop() {
     return;
   }
 
-  if (newHold.box.contains(tx, ty)) return;  // New needs a hold; a tap does nothing
+  if (newButton.contains(tx, ty) && panel == Panel::Board && game->started()) {
+    draft = settings;
+    panel = Panel::NewGame;
+    requestUpdate();
+    return;
+  }
   const int point = pointAt(tx, ty);
   if (point >= 0) {
     tapPoint(point);
@@ -508,6 +507,7 @@ void GoActivity::drawNewGamePanel() const {
   for (int i = 0; i < 2; ++i) gameui::choice(renderer, levelBoxes[i], levelName(i), draft.level == i, computer);
   gameui::choice(renderer, sideBoxes[0], tr(STR_GO_BLACK_FIRST), draft.human == go::Black, computer);
   gameui::choice(renderer, sideBoxes[1], tr(STR_GO_WHITE), draft.human == go::White, computer);
+  gameui::panelRule(renderer, panelBox, startBox.y - 8);
   if (game->started()) gameui::button(renderer, cancelBox, tr(STR_CANCEL), false);
   gameui::button(renderer, startBox, tr(STR_GAME_START), true);
 }
@@ -516,7 +516,7 @@ void GoActivity::render(RenderLock&&) {
   layout();
   renderer.clearScreen();
   gameui::drawHeader(renderer, mappedInput, tr(STR_GAME_GO));
-  if (panel == Panel::Board && game->started()) newHold.draw(renderer, tr(STR_GAME_NEW_SHORT), tr(STR_HOLD_FOR_NEW_GAME));
+  if (panel == Panel::Board && game->started()) gameui::cornerButton(renderer, newButton, tr(STR_GAME_NEW_SHORT));
 
   const go::Stone top = settings.opponent == Computer ? go::other(static_cast<go::Stone>(settings.human)) : go::White;
   drawStrip(topStripY, top);
@@ -531,9 +531,9 @@ void GoActivity::render(RenderLock&&) {
     gameui::button(renderer, tools[Undo], tr(STR_GO_PLAY_ON), false);
     gameui::button(renderer, tools[Hint], tr(STR_GO_COUNT), true);
   } else {
-    gameui::iconButton(renderer, tools[Undo], appart::kIconUndo, tr(STR_SUDOKU_UNDO), false);
+    gameui::iconButton(renderer, tools[Undo], icon_undo_32, tr(STR_SUDOKU_UNDO), false);
     gameui::button(renderer, tools[Pass], tr(STR_GO_PASS), false);
-    gameui::iconButton(renderer, tools[Hint], appart::kIconHint, tr(STR_SUDOKU_HINT), false);
+    gameui::iconButton(renderer, tools[Hint], icon_hint_32, tr(STR_SUDOKU_HINT), false);
   }
 
   if (panel == Panel::NewGame) drawNewGamePanel();
@@ -560,7 +560,7 @@ void GoActivity::render(RenderLock&&) {
     } else {
       for (const auto& b : tools) pointer.add(b);
     }
-    if (game->started()) pointer.add(newHold.box);
+    if (game->started()) pointer.add(newButton);
   }
   pointer.draw(renderer);
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

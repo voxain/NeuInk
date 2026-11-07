@@ -1,3 +1,4 @@
+#include "util/AppUsage.h"
 #include "ActivityManager.h"
 
 #include <BlePageTurner.h>
@@ -38,6 +39,8 @@
 #include "network/NearbyBookTransferActivity.h"
 #include "network/NearbyStatsSyncActivity.h"
 #include "network/UsbDriveActivity.h"
+#include "activities/util/ConfirmationActivity.h"
+#include "util/UsbPrompt.h"
 #include "reader/BookReadingStats.h"
 #include "reader/BookStatsActivity.h"
 #include "reader/BookStatsTracking.h"
@@ -680,6 +683,9 @@ void ActivityManager::loop() {
         exitActivity(lock);
         // Clear the stack
         while (!stackActivities.empty()) {
+#if NEUINK_BATTERY_HISTORY
+          AppUsage::exit(stackActivities.back()->name);
+#endif
           stackActivities.back()->onExit();
           stackActivities.pop_back();
         }
@@ -691,6 +697,9 @@ void ActivityManager::loop() {
       currentActivity = std::move(pendingActivity);
 
       lock.unlock();  // onEnter may acquire its own lock
+#if NEUINK_BATTERY_HISTORY
+      AppUsage::enter(currentActivity->name);
+#endif
       currentActivity->onEnter();
 
       if (pendingAction == PendingAction::None && pendingReaderMenuAction >= 0 &&
@@ -853,6 +862,9 @@ void ActivityManager::exitActivity(const RenderLock& lock) {
   // Note: lock must be held by the caller
   if (currentActivity) {
     TouchRegistry::getInstance().clear();
+#if NEUINK_BATTERY_HISTORY
+    AppUsage::exit(currentActivity->name);
+#endif
     currentActivity->onExit();
     currentActivity.reset();
   }
@@ -870,6 +882,9 @@ void ActivityManager::replaceActivity(std::unique_ptr<Activity>&& newActivity) {
     // No current activity, safe to launch immediately
     TouchRegistry::getInstance().clear();
     currentActivity = std::move(newActivity);
+#if NEUINK_BATTERY_HISTORY
+    AppUsage::enter(currentActivity->name);
+#endif
     currentActivity->onEnter();
   }
 }
@@ -921,6 +936,25 @@ void ActivityManager::goToUsbDrive() {
   replaceActivity(std::move(activity));
 #else
   LOG_ERR("ACT", "USB Drive requested in a build without USB Drive capability");
+#endif
+}
+
+void ActivityManager::offerUsbDrive() {
+#if CROSSINK_APP_CAP_USB_DRIVE
+  if (pendingAction != PendingAction::None || !currentActivity) return;
+  if (currentActivity->name == "UsbDrive" || currentActivity->name == "Confirmation") return;
+  auto prompt = makeUniqueNoThrow<ConfirmationActivity>(renderer, mappedInput, tr(STR_USB_HOST_FOUND),
+                                                        tr(STR_USB_HOST_ASK), false, true, 30000);
+  if (!prompt) return;
+  // The answer goes to the screen underneath, as with startActivityForResult().
+  currentActivity->resultHandler = [this](const ActivityResult& result) {
+    if (result.isCancelled) {
+      UsbPrompt::suppress();
+    } else {
+      goToUsbDrive();
+    }
+  };
+  pushActivity(std::move(prompt));
 #endif
 }
 
@@ -1063,16 +1097,13 @@ void ActivityManager::goHome(HomeMenuItem initialMenuItem, const HalDisplay::Ref
 
   if (initialMenuItem == HomeMenuItem::NONE && currentActivity) {
     const auto& activityName = currentActivity->name;
-    if (activityName == "FileBrowser") {
+    // File transfer is part of the File Manager now.
+    if (activityName == "FileBrowser" || activityName == "CrossPointWebServer" || activityName == "NearbyStatsSync") {
       initialMenuItem = HomeMenuItem::FILE_BROWSER;
     } else if (activityName == "Library") {
       initialMenuItem = HomeMenuItem::LIBRARY;
     } else if (activityName == "OpdsBookBrowser") {
       initialMenuItem = HomeMenuItem::OPDS_BROWSER;
-    } else if (activityName == "CrossPointWebServer") {
-      initialMenuItem = HomeMenuItem::FILE_TRANSFER;
-    } else if (activityName == "NearbyStatsSync") {
-      initialMenuItem = HomeMenuItem::FILE_TRANSFER;
     } else if (activityName == "Settings") {
       initialMenuItem = HomeMenuItem::SETTINGS_MENU;
     }
@@ -1080,6 +1111,13 @@ void ActivityManager::goHome(HomeMenuItem initialMenuItem, const HalDisplay::Ref
   replaceActivity(std::make_unique<HomeActivity>(renderer, mappedInput, initialMenuItem, initialRefreshMode,
                                                  std::move(initialBookPath)));
 }
+const std::string& ActivityManager::currentActivityName() const {
+  static const std::string none;
+  return currentActivity ? currentActivity->name : none;
+}
+
+bool ActivityManager::currentIsReader() const { return currentActivity && currentActivity->isReaderActivity(); }
+
 void ActivityManager::goToApps(const uint8_t resumeId) {
   replaceActivity(std::make_unique<AppsActivity>(renderer, mappedInput, resumeId));
 }

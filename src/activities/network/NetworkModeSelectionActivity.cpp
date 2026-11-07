@@ -8,8 +8,6 @@
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
-#include "components/icons/listIcons.h"
-#include "components/icons/readingStatsIcons.h"
 #include "fontIds.h"
 
 namespace fui = freeink::ui;
@@ -29,8 +27,8 @@ constexpr StrId menuDescs[] = {StrId::STR_JOIN_DESC,
                                StrId::STR_USB_DRIVE_DESC,
                                StrId::STR_RECEIVE_NEARBY_BOOK_DESC,
                                StrId::STR_NEARBY_STATS_SYNC_DESC};
-constexpr UIIcon menuIcons[] = {UIIcon::Wifi,     UIIcon::Library,  UIIcon::Hotspot,
-                                UIIcon::Transfer, UIIcon::Transfer, UIIcon::Transfer};
+constexpr UIIcon menuIcons[] = {UIIcon::Wifi,     UIIcon::Opds,     UIIcon::Hotspot,
+                                UIIcon::Usb,      UIIcon::Download, UIIcon::Transfer};
 #else
 constexpr NetworkMode menuModes[] = {NetworkMode::JOIN_NETWORK, NetworkMode::CONNECT_CALIBRE,
                                      NetworkMode::CREATE_HOTSPOT, NetworkMode::NEARBY_BOOK_RECEIVE,
@@ -39,7 +37,7 @@ constexpr StrId menuItems[] = {StrId::STR_JOIN_NETWORK, StrId::STR_CALIBRE_WIREL
                                StrId::STR_RECEIVE_NEARBY_BOOK, StrId::STR_NEARBY_STATS_SYNC};
 constexpr StrId menuDescs[] = {StrId::STR_JOIN_DESC, StrId::STR_CALIBRE_DESC, StrId::STR_HOTSPOT_DESC,
                                StrId::STR_RECEIVE_NEARBY_BOOK_DESC, StrId::STR_NEARBY_STATS_SYNC_DESC};
-constexpr UIIcon menuIcons[] = {UIIcon::Wifi, UIIcon::Library, UIIcon::Hotspot, UIIcon::Transfer, UIIcon::Transfer};
+constexpr UIIcon menuIcons[] = {UIIcon::Wifi, UIIcon::Opds, UIIcon::Hotspot, UIIcon::Download, UIIcon::Transfer};
 #endif
 
 constexpr int ALL_MENU_ITEM_COUNT = sizeof(menuModes) / sizeof(menuModes[0]);
@@ -190,15 +188,7 @@ void NetworkModeSelectionActivity::buildListScreen(UiApp::ScreenType& screen) {
     fui::ListItem item;
     item.label = I18N.get(menuItems[i]);
     item.subtitle = I18N.get(menuDescs[i]);
-    if (menuModes[i] == NetworkMode::USB_DRIVE) {
-      item.icon = fui::bitmapFromIcon(icon_usb_32);
-    } else if (menuModes[i] == NetworkMode::NEARBY_BOOK_RECEIVE) {
-      item.icon = fui::bitmapFromIcon(icon_chevrons_left_right_ellipsis_32);
-    } else if (menuModes[i] == NetworkMode::NEARBY_STATS_SYNC) {
-      item.icon = fui::bitmapFromIcon(icon_reading_stats_32);
-    } else {
-      item.icon = listIconFor(menuIcons[i], 32);  // subtitle rows carry the larger icon
-    }
+    item.icon = listIconFor(menuIcons[i], 32);  // subtitle rows carry the larger icon
     item.actionValue = static_cast<int16_t>(i);
     items.push_back(item);
   }
@@ -216,6 +206,7 @@ void NetworkModeSelectionActivity::buildListScreen(UiApp::ScreenType& screen) {
   props.headerText = screen.theme().bodyText;
   props.headerText.bold = true;
   props.rowGap = 10;
+  props.iconPlate = 53;  // each icon on a gray squircle (odd size)
   // The normal 10px row gap plus this extra 10px separates Nearby Device
   // from the hotspot group by about 20px.
   props.sectionGap = 10;

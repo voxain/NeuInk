@@ -201,6 +201,7 @@ uint16_t HalPowerManager::getBatteryPercentage() const {
       return _batteryCachedPercent;
     }
     _batteryCachedPercent = percent;
+    if (batteryObserver) batteryObserver(percent);
     return _batteryCachedPercent;
   }
 

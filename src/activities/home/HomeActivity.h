@@ -37,6 +37,11 @@ class HomeActivity final : public Activity {
   std::unique_ptr<CoverGridHomeUi> coverGridUi;
   bool gridHasContinueReading = false;
   int selectorIndex = 0;
+  // Vega: the selection shows only while buttons are used (MappedInputManager::buttonsInUse); a touch
+  // lights the pressed item instead, which is pressedSelector (-1: none).
+  int pressedSelector = -1;
+  int homePage = 0;
+  int fastRefreshesSinceClean = 0;  // Vega: fast refreshes since the last half refresh  // the page of the Vega theme's app grid
   int lastCarouselBookIndex = 0;  // remembered position when leaving carousel row
   // Finger travel on Carousel, so a drag slower than the SDK's flick window
   // still counts as a swipe.
@@ -119,11 +124,11 @@ class HomeActivity final : public Activity {
   void onContinueReading();
   void onLibraryOpen();
   void onSettingsOpen();
-  void onFileTransferOpen();
   void onOpdsBrowserOpen();
   void onReadingStatsOpen();
   void onSavedItemsOpen();
   void onAppsOpen();
+  void onAppOpen(uint8_t appId);
 
   int getMenuItemCount() const;
   bool storeCoverBuffer();    // Store frame buffer for cover image

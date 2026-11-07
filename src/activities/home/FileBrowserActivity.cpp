@@ -35,6 +35,7 @@
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
 #include "components/UiAppHelpers.h"
+#include "components/icons/homeIcons.h"
 #include "components/icons/listIcons.h"
 #include "components/themes/minimal/MinimalTheme.h"
 #include "fontIds.h"
@@ -49,6 +50,7 @@ constexpr int ROOT_HINT_GAP = 20;
 constexpr size_t NAME_BUFFER_SIZE = 500;
 constexpr fui::ActionId ACTION_ROW = 1;
 constexpr fui::ActionId ACTION_SETTINGS = 2;
+constexpr fui::ActionId ACTION_TRANSFER = 3;
 constexpr size_t INDEX_THRESHOLD = 200;
 constexpr size_t MAX_VIRTUAL_LIST_ENTRIES = static_cast<size_t>(std::numeric_limits<int16_t>::max());
 constexpr uint32_t FILE_BROWSER_APPEND_MIN_FREE_AFTER_ALLOC = 48U * 1024U;
@@ -414,6 +416,7 @@ void FileBrowserActivity::onEnter() {
   applySharedUiTheme(app, uiTarget);
   app.on(ACTION_ROW, &FileBrowserActivity::onRowEvent, this);
   app.on(ACTION_SETTINGS, &FileBrowserActivity::onSettingsEvent, this);
+  app.on(ACTION_TRANSFER, &FileBrowserActivity::onTransferEvent, this);
   app.setScreen(&FileBrowserActivity::listScreen, this);
   requestUpdate();
 }
@@ -1043,6 +1046,13 @@ void FileBrowserActivity::onSettingsEvent(const fui::ActionEvent&, void* user) {
   self->openSettings();
 }
 
+void FileBrowserActivity::onTransferEvent(const fui::ActionEvent&, void* user) {
+  auto* self = static_cast<FileBrowserActivity*>(user);
+  if (self->mode != Mode::Books) return;
+  self->app.clearTapFlash();
+  activityManager.goToFileTransfer();
+}
+
 void FileBrowserActivity::openSettings() {
   const std::string selectedEntry =
       entryCount() > 0 && selectorIndex < entryCount() ? entryNameAt(selectorIndex) : std::string();
@@ -1389,24 +1399,47 @@ void FileBrowserActivity::buildListScreen(UiApp::ScreenType& screen) {
     settings.styles = fui::plainStyles(fui::Paint::solid(fui::Color::Black));
     settings.minTouchSize = screen.theme().minTouchSize;
     screen.button(settings, settingsRect);
-    const auto icon = fui::bitmapFromIcon(icon_sliders_horizontal_24);
+    const auto icon = fui::bitmapFromIcon(icon_controls_24);
     const int16_t iconX = static_cast<int16_t>(settingsRect.x + (settingsRect.width - icon.width) / 2);
-    const int16_t iconY = static_cast<int16_t>(backLayout.iconRect.y + TouchHeaderBackButton::TITLE_VERTICAL_OFFSET +
-                                               (backLayout.iconRect.height - icon.height) / 2);
+    const int16_t iconY = static_cast<int16_t>(TouchHeaderBackButton::titleCenterY(header) - icon.height / 2);
     screen.target().bitmap(fui::Rect{iconX, iconY, icon.width, icon.height}, icon, fui::BitmapMode::Center,
                            fui::Paint::solid(fui::Color::Black));
   }
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
 
-  // Full path band at the bottom: separator on top, left-truncated so the
-  // deepest directory stays visible.
+  if (mode == Mode::Books && mappedInput.hasTouchHardware()) {
+    // File Transfer (upload from a computer or phone) is a part of the File Manager: a button, not a submenu.
+    constexpr int16_t transferHeight = 52;
+    fui::Rect row = screen.takeTop(transferHeight, static_cast<int16_t>(metrics.verticalSpacing));
+    row.x = static_cast<int16_t>(row.x + metrics.contentSidePadding);
+    row.width = static_cast<int16_t>(row.width - 2 * metrics.contentSidePadding);
+    fui::ButtonProps transfer;
+    transfer.label = tr(STR_FILE_TRANSFER);
+    transfer.icon = fui::bitmapFromIcon(icon_transfer_arrows_32);
+    transfer.styles = grayButtonStyles();
+    transfer.action = ACTION_TRANSFER;
+    transfer.text = screen.theme().bodyText;
+    screen.button(transfer, row);
+  }
+
+  // The path in a gray pill at the bottom, left-truncated so the deepest directory stays visible.
   {
+    constexpr int pillPad = 10;
+    constexpr int pillInset = 14;
     const int pathLineHeight = renderer.getLineHeight(SMALL_FONT_ID);
-    const fui::Rect band = screen.takeBottom(static_cast<int16_t>(pathLineHeight + metrics.verticalSpacing));
-    screen.target().fill(fui::Rect{band.x, band.y, band.width, 3}, fui::Paint::solid(fui::Color::Black));
-    const int pathY =
-        band.y + metrics.verticalSpacing / 2 + (band.height - metrics.verticalSpacing / 2 - pathLineHeight) / 2;
-    const int pathMaxWidth = band.width - metrics.contentSidePadding * 2;
+    const fui::Rect band = screen.takeBottom(static_cast<int16_t>(pathLineHeight + 2 * pillPad + metrics.verticalSpacing));
+    const fui::Rect pill{static_cast<int16_t>(band.x + metrics.contentSidePadding),
+                         static_cast<int16_t>(band.y + metrics.verticalSpacing),
+                         static_cast<int16_t>(band.width - 2 * metrics.contentSidePadding),
+                         static_cast<int16_t>(pathLineHeight + 2 * pillPad)};
+    screen.target().fill(pill, fui::Paint::dither(fui::Color::LightGray), static_cast<uint8_t>(pill.height / 2));
+    const fui::BitmapRef folder = fui::bitmapFromIcon(icon_files_24);
+    screen.target().bitmap(fui::Rect{static_cast<int16_t>(pill.x + pillInset),
+                                     static_cast<int16_t>(pill.y + (pill.height - folder.height) / 2), folder.width,
+                                     folder.height},
+                           folder, fui::BitmapMode::Center, fui::Paint::solid(fui::Color::Black));
+    const int textX = pill.x + pillInset + folder.width + 8;
+    const int pathMaxWidth = pill.x + pill.width - pillInset - textX;
     const char* pathStr = basepath.c_str();
     const char* pathDisplay = pathStr;
     char leftTruncBuf[256];
@@ -1424,7 +1457,7 @@ void FileBrowserActivity::buildListScreen(UiApp::ScreenType& screen) {
       snprintf(leftTruncBuf, sizeof(leftTruncBuf), "%s%s", ellipsis, p);
       pathDisplay = leftTruncBuf;
     }
-    renderer.drawText(SMALL_FONT_ID, band.x + metrics.contentSidePadding, pathY, pathDisplay);
+    renderer.drawText(SMALL_FONT_ID, textX, pill.y + pillPad, pathDisplay);
   }
 
   const size_t totalEntries = entryCount();
@@ -1503,6 +1536,7 @@ void FileBrowserActivity::buildListScreen(UiApp::ScreenType& screen) {
   props.inputMask = mode == Mode::Books ? static_cast<uint16_t>(fui::InputTouch | fui::InputLongPress)
                                         : fui::InputTouch;  // physical buttons stay in loop()
   props.valueInset = 8;                                     // air between the extension and the row edge
+  props.iconPlate = twoLineRows ? 49 : 41;                  // the file's icon on a gray squircle (odd sizes)
   // A file extension is short, so do not sacrifice most of a two-line title
   // to visually balance it with the value column.
   props.balanceWrappedLabelWithValue = false;

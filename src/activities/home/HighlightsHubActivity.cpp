@@ -206,6 +206,7 @@ void HighlightsHubActivity::buildListScreen(UiApp::ScreenType& screen) {
   props.action = ACTION_ROW;
   props.inputMask = static_cast<uint16_t>(fui::InputTouch | fui::InputLongPress);
   props.labelText = screen.theme().bodyText;
+  props.iconPlate = 53;  // each icon on a gray squircle (odd size)
   const auto rows = configureUiList(props, screen.theme(), screen.body(), UiListRowType::WithSubtitle);
   visibleRows = rows > 0 ? rows : 1;
   topIndex = scrollListBy(topIndex, 0, visibleRows, rowCount());

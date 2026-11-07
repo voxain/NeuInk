@@ -8,6 +8,9 @@
 
 #include "util/ReaderStatusBarConfig.h"
 
+namespace freeink {
+struct Icon;
+}
 class GfxRenderer;
 struct RecentBook;
 struct BookReadingStats;
@@ -171,7 +174,19 @@ enum UIIcon {
   Wifi,
   Hotspot,
   Chart,
-  Apps
+  Apps,
+  Usb,
+  Download,
+  // The built-in apps (activities/apps/AppRegistry.h), drawn from homeIcons.h.
+  Sudoku,
+  Chess,
+  Checkers,
+  Go,
+  TicTacToe,
+  Clock,
+  // Settings pages with their own screens.
+  Battery,
+  StorageIcon
 };
 
 // Default theme implementation (Classic Theme)
@@ -268,6 +283,12 @@ class BaseTheme {
                        bool foregroundBlack = true) const;  // Left aligned (reader mode)
   void drawBatteryRight(const GfxRenderer& renderer, Rect rect, bool showPercentage = true,
                         bool foregroundBlack = true) const;  // Right aligned (UI headers)
+  // The reader status bar's battery: the header's level box, smaller, with the percentage beside it and a bolt
+  // while charging. Left to right: [bolt] box [percentage], or on the right-hand side [percentage] [bolt] box.
+  // readerBatteryWidth() is the room it takes.
+  int readerBatteryWidth(const GfxRenderer& renderer, bool showPercentage) const;
+  void drawReaderBattery(const GfxRenderer& renderer, int x, int y, bool showPercentage, bool percentageFirst,
+                         bool foregroundBlack) const;
   virtual void fillBatteryIcon(const GfxRenderer& renderer, Rect rect, uint16_t percentage,
                                bool foregroundBlack = true) const;
   // Button hint labels use three states: non-empty labels draw an active hint,
@@ -276,6 +297,20 @@ class BaseTheme {
   virtual void drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
                                const char* btn4, bool allowInvertedText = false) const;
   virtual void drawSideButtonHints(const GfxRenderer& renderer, const char* topBtn, const char* bottomBtn) const;
+  // Title bar looks, for themes that want them: a light-gray band behind it, the icon of the
+  // open app in front of its title (nullptr: none), and height added to the bar.
+  virtual bool headerBand() const { return false; }
+  virtual const freeink::Icon* headerIcon() const { return nullptr; }
+  virtual int headerExtraHeight() const { return 0; }
+  // Lists and grids show no selected entry until the buttons are used (touch: a press lights its row instead).
+  virtual bool selectionOnlyForButtons() const { return false; }
+  // The battery in the top status row of a title bar, with whatever a theme puts beside it. batteryRect is
+  // where the classic icon goes; its right edge (left edge when batteryLeft) is the edge to align to.
+  // onBand: the bar sits on the theme's gray band (so "empty" parts must not be gray too).
+  virtual void drawHeaderStatus(const GfxRenderer& renderer, Rect batteryRect, bool batteryLeft, bool showPercentage,
+                                bool onBand) const;
+  // The font of the clock in that row.
+  virtual int statusClockFontId() const;
   virtual int getMenuRowHeight(const GfxRenderer& renderer) const;
   virtual int getListRowStep(bool hasSubtitle, int rowHeightScale = 1) const;
   virtual int getListPageItems(int contentHeight, bool hasSubtitle, int rowHeightScale = 1) const;

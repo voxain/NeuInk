@@ -32,8 +32,7 @@
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
-#include "components/icons/libraryIcons.h"
-#include "components/icons/listIcons.h"
+#include "components/icons/homeIcons.h"
 
 namespace fui = freeink::ui;
 
@@ -51,7 +50,7 @@ constexpr int GRID_GAP = 8;
 constexpr int GRID_SELECTION_PADDING = 4;
 constexpr int GRID_SELECTION_OUTLINE_GAP = 2;
 constexpr int GRID_SELECTION_OUTER_INSET = GRID_SELECTION_PADDING + GRID_SELECTION_OUTLINE_GAP;
-constexpr int GRID_COVER_CORNER_RADIUS = 2;
+constexpr int GRID_COVER_CORNER_RADIUS = 10;  // as the Home card's cover
 
 const RecentBook* recentBookForPath(const std::string& path) {
   const auto& books = RECENT_BOOKS.getBooks();
@@ -175,6 +174,7 @@ bool LibraryActivity::rebuildIndex(const bool showScanning) {
 
 void LibraryActivity::resolveRecents() {
   recentCount = 0;
+  unopenedCount = 0;
   if (!index.isOpen()) return;
   const auto& books = RECENT_BOOKS.getBooks();
   // Index lookup accepts up to 16 entries per pass; the history holds 18.
@@ -200,6 +200,12 @@ void LibraryActivity::resolveRecents() {
       recentRows[recentCount++] = rows[i];
     }
   }
+  // The rest of the library follows, by title.
+  for (size_t i = 0; i < recentCount; ++i) {
+    openedOrdinals[i] = index.ordinalForRow(library::SortOrder::RecentAsc, recentRows[i]);
+  }
+  std::sort(openedOrdinals, openedOrdinals + recentCount);
+  unopenedCount = static_cast<uint16_t>(index.bookCount() - recentCount);
 }
 
 library::SortOrder LibraryActivity::indexOrder() const {
@@ -249,7 +255,7 @@ bool LibraryActivity::hasActiveFilter() const {
 
 int LibraryActivity::rowCount() const {
   if (hasActiveFilter()) return filteredCount;
-  if (sort == Sort::RecentlyRead) return static_cast<int>(recentCount);
+  if (sort == Sort::RecentlyRead) return static_cast<int>(recentCount + unopenedCount);
   return index.bookCount();
 }
 
@@ -277,11 +283,20 @@ void LibraryActivity::loadGridProgress() {
 uint16_t LibraryActivity::ordinalForRow(const int row) {
   if (row < 0 || row >= rowCount()) return UINT16_MAX;
   if (hasActiveFilter()) return filtered ? filtered[row] : UINT16_MAX;
-  uint16_t indexRow = static_cast<uint16_t>(row);
-  if (sort == Sort::RecentlyRead) {
-    indexRow = library::recentHistoryRow(indexRow, index.bookCount(), recentRows, recentCount, descending);
+  return sourceOrdinal(static_cast<uint16_t>(row));
+}
+
+// The book of a row before any filter: in Recently Opened the recent ones, then the unopened ones.
+uint16_t LibraryActivity::sourceOrdinal(const uint16_t row) {
+  if (sort != Sort::RecentlyRead) return index.ordinalForRow(indexOrder(), row);
+  if (row >= recentCount) {
+    if (row - recentCount >= unopenedCount) return UINT16_MAX;
+    uint16_t ordinal = static_cast<uint16_t>(row - recentCount);
+    for (size_t i = 0; i < recentCount; ++i) ordinal += openedOrdinals[i] <= ordinal ? 1 : 0;
+    return ordinal;
   }
-  return index.ordinalForRow(indexOrder(), indexRow);
+  return index.ordinalForRow(indexOrder(),
+                             library::recentHistoryRow(row, index.bookCount(), recentRows, recentCount, descending));
 }
 
 bool LibraryActivity::readBook(const int row, RecentBook& book, const bool fullPath) {
@@ -301,7 +316,7 @@ void LibraryActivity::applyFilter() {
   filterFailed = false;
   filtered.reset();
   if (!hasActiveFilter() || !index.isOpen() || index.bookCount() == 0) return;
-  const uint16_t sourceCount = sort == Sort::RecentlyRead ? static_cast<uint16_t>(recentCount) : index.bookCount();
+  const uint16_t sourceCount = sort == Sort::RecentlyRead ? static_cast<uint16_t>(recentCount + unopenedCount) : index.bookCount();
   if (sourceCount == 0) return;
   filtered = makeUniqueNoThrow<uint16_t[]>(sourceCount);
   if (!filtered) {
@@ -346,10 +361,7 @@ void LibraryActivity::applyFilter() {
     return true;
   };
   for (uint16_t row = 0; row < sourceCount; ++row) {
-    const uint16_t indexRow = sort == Sort::RecentlyRead ? library::recentHistoryRow(row, index.bookCount(), recentRows,
-                                                                                     recentCount, descending)
-                                                         : row;
-    const uint16_t ordinal = index.ordinalForRow(indexOrder(), indexRow);
+    const uint16_t ordinal = sourceOrdinal(row);
     library::ClixRecord record{};
     if (ordinal == UINT16_MAX || !index.readRecord(ordinal, record) || !index.readName(record, name)) {
       LOG_ERR("LIB", "Cannot read Library search data");
@@ -869,6 +881,10 @@ void LibraryActivity::buildSortHeader(UiApp::ScreenType& screen) {
   const int16_t bandHeight = std::max<int16_t>(44, screen.theme().rowHeight);
   const auto band = screen.take(fui::LayoutAnchor::Top, bandHeight);
   const int16_t margin = UITheme::getInstance().getMetrics().contentSidePadding;
+  // The sorting controls sit on a gray pill instead of between two rules.
+  uiTarget.fill(fui::Rect{static_cast<int16_t>(band.x + margin / 2), static_cast<int16_t>(band.y + 2),
+                          static_cast<int16_t>(band.width - margin), static_cast<int16_t>(band.height - 4)},
+                fui::Paint::dither(fui::Color::LightGray), static_cast<uint8_t>(bandHeight / 2));
   auto labelStyle = screen.theme().bodyText;
   labelStyle.bold = true;
   const int16_t labelWidth = std::min<int16_t>(
@@ -896,7 +912,7 @@ void LibraryActivity::buildSortHeader(UiApp::ScreenType& screen) {
       mappedInput.hasTouchHardware() && showSelection && selection == 3 ? fui::StateSelected : fui::StateNormal;
   screen.button(button, method);
   button.label = nullptr;
-  button.icon = fui::bitmapFromIcon(descending ? icon_arrow_down_wide_narrow_32 : icon_arrow_up_narrow_wide_32);
+  button.icon = fui::bitmapFromIcon(descending ? icon_sort_desc_32 : icon_sort_asc_32);
   button.state =
       mappedInput.hasTouchHardware() && showSelection && selection == 4 ? fui::StateSelected : fui::StateNormal;
   screen.button(button, direction);
@@ -907,9 +923,6 @@ void LibraryActivity::buildSortHeader(UiApp::ScreenType& screen) {
     screen.frame().hit(fui::Rect{split, band.y, static_cast<int16_t>(band.right() - split), band.height},
                        ACTION_CONTROL, 4, fui::InputTouch);
   }
-  uiTarget.fill(fui::Rect{band.x, band.y, band.width, 1}, fui::Paint::solid(fui::Color::Black));
-  uiTarget.fill(fui::Rect{band.x, static_cast<int16_t>(band.bottom() - 1), band.width, 1},
-                fui::Paint::solid(fui::Color::Black));
 }
 
 void LibraryActivity::buildListScreen(UiApp::ScreenType& screen) {
@@ -926,34 +939,36 @@ void LibraryActivity::buildListScreen(UiApp::ScreenType& screen) {
   const int16_t controlSize = HEADER_CONTROL_SIZE;
   const auto header = TouchHeaderBackButton::headerRect(renderer, mappedInput);
   const int16_t right = static_cast<int16_t>(renderer.getScreenWidth() - bounds[1] - headerControlRightInset());
+  // On the title's line, so the icons sit level with it.
+  const int16_t controlY = static_cast<int16_t>(TouchHeaderBackButton::titleCenterY(header) - controlSize / 2);
   if (mappedInput.hasTouchHardware()) {
     fui::ButtonProps action;
     action.action = ACTION_CONTROL;
     action.inputMask = fui::InputTouch;
     action.styles = fui::plainStyles();
     action.styles.selected = screen.theme().button.selected;
-    action.icon = fui::bitmapFromIcon(icon_refresh_cw_32);
+    action.icon = fui::bitmapFromIcon(icon_refresh_24);
     action.value = 0;
     action.state = showSelection && selection == 0 ? fui::StateSelected : fui::StateNormal;
     screen.button(action,
                   fui::Rect{static_cast<int16_t>(right - 3 * controlSize - 2 * HEADER_CONTROL_GAP),
-                            static_cast<int16_t>(header.y + header.height - controlSize), controlSize, controlSize});
-    action.icon = fui::bitmapFromIcon(icon_search_32);
+                            controlY, controlSize, controlSize});
+    action.icon = fui::bitmapFromIcon(icon_search_24);
     action.value = 1;
     action.state = showSelection && selection == 1 ? fui::StateSelected : fui::StateNormal;
     screen.button(action,
                   fui::Rect{static_cast<int16_t>(right - 2 * controlSize - HEADER_CONTROL_GAP),
-                            static_cast<int16_t>(header.y + header.height - controlSize), controlSize, controlSize});
-    action.icon = fui::bitmapFromIcon(icon_ellipsis_vertical_32);
+                            controlY, controlSize, controlSize});
+    action.icon = fui::bitmapFromIcon(icon_more_vertical_24);
     action.value = 2;
     action.state = showSelection && selection == 2 ? fui::StateSelected : fui::StateNormal;
-    // Give the small overflow icon a 56px touch target. Keep its bottom edge at
-    // the header boundary so the expanded target cannot steal taps from sorting.
+    // Give the small overflow icon a 56px touch target.
     action.hitPadding = fui::Insets{12, 6, 0, 6};
     screen.button(action,
                   fui::Rect{static_cast<int16_t>(right - controlSize),
-                            static_cast<int16_t>(header.y + header.height - controlSize), controlSize, controlSize});
+                            controlY, controlSize, controlSize});
   }
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));  // air between the title bar and the sort pill
   buildSortHeader(screen);
   if (scanFailed || index.ranksDegraded() || filterFailed) {
     const auto warning = screen.take(fui::LayoutAnchor::Top, uiTarget.lineHeight(screen.theme().smallText.font) + 8);
@@ -990,7 +1005,7 @@ void LibraryActivity::buildListScreen(UiApp::ScreenType& screen) {
   props.selectedIndex = showSelection ? static_cast<int16_t>(selection - CONTROL_COUNT) : -1;
   props.action = ACTION_ROW;
   props.inputMask = fui::InputTouch | fui::InputLongPress;
-  props.iconSize = 28;
+  props.iconPlate = 49;  // the file's icon on a gray squircle (odd size)
   props.labelText = screen.theme().bodyText;
   props.labelText.bold = true;
   props.labelText.maxLines = 1;
@@ -1085,7 +1100,7 @@ void LibraryActivity::buildGrid(UiApp::ScreenType& screen) {
       }
     }
     if (!drawn) {
-      renderer.fillRoundedRect(x, y, coverWidth, coverHeight, GRID_COVER_CORNER_RADIUS, Color::White);
+      renderer.fillRoundedRect(x, y, coverWidth, coverHeight, GRID_COVER_CORNER_RADIUS, Color::LightGray);
       if (coverWidth >= 36 && coverHeight >= 36)
         drawLucideIcon(renderer, icon_book_marked_32, x + (coverWidth - 32) / 2, y + (coverHeight - 32) / 2);
     }
@@ -1104,17 +1119,8 @@ void LibraryActivity::buildGrid(UiApp::ScreenType& screen) {
   }
 
   if (pageCount > 1) {
-    constexpr int dotSize = 6;
-    constexpr int dotGap = 8;
-    const int dotsWidth = pageCount * dotSize + (pageCount - 1) * dotGap;
-    const int startX = pageIndicator.x + (pageIndicator.width - dotsWidth) / 2;
-    for (int page = 0; page < pageCount; ++page) {
-      const int x = startX + page * (dotSize + dotGap);
-      if (page == gridPageStart / GRID_PAGE_SIZE)
-        renderer.fillRect(x, pageIndicator.y + 4, dotSize, dotSize, true);
-      else
-        renderer.drawRect(x, pageIndicator.y + 4, dotSize, dotSize, true);
-    }
+    drawPageDots(renderer, pageIndicator.x, pageIndicator.y + 4, pageIndicator.width, pageCount,
+                 gridPageStart / GRID_PAGE_SIZE);
   }
 }
 
@@ -1240,8 +1246,9 @@ void LibraryActivity::swipeDelete(const int row) {
   if (row < 0 || row >= rowCount()) return;
   RecentBook book;
   if (!readBook(row, book)) return;
-  if (sort == Sort::RecentlyRead) {
-    if (RECENT_BOOKS.removeByPath(book.path)) reloadAfterBookAction();
+  // A recent book leaves the history; one that was never opened is deleted like in the other lists.
+  if (sort == Sort::RecentlyRead && RECENT_BOOKS.removeByPath(book.path)) {
+    reloadAfterBookAction();
     return;
   }
   promptDeleteBook(book);

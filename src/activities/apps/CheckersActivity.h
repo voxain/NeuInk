@@ -84,7 +84,7 @@ class CheckersActivity final : public Activity {
   int hintFrom = -1;
   int hintTo = -1;
 
-  gameui::HoldButton newHold;
+  gameui::Box newButton;  // "New" in the title bar: a tap opens the New game panel
   gameui::Box board;
   gameui::Box tools[kToolCount];
   gameui::Box newGameBox;
@@ -95,6 +95,7 @@ class CheckersActivity final : public Activity {
   gameui::Box cancelBox;
   gameui::Box startBox;
   int topStripY = 0;
+  int squareSize = 0;  // a board square's side, set by layout()
   int bottomStripY = 0;
   int statusY = 0;
   gameui::ButtonPointer pointer;  // NeuInk: apps on button readers
