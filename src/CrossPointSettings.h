@@ -685,10 +685,25 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Recently Opened layout in Library; keep the original raw values for older settings.
   uint8_t recentBooksView = RECENT_BOOKS_LIST;
   // Vega Home grid (the pane under the bottom-edge swipe): icon size (0 = 32, 1 = 42, 2 = 48, 3 = 24 px),
-  // columns x rows (0 = 4x3, 1 = 4x4, 2 = 3x4, 3 = 3x3) and whether the names show under the icons.
+  // columns and rows of the app grid (rows: under the widgets on the first page) and whether the names show.
   uint8_t homeIconSize = 0;
-  uint8_t homeGrid = 0;
+  uint8_t homeColumns = 4;
+  uint8_t homeRows = 3;
   uint8_t homeShowNames = 1;
+  // Vega Home widgets in their order (see components/themes/vega/VegaHome.h), and the order of its apps and entries
+  // (vegahome::entryKey; entries missing from it follow in their default order).
+  struct HomeWidget {
+    uint8_t type = 0;  // vegahome::Type; 0 = the current book
+    uint8_t size = 1;  // vegahome::Size; 1 = two cells wide, one high
+    uint8_t flags = 0xFF;  // the widget's optional data, a bit each
+    uint8_t value = 0;     // one number the widget may use (the calendar's minutes)
+  };
+  static constexpr int HOME_WIDGET_MAX = 6;
+  static constexpr int HOME_ORDER_MAX = 16;
+  HomeWidget homeWidgets[HOME_WIDGET_MAX] = {};
+  uint8_t homeWidgetCount = 1;
+  uint8_t homeOrder[HOME_ORDER_MAX] = {};
+  uint8_t homeOrderCount = 0;
   // Vega Home: a greeting above the current-book card ("Good morning", by the time of day and language).
   uint8_t homeGreeting = 1;
   // Shape of the icon plates (0 = squircle, 1 = rounded square, 2 = circle, 3 = hexagon) and whether their gray is true

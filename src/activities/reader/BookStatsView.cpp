@@ -168,60 +168,6 @@ const StatsLayout& getNoRtcCombinedLayout(const GfxRenderer& renderer, const Map
   return kCompactLayout;
 }
 
-bool fallbackEstimatedTimeLeft(const BookReadingStats& stats, const float progressPercent, uint32_t& seconds) {
-  seconds = 0;
-  if (progressPercent <= 0.0f || progressPercent >= 100.0f || stats.totalReadingSeconds < 120) {
-    return false;
-  }
-
-  const float progress = progressPercent / 100.0f;
-  const float estimate = (static_cast<float>(stats.totalReadingSeconds) * (1.0f - progress)) / progress;
-  if (estimate <= 0.0f) {
-    return false;
-  }
-  seconds = static_cast<uint32_t>(estimate + 0.5f);
-  return seconds > 0;
-}
-
-bool cachedEstimatedTimeLeft(const BookReadingStats& stats, uint32_t& seconds) {
-  seconds = stats.estimatedTimeLeftSeconds;
-  return seconds > 0;
-}
-
-bool estimateFinishDateFromDailyPace(const BookReadingStats& stats, const ReadingStatsDateTime& today,
-                                     const uint32_t estimatedReadingSeconds, ReadingStatsDate& outDate) {
-  outDate = {};
-  if (!today.isValid() || !stats.startDate.isValid() || estimatedReadingSeconds == 0 ||
-      stats.totalReadingSeconds == 0) {
-    return false;
-  }
-
-  const uint16_t elapsedDays = readingSpanDaysElapsed(stats.startDate, today.date);
-  const uint16_t readingDays = std::max<uint16_t>(1, elapsedDays);
-
-  // Convert remaining reading time into calendar time using the book's average reading seconds per calendar day.
-  const uint64_t estimatedCalendarSeconds =
-      (static_cast<uint64_t>(estimatedReadingSeconds) * static_cast<uint64_t>(readingDays) * 86400ULL +
-       static_cast<uint64_t>(stats.totalReadingSeconds) / 2ULL) /
-      static_cast<uint64_t>(stats.totalReadingSeconds);
-  if (estimatedCalendarSeconds == 0) {
-    return false;
-  }
-
-  ReadingStatsDateTime estimatedFinish = today;
-  addSecondsToReadingStatsDateTime(estimatedFinish,
-                                   static_cast<uint32_t>(std::min<uint64_t>(estimatedCalendarSeconds, UINT32_MAX)));
-  outDate = estimatedFinish.date;
-  return outDate.isValid();
-}
-
-float pagesPerMinute(const uint32_t totalPagesTurned, const uint32_t totalReadingSeconds) {
-  if (totalReadingSeconds <= 60) {
-    return 0.0f;
-  }
-  return static_cast<float>(totalPagesTurned) * 60.0f / static_cast<float>(totalReadingSeconds);
-}
-
 void drawCenteredLabel(const GfxRenderer& renderer, const int fontId, const int x, const int w, const int y,
                        const char* text, const bool bold = false) {
   const int textWidth = renderer.getTextWidth(fontId, text, bold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
@@ -333,9 +279,9 @@ void drawPerBookStatsCard(GfxRenderer& renderer, const int x, const int y, const
   drawStatCell(renderer, x, thirdW, y + layout.topCardTitleH + rowH, rowH, buf, tr(STR_STATS_AVG_SESSION_LBL));
 
   uint32_t fallbackEstimateSeconds = 0;
-  uint32_t cachedEstimateSeconds = 0;
-  const bool hasCachedEstimate = cachedEstimatedTimeLeft(stats, cachedEstimateSeconds);
-  const bool hasFallbackEstimate = fallbackEstimatedTimeLeft(stats, progressPercent, fallbackEstimateSeconds);
+  const uint32_t cachedEstimateSeconds = stats.estimatedTimeLeftSeconds;
+  const bool hasCachedEstimate = cachedEstimateSeconds > 0;
+  const bool hasFallbackEstimate = stats.extrapolatedTimeLeft(progressPercent, fallbackEstimateSeconds);
   if (!stats.isCompleted && (hasEstimatedTimeLeft || hasCachedEstimate || hasFallbackEstimate)) {
     formatCompactReadingDuration(hasEstimatedTimeLeft ? estimatedTimeLeftSeconds
                                  : hasCachedEstimate  ? cachedEstimateSeconds
@@ -346,7 +292,7 @@ void drawPerBookStatsCard(GfxRenderer& renderer, const int x, const int y, const
   }
   drawStatCell(renderer, x + thirdW, thirdW, y + layout.topCardTitleH + rowH, rowH, buf, tr(STR_TIME_LEFT));
 
-  snprintf(buf, sizeof(buf), "%.1f", pagesPerMinute(stats.totalPagesTurned, stats.totalReadingSeconds));
+  snprintf(buf, sizeof(buf), "%.1f", stats.pagesPerMinute());
   drawStatCell(renderer, x + thirdW * 2, thirdW, y + layout.topCardTitleH + rowH, rowH, buf,
                tr(STR_STATS_PAGES_PER_MIN));
 
@@ -383,11 +329,7 @@ void drawPerBookStatsCard(GfxRenderer& renderer, const int x, const int y, const
     const uint32_t remainingReadingSeconds = hasEstimatedTimeLeft ? estimatedTimeLeftSeconds
                                              : hasCachedEstimate  ? cachedEstimateSeconds
                                                                   : fallbackEstimateSeconds;
-    if (!estimateFinishDateFromDailyPace(stats, today, remainingReadingSeconds, finishDisplayDate)) {
-      ReadingStatsDateTime estimatedFinish = today;
-      addSecondsToReadingStatsDateTime(estimatedFinish, remainingReadingSeconds);
-      finishDisplayDate = estimatedFinish.date;
-    }
+    finishDisplayDate = stats.estimatedFinishDate(today, remainingReadingSeconds);
   }
   formatReadingStatsShortDate(finishDisplayDate, buf, sizeof(buf));
   drawStatCell(renderer, x + halfW, halfW, y + layout.topCardTitleH + rowH * 2, rowH, buf,
@@ -411,7 +353,7 @@ void drawGlobalStatsCard(GfxRenderer& renderer, const int x, const int y, const 
   BookReadingStats::formatDuration(stats.totalReadingSeconds, buf, sizeof(buf));
   drawStatCell(renderer, x + thirdW, thirdW, y + layout.topCardTitleH, rowH, buf, tr(STR_STATS_TIME_LBL));
 
-  snprintf(buf, sizeof(buf), "%.1f", pagesPerMinute(stats.totalPagesTurned, stats.totalReadingSeconds));
+  snprintf(buf, sizeof(buf), "%.1f", BookReadingStats::pagesPerMinute(stats.totalPagesTurned, stats.totalReadingSeconds));
   drawStatCell(renderer, x + thirdW * 2, thirdW, y + layout.topCardTitleH, rowH, buf, tr(STR_STATS_PAGES_PER_MIN));
 
   const uint32_t avgSecs = stats.totalSessions > 0 ? stats.totalReadingSeconds / stats.totalSessions : 0;

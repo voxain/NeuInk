@@ -11,6 +11,7 @@
 #include "activities/Activity.h"
 #include "components/DrawerHandle.h"
 #include "components/LevelBox.h"
+#include "components/icons/homeIcons.h"
 
 namespace panel {
 
@@ -56,12 +57,13 @@ void levelSlider(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame
             action, 0, fui::InputTouch | fui::InputDrag);
 }
 
-// A round white button with a Lucide icon, for exact steps beside a slider. `padX` and `padY` widen its touch area.
+// A round button (white, or `color`) with a Lucide icon, for exact steps beside a slider. `padX` and `padY` widen its
+// touch area.
 template <size_t MaxInteractions>
 void stepButton(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y,
                 const int diameter, const freeink::Icon& icon, const fui::ActionId action, const int value,
-                const int padX, const int padY) {
-  renderer.fillRoundedRect(x, y, diameter, diameter, diameter / 2, Color::White);
+                const int padX, const int padY, const Color color = Color::White) {
+  renderer.fillRoundedRect(x, y, diameter, diameter, diameter / 2, color);
   frame.target().bitmap(fui::Rect{static_cast<int16_t>(x + (diameter - icon.w) / 2),
                                   static_cast<int16_t>(y + (diameter - icon.h) / 2), static_cast<int16_t>(icon.w),
                                   static_cast<int16_t>(icon.h)},
@@ -116,7 +118,8 @@ void tiles(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, cons
 // A white row with its name and an on/off toggle (the SDK's own) at the right edge; a tap anywhere on the row flips it.
 template <size_t MaxInteractions>
 void toggleRow(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y,
-               const int width, const char* label, const bool on, const fui::ActionId action, const int fontId) {
+               const int width, const char* label, const bool on, const fui::ActionId action, const int fontId,
+               const int value = 0) {
   renderer.fillRoundedRect(x, y, width, kControlHeight, kControlHeight / 2, Color::White);
   renderer.drawText(fontId, x + 22, y + (kControlHeight - renderer.getLineHeight(fontId)) / 2, label, true);
   fui::ToggleProps toggle;
@@ -129,14 +132,38 @@ void toggleRow(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, 
                                toggle.height},
               toggle);
   frame.hit(fui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(width), kControlHeight},
-            action, 0, fui::InputTouch);
+            action, static_cast<int16_t>(value), fui::InputTouch);
+}
+
+// A white row with its name and a number between a minus and a plus button; a hit carries -1 or +1.
+template <size_t MaxInteractions>
+void stepperRow(const GfxRenderer& renderer, fui::Frame<MaxInteractions>& frame, const int x, const int y,
+                const int width, const char* label, const char* value, const fui::ActionId action, const int fontId) {
+  constexpr int diameter = 38;
+  constexpr int valueWidth = 64;
+  renderer.fillRoundedRect(x, y, width, kControlHeight, kControlHeight / 2, Color::White);
+  const int textY = y + (kControlHeight - renderer.getLineHeight(fontId)) / 2;
+  renderer.drawText(fontId, x + 22, textY, label, true);
+  const int buttonY = y + (kControlHeight - diameter) / 2;
+  const int plusX = x + width - 8 - diameter;
+  const int minusX = plusX - valueWidth - diameter;
+  stepButton(renderer, frame, minusX, buttonY, diameter, icon_cc_minus_24, action, -1, 6, 8, Color::LightGray);
+  stepButton(renderer, frame, plusX, buttonY, diameter, icon_cc_plus_24, action, 1, 6, 8, Color::LightGray);
+  renderer.drawText(fontId, minusX + diameter + (valueWidth - renderer.getTextWidth(fontId, value, EpdFontFamily::BOLD)) / 2,
+                    textY, value, true, EpdFontFamily::BOLD);
+}
+
+// A row's name in small bold, above the tiles or rows it names.
+inline void heading(const GfxRenderer& renderer, const int x, const int y, const char* text, const int fontId) {
+  renderer.drawText(fontId, x, y, text, true, EpdFontFamily::BOLD);
 }
 
 }  // namespace panel
 
 // A panel over the current screen, hanging from the bottom edge (the card, its grabber and the ways to close it
-// are panel::card). It paints only its own band, so what is underneath stays on the screen. A subclass says how
-// tall its content is and draws it with the panel:: helpers; a choice comes back through onChoice.
+// are panel::card). It paints only its own band, so what is underneath stays on the screen. A subclass's content
+// comes in sections drawn with the panel:: helpers; a card taller than maxContentHeight() shows as many whole
+// sections as fit and scrolls a page of them with a swipe up or down on it. A choice comes back through onChoice.
 class PanelActivity : public Activity {
  public:
   PanelActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const char* name);
@@ -150,23 +177,38 @@ class PanelActivity : public Activity {
   static constexpr freeink::ui::ActionId ACTION_FIRST_CONTROL = 10;
 
  protected:
-  using UiApp = freeink::ui::FreeInkApp<24, 12>;
+  using UiApp = freeink::ui::FreeInkApp<32, 12>;
   using Screen = UiApp::ScreenType;
 
-  // The height of what goes inside the card, between its padding.
-  virtual int contentHeight() const = 0;
-  // Draw the content from y, between x and x + width, and register its hits under ACTION_FIRST_CONTROL and up (a tile's value is its index).
-  virtual void buildContent(Screen& screen, int x, int y, int width) = 0;
+  virtual int sectionCount() const = 0;
+  // A section's height, its gap to the next one included.
+  virtual int sectionHeight(int section) const = 0;
+  // Draw a section from y, between x and x + width, and register its hits under ACTION_FIRST_CONTROL and up.
+  virtual void buildSection(Screen& screen, int section, int x, int y, int width) = 0;
   // A hit on a control: which one is up to the subclass (its action id) and which option (value).
   virtual void onChoice(freeink::ui::ActionId action, int value) = 0;
+  // The tallest the content may be before it scrolls (default: nearly the whole screen).
+  virtual int maxContentHeight() const;
+  // A round button in the card's top right corner (nullptr: none) and its tap.
+  virtual const freeink::Icon* cornerIcon() const { return nullptr; }
+  virtual void onCorner() {}
+  // The card's top to its content (below the corner button when there is one).
+  int topInset() const;
+  // After the content changed its sections: back to the first one.
+  void scrollToTop() { firstSection = 0; }
 
  private:
   static void screenBuilder(Screen& screen, void* user);
   static void onActionEvent(const freeink::ui::ActionEvent& event, void* user);
+  int visibleHeight() const;
+  int lastVisible(int first) const;  // one past the last section that fits from `first`
+  void scrollPage(bool down);
 
   freeink::ui::GfxRendererTarget uiTarget;  // must precede `app`: the app holds a reference to it
   UiApp app;
   std::atomic<bool> uiReady{false};
   freeink::ui::Rect handle{};
   int cardTop = 0;
+  int firstSection = 0;
+  int paintedTop = 0;
 };

@@ -8,6 +8,8 @@ constexpr size_t READING_TIME_BUCKET_COUNT = 4;
 constexpr size_t READING_DAY_OF_WEEK_COUNT = 7;
 constexpr size_t READING_HISTORY_DAYS = 730;
 constexpr size_t READING_HISTORY_BYTES = (READING_HISTORY_DAYS + 7) / 8;
+// Days the reading time per day is kept for (Home's calendar widget marks them).
+constexpr size_t READING_DAILY_DAYS = 64;
 
 enum class ReadingTimeBucket : uint8_t { Morning = 0, Afternoon, Evening, Night };
 
@@ -54,6 +56,8 @@ void recordReadingSpanIntoHistory(uint32_t& anchorDay, std::array<uint8_t, READI
                                   const ReadingStatsDateTime& localStart, uint32_t seconds);
 void mergeReadingHistory(uint32_t& targetAnchorDay, std::array<uint8_t, READING_HISTORY_BYTES>& targetBits,
                          uint32_t sourceAnchorDay, const std::array<uint8_t, READING_HISTORY_BYTES>& sourceBits);
+// Whether anything was read on that day (a readingStatsDayIndex).
+bool readingHistoryHasDay(uint32_t anchorDay, const std::array<uint8_t, READING_HISTORY_BYTES>& bits, uint32_t dayIndex);
 uint16_t computeReadingHistoryLongestStreak(uint32_t anchorDay, const std::array<uint8_t, READING_HISTORY_BYTES>& bits);
 uint16_t computeReadingHistoryCurrentStreak(uint32_t anchorDay, const std::array<uint8_t, READING_HISTORY_BYTES>& bits,
                                             const ReadingStatsDate* today);
