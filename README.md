@@ -168,6 +168,14 @@ Xteink firmware, read the [installation guide](docs/installation.md) first.
 
 Optional: a German → English dictionary, see [Dictionaries](docs/neuink/DICTIONARIES.md).
 
+### Coming from CrossPoint or CrossInk
+
+Moving to NeuInk from CrossPoint or CrossInk is usually safe. In the normal case it keeps
+everything: your settings, books, highlights, bookmarks and even your reading stats, since
+NeuInk reads the same files on the SD card. Make a backup of the card anyway, before any
+firmware change: it costs a minute, and a flash that goes wrong or a card that is pulled
+out at the wrong moment is the one case where it saves you.
+
 ### Leaving NeuInk
 
 If NeuInk is not for you, **Settings → System → Switch to Another Firmware** installs
