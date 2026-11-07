@@ -689,6 +689,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t homeIconSize = 0;
   uint8_t homeGrid = 0;
   uint8_t homeShowNames = 1;
+  // Vega Home: a greeting above the current-book card ("Good morning", by the time of day and language).
+  uint8_t homeGreeting = 1;
   // Shape of the icon plates (0 = squircle, 1 = rounded square, 2 = circle, 3 = hexagon) and whether their gray is true
   // gray (an extra panel pass, experimental) instead of a dither.
   uint8_t homeIconShape = 0;

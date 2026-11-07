@@ -2464,11 +2464,18 @@ void HomeActivity::render(RenderLock&&) {
   }
 
   renderer.clearScreen();
+  // The greeting section (Vega) sits above the card, so the tile and the menu below it grow by its height. A snapshot
+  // taken with another height (the greeting was switched) has the card and the tile at the wrong place: drop it.
+  const int greetingHeight = GUI.homeGreetingHeight(renderer);
+  if (greetingHeight != coverGreetingHeight) {
+    invalidateCoverCache();
+    coverGreetingHeight = greetingHeight;
+  }
   bool bufferRestored = coverBufferStored && restoreCoverBuffer();
 
   auto menuItems = buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings,
                                                 metrics.homeContinueReadingInMenu && !recentBooks.empty());
-  int homeCoverTileHeight = metrics.homeCoverTileHeight;
+  int homeCoverTileHeight = metrics.homeCoverTileHeight + greetingHeight;
   if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::CLASSIC) {
     // Keep the four always-present actions clear of the button-hint strip on
     // shorter displays; any optional actions paginate below them.

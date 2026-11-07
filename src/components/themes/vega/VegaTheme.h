@@ -41,6 +41,7 @@ class VegaTheme : public LyraTheme {
   void drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount, int selectedIndex,
                       const std::function<const char*(int index)>& buttonLabel,
                       const std::function<UIIcon(int index)>& rowIcon) const override;
+  int homeGreetingHeight(GfxRenderer& renderer) const override;
 
  // Title bars of the apps: light-gray band, the app's icon before its title, a little taller.
   bool headerBand() const override { return true; }
@@ -52,5 +53,6 @@ class VegaTheme : public LyraTheme {
   int statusClockFontId() const override;
 
  private:
+  void drawGreeting(GfxRenderer& renderer, Rect rect) const;
   static inline int homePage = 0;
 };

@@ -265,28 +265,21 @@ EpdFontFamily bitter16FontFamily =
 #endif
 
 #endif
-// IPA pronunciation letters (U+0250-U+02FF) for the UI fonts, so dictionary
-// meanings shown in lists and menus draw /ˈkœnən/ instead of boxes.
-EpdFont ipa8RegularFont(&inter_ipa_8_regular);
-EpdFont ipa10RegularFont(&inter_ipa_10_regular);
-EpdFont ipa10BoldFont(&inter_ipa_10_bold);
-EpdFont ipa12RegularFont(&inter_ipa_12_regular);
-EpdFont ipa12BoldFont(&inter_ipa_12_bold);
-
-EpdFont smallFont(&inter_8_regular);
-EpdFontFamily smallFontFamily = EpdFontFamily(&smallFont).withSupplement(&ipa8RegularFont, nullptr);
+// UI fonts are LexendDeca faces. Hebrew, Arabic and IPA letters (U+0250-U+02FF,
+// for dictionary meanings in lists and menus) are built into each face, so no
+// supplement families are needed. See lib/EpdFont/scripts/convert-builtin-fonts.sh.
+EpdFont smallFont(&lexend_ui_8_regular);
+EpdFontFamily smallFontFamily = EpdFontFamily(&smallFont);
 
 const EpdFont uiSymbols10Font(&ui_symbols_10);
 
-EpdFont ui10RegularFont(&inter_10_regular);
-EpdFont ui10BoldFont(&inter_10_bold);
-EpdFontFamily ui10FontFamily = EpdFontFamily(&ui10RegularFont, &ui10BoldFont, nullptr, nullptr, &uiSymbols10Font)
-                                   .withSupplement(&ipa10RegularFont, &ipa10BoldFont);
+EpdFont ui10RegularFont(&lexend_ui_10_regular);
+EpdFont ui10BoldFont(&lexend_ui_10_bold);
+EpdFontFamily ui10FontFamily = EpdFontFamily(&ui10RegularFont, &ui10BoldFont, nullptr, nullptr, &uiSymbols10Font);
 
-EpdFont ui12RegularFont(&inter_12_regular);
-EpdFont ui12BoldFont(&inter_12_bold);
-EpdFontFamily ui12FontFamily = EpdFontFamily(&ui12RegularFont, &ui12BoldFont, nullptr, nullptr, &uiSymbols10Font)
-                                   .withSupplement(&ipa12RegularFont, &ipa12BoldFont);
+EpdFont ui12RegularFont(&lexend_ui_12_regular);
+EpdFont ui12BoldFont(&lexend_ui_12_bold);
+EpdFontFamily ui12FontFamily = EpdFontFamily(&ui12RegularFont, &ui12BoldFont, nullptr, nullptr, &uiSymbols10Font);
 
 const char* resetReasonName(const esp_reset_reason_t reason) {
   switch (reason) {

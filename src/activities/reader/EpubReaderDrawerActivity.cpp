@@ -866,7 +866,7 @@ void EpubReaderDrawerActivity::drawButtonBookHeader() {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect header{safe.x, safe.y + metrics.topPadding, safe.width,
                     TouchHeaderBackButton::height(metrics, mappedInput)};
-  GUI.drawHeader(renderer, header, epub ? epub->getTitle().c_str() : "", nullptr, false, true);
+  GUI.drawHeader(renderer, header, epub ? epub->getTitle().c_str() : "", nullptr, true, true);
 
   const Rect summary{safe.x, header.y + header.height, safe.width, metrics.tabBarHeight};
   char progress[96];

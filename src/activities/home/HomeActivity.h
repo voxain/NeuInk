@@ -90,6 +90,7 @@ class HomeActivity final : public Activity {
   int coverRectY = 0;
   int coverRectW = 0;
   int coverRectH = 0;
+  int coverGreetingHeight = 0;  // greeting height the cover snapshot was taken with (Vega)
   float currentBookProgressPercent = -1.0f;
   std::string currentBookChapterTitle;
   BookReadingStats currentBookStats;

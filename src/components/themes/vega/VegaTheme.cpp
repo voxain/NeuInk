@@ -1,7 +1,9 @@
 #include "VegaTheme.h"
 
 #include <GfxRenderer.h>
+#include <HalClock.h>
 #include <HalGPIO.h>
+#include <ScalableBuiltins.h>
 #include <HalPowerManager.h>
 #include <I18n.h>
 
@@ -9,6 +11,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "BuiltinBitter.h"
 #include "RecentBooksStore.h"
 #include "activities/Activity.h"
 #include "activities/apps/AppRegistry.h"
@@ -20,6 +23,8 @@
 #include "components/icons/homeIconSet.h"
 #include "fontIds.h"
 #include "network/OnlineWifi.h"
+#include "util/FrontlightSchedule.h"
+#include "util/LocalClockOffset.h"
 
 namespace {
 constexpr int kCardPadding = 12;
@@ -30,7 +35,37 @@ constexpr int kBarHeight = 10;
 constexpr int kDotsHeight = 28;
 constexpr int kHeaderIconSize = 24;
 constexpr int kSideMargin = 16;
+constexpr int kGreetingGap = 10;  // above and below the greeting text
 int coverWidth = 0;
+
+// The greeting is set large, in Bitter. Scalable builds (X4 Pro) load the Bitter family on demand, the same one
+// the reader uses when Bitter is its font, and the largest scalable size is 22. Bitmap builds use their largest
+// built-in size (16), and LexendDeca where Bitter is not built in.
+int greetingFontId(GfxRenderer& renderer) {
+#if CROSSINK_SCALABLE_FONTS
+  const unsigned bitter = CrossPointSettings::BITTER;
+  ensureScalableBuiltinFamily(renderer, bitter);
+  return scalableBuiltinReaderFontId(bitter, 22);
+#elif CROSSINK_BUILTIN_BITTER
+  (void)renderer;
+  return BITTER_16_FONT_ID;
+#else
+  (void)renderer;
+  return LEXENDDECA_16_FONT_ID;
+#endif
+}
+
+// "Good morning", "Good evening"... by the local hour, in the menu language.
+const char* greetingText() {
+  uint8_t utcHour = 0;
+  uint8_t utcMinute = 0;
+  if (!halClock.getTime(utcHour, utcMinute)) return tr(STR_GREETING_HELLO);
+  const int hour = FrontlightSchedule::localTimeOfDay(utcHour, utcMinute, localClockOffsetQ()) / 60;
+  if (hour >= 5 && hour < 12) return tr(STR_GREETING_MORNING);
+  if (hour >= 12 && hour < 18) return tr(STR_GREETING_AFTERNOON);
+  if (hour >= 18 && hour < 22) return tr(STR_GREETING_EVENING);
+  return tr(STR_GREETING_NIGHT);
+}
 
 // Rounds the corners of the picture drawn at x, y by painting what lies outside a
 // quarter circle in the colour behind it (the dither pattern is the same everywhere).
@@ -56,13 +91,14 @@ void VegaTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
   (void)bufferRestored;
   if (recentBooks.empty()) {
     drawEmptyRecents(renderer, rect);
+    drawGreeting(renderer, rect);
     return;
   }
   const auto& metrics = VegaMetrics::values;
   const RecentBook& book = recentBooks[0];
   // The Home header band ends topPadding below the tile's top, and is drawn after the cached card is
-  // restored: start the card under it, or its top rows are painted over.
-  const int cardY = rect.y + metrics.topPadding;
+  // restored: start the card under it (and under the greeting section, when shown), or its top rows are painted over.
+  const int cardY = rect.y + metrics.topPadding + homeGreetingHeight(renderer);
   const int cardX = metrics.contentSidePadding;
   const int cardW = rect.width - 2 * metrics.contentSidePadding;
   const int cardH = metrics.homeCoverHeight + 2 * kCardPadding;
@@ -113,6 +149,20 @@ void VegaTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
       renderer.fillRoundedRect(textX, barY, fillWidth, kBarHeight, kBarHeight / 2, Color::Black);
     }
   }
+  // Drawn last, outside the cached card: the greeting changes with the time of day.
+  drawGreeting(renderer, rect);
+}
+
+int VegaTheme::homeGreetingHeight(GfxRenderer& renderer) const {
+  if (!SETTINGS.homeGreeting) return 0;
+  return renderer.getLineHeight(greetingFontId(renderer)) + 2 * kGreetingGap;
+}
+
+void VegaTheme::drawGreeting(GfxRenderer& renderer, Rect rect) const {
+  if (!SETTINGS.homeGreeting) return;
+  const int fontId = greetingFontId(renderer);
+  const int y = rect.y + VegaMetrics::values.topPadding + kGreetingGap;
+  renderer.drawText(fontId, VegaMetrics::values.contentSidePadding, y, greetingText(), true, EpdFontFamily::BOLD);
 }
 
 int VegaTheme::columns() { return SETTINGS.homeGrid >= 2 ? 3 : 4; }
@@ -207,7 +257,7 @@ void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const b
   const int bodyH = showPercentage ? 20 : 14;
   constexpr int nubW = 3;
   constexpr int gap = 8;
-  const int centerY = rect.y + 11;  // where the classic icon centers on the clock's line
+  const int centerY = rect.y + rect.height / 2;  // the middle of the status bar, where the clock is
   const int bodyX = batteryLeft ? rect.x : rect.x + rect.width - nubW - bodyW;
 
   // The empty part is light gray, or white where the bar itself is that gray.

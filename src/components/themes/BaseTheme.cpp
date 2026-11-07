@@ -163,6 +163,8 @@ void BaseTheme::drawReaderBattery(const GfxRenderer& renderer, const int x, cons
                     foregroundBlack ? Color::LightGray : Color::DarkGray, foregroundBlack ? Color::Black : Color::White);
 }
 
+int BaseTheme::homeGreetingHeight(GfxRenderer&) const { return 0; }
+
 int BaseTheme::homeHeaderClockTextYOffset(const GfxRenderer& renderer) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int statusBarHeight = metrics.statusBarVerticalMargin;
@@ -503,8 +505,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
                                         SETTINGS.uiTheme == CrossPointSettings::UI_THEME::ROUNDEDRAFF &&
                                         rect.height != metrics.homeTopPadding;
   const bool roundedRaffHeader = !readerContext && SETTINGS.uiTheme == CrossPointSettings::UI_THEME::ROUNDEDRAFF;
-  const int clockYOffset =
-      roundedRaffHeader ? roundedRaffHeaderClockYOffset : (!readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
+  const int clockYOffset = roundedRaffHeader ? roundedRaffHeaderClockYOffset : 0;
   if (batteryDetached) {
     const int titleLineHeight = ui.target.lineHeight(fui::GfxRendererTarget::FONT_TITLE);
     const int titleTop = static_cast<int>(band.height) - tokens.headerUnderline - tokens.spaceMd - titleLineHeight;
@@ -533,9 +534,12 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   const int16_t batteryX = batteryLeft ? static_cast<int16_t>(band.x + batteryEdgeInset)
                                        : static_cast<int16_t>(band.right() - batteryEdgeInset - batteryReserve);
   // Shared detached headers use the same status row as Dashboard Home.
+  // The battery is centred on the status bar, the same line as the clock.
+  const int centredBatteryY = (headerStatusRowHeight - metrics.batteryHeight) / 2;
   const int16_t batteryY = [&] {
     if (batteryDetached && SETTINGS.uiTheme != CrossPointSettings::UI_THEME::ROUNDEDRAFF) {
-      return static_cast<int16_t>(rect.y + UITheme::getTopStatusBarInset(renderer) + homeHeaderTopInset);
+      return static_cast<int16_t>(rect.y + UITheme::getTopStatusBarInset(renderer) +
+                                  (readerContext ? homeHeaderTopInset : centredBatteryY));
     }
 
     // RoundedRaff's Home header is taller than ordinary headers. Shift compact
@@ -544,7 +548,8 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
         band.y + UITheme::getTopStatusBarInset(renderer) +
         (batteryDetached
              ? detachedHeaderBatteryTopInset
-             : (roundedRaffCompactHeader ? std::max(0, (metrics.homeTopPadding - metrics.headerHeight) / 2) : 0)));
+             : (readerContext ? 0 : centredBatteryY) +
+                   (roundedRaffCompactHeader ? std::max(0, (metrics.homeTopPadding - metrics.headerHeight) / 2) : 0)));
   }();
   const int16_t batteryIconX = batteryLeft
                                    ? batteryX
@@ -1135,11 +1140,16 @@ void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, con
   const int fontId = statusClockFontId();
   const int textWidth = renderer.getTextWidth(fontId, timeText);
   const int lineHeight = renderer.getLineHeight(fontId);
-  const int textX = (renderer.getScreenWidth() - textWidth) / 2;
+  // Reader screens keep the centred clock in the reader's bar; app and Home headers put it on the left, at the
+  // battery's edge inset (mirrored when the battery is on the left).
+  const int textX = readerContext ? (renderer.getScreenWidth() - textWidth) / 2
+                    : metrics.headerBatterySide == 1 ? renderer.getScreenWidth() - StatusBarMetrics::sideInset - textWidth
+                                                     : StatusBarMetrics::sideInset;
+  const int rowHeight = readerContext ? statusBarHeight : headerStatusRowHeight;
   const int effectiveTextYOffset = textYOffset + UITheme::getTopStatusBarInset(renderer) +
                                    (readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
   const int baseTopY = topY >= 0 ? topY : metrics.topPadding;
-  const int textY = baseTopY + (statusBarHeight - lineHeight) / 2 + effectiveTextYOffset;
+  const int textY = baseTopY + (rowHeight - lineHeight) / 2 + effectiveTextYOffset;
   renderer.drawText(fontId, textX, textY, timeText, !darkMode);
 }
 

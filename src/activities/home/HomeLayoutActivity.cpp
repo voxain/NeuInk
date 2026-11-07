@@ -13,6 +13,7 @@ constexpr freeink::ui::ActionId ACTION_GRID = PanelActivity::ACTION_FIRST_CONTRO
 constexpr freeink::ui::ActionId ACTION_NAMES = PanelActivity::ACTION_FIRST_CONTROL + 2;
 constexpr freeink::ui::ActionId ACTION_SHAPE = PanelActivity::ACTION_FIRST_CONTROL + 3;
 constexpr freeink::ui::ActionId ACTION_GRAY = PanelActivity::ACTION_FIRST_CONTROL + 4;
+constexpr freeink::ui::ActionId ACTION_GREETING = PanelActivity::ACTION_FIRST_CONTROL + 5;
 
 // The options in the order shown, as the values stored in homeIconSize (0 = 32 px, the default) and homeGrid.
 constexpr int kIconPx[] = {24, 32, 42, 48};
@@ -43,7 +44,7 @@ void HomeLayoutActivity::onExit() {
 }
 
 int HomeLayoutActivity::contentHeight() const {
-  return 3 * (panel::kLabelHeight + panel::kTileHeight + panel::kRowGap) + 2 * panel::kControlHeight + panel::kRowGap;
+  return 3 * (panel::kLabelHeight + panel::kTileHeight + panel::kRowGap) + 3 * panel::kControlHeight + 2 * panel::kRowGap;
 }
 
 void HomeLayoutActivity::buildContent(Screen& screen, const int x, int y, const int width) {
@@ -119,6 +120,9 @@ void HomeLayoutActivity::buildContent(Screen& screen, const int x, int y, const 
   y += panel::kControlHeight + panel::kRowGap;
   panel::toggleRow(renderer, frame, x, y, width, tr(STR_TRUE_GRAY), SETTINGS.homeTrueGray != 0, ACTION_GRAY,
                       UI_10_FONT_ID);
+  y += panel::kControlHeight + panel::kRowGap;
+  panel::toggleRow(renderer, frame, x, y, width, tr(STR_HOME_GREETING), SETTINGS.homeGreeting != 0, ACTION_GREETING,
+                      UI_10_FONT_ID);
 }
 
 void HomeLayoutActivity::onChoice(const freeink::ui::ActionId action, const int value) {
@@ -132,6 +136,8 @@ void HomeLayoutActivity::onChoice(const freeink::ui::ActionId action, const int 
     SETTINGS.homeTrueGray = SETTINGS.homeTrueGray ? 0 : 1;
   } else if (action == ACTION_NAMES) {
     SETTINGS.homeShowNames = SETTINGS.homeShowNames ? 0 : 1;
+  } else if (action == ACTION_GREETING) {
+    SETTINGS.homeGreeting = SETTINGS.homeGreeting ? 0 : 1;
   }
   requestUpdate();
 }
