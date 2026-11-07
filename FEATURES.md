@@ -1071,14 +1071,19 @@ before: the greeting, the current book as a wide card, the icons.
 
 | Widget | Sizes | Options |
 |---|---|---|
-| Current book | 1x1, 2x1, 2x2 (with stat tiles) | pace, time left, estimated finish date |
+| Current book | 1x1, 2x1, 2x2 (with stat tiles) | author, pace, time left, estimated finish date |
 | Recent books | 1x1 (two covers), 2x1, 2x2 (with titles) | progress bars |
 | Calendar | 1x1, 2x1, 2x2 | a dot on the days you read, for any reading or from a number of minutes |
 | Date | 1x1, 2x1 | |
-| Clock | 1x1, 2x1, 2x2 | the date, an analog face |
-| Reading streak | 1x1, 2x1 (the last seven days), 2x2 (totals) | today's reading |
+| Clock | 1x1, 2x1, 2x2 | the date, an analog face, the digits' size (auto, S, M, L, XL) |
+| Streak | 1x1, 2x1 (this week), 2x2 (totals) | today's reading, the week from Sunday |
+| Reading goal | 1x1, 2x1 (this week against the goal) | minutes a day, the week from Sunday |
+| Up next | 1x1, 2x1 | the next book in the series, else the next one in the folder |
+| Highlight | 2x1, 2x2 | a saved highlight, a new one each day |
+| Battery | 1x1, 2x1, 2x2 (with the Battery page's graph) | how long the charge lasts |
 
-A cover opens its book, the clock, date and calendar open the Clock app, and the streak opens Reading stats.
+A cover or Up next opens its book, the clock, date and calendar open the Clock app, the streak and the goal open
+Reading stats, a highlight the saved highlights and the battery Settings > Battery.
 
 **Edit mode** starts from the pencil in the layout panel. Press a widget or an icon and lift your finger where it
 should go: it moves when you let go, as the screen cannot follow a finger. While an icon is held, bars at the sides
@@ -1086,8 +1091,10 @@ of the screen mark where to drop it for the previous or next page. A tap on a wi
 behind the panel as you change them; the bin in its corner removes it. A tap on an icon can hide it. **Add widget**
 and **Done** sit at the top. The first visit to Home and to edit mode explains the gestures once.
 
-**Settings > Apps** lists everything with an icon on Home (Settings and Library too), each with **Show on Home**
-and, for the Clock and Sudoku, their options. Home can be left completely empty: Settings stay one tap away
+**Settings > Apps** lists everything with an icon on Home (Settings and Library too). Each app's page shows its
+icon large, **Open** and **Enable** / **Disable** (whether it shows on Home), and under a rule its options (the
+Clock's, Sudoku's). The OPDS browser joins Home only once an OPDS server is set up. Every app counts its time and
+charge on the Battery page, Home and Settings included. Home can be left completely empty: Settings stay one tap away
 through the button at the top of the Control Center.
 
 <table>

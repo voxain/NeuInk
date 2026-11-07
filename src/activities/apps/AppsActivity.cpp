@@ -12,6 +12,10 @@
 #include "MappedInputManager.h"
 #include "SudokuActivity.h"
 #include "TicTacToeActivity.h"
+#include "OpdsServerStore.h"
+#include "activities/ActivityManager.h"
+#include "activities/home/HighlightsHubActivity.h"
+#include "activities/home/StatsPickerActivity.h"
 #include "activities/settings/RowListActivity.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/homeIconSet.h"
@@ -255,18 +259,101 @@ void addSudokuRows(std::vector<Row>& rows) {
   }
 }
 
-// One app's page: whether it shows on Home, then its own options.
-std::unique_ptr<Activity> appPage(GfxRenderer& renderer, MappedInputManager& input, const uint8_t key,
-                                  const char* name) {
-  return std::make_unique<LambdaRowList>(renderer, input, "AppSettings", name, [key](std::vector<Row>& rows, RowListActivity&) {
+// One app's page: its icon large, Open and Enable / Disable (whether it shows on Home), a rule, then the app's own
+// options, or a gray note when it has none.
+class AppPageActivity final : public RowListActivity {
+ public:
+  AppPageActivity(GfxRenderer& renderer, MappedInputManager& input, const uint8_t key, const char* name,
+                  const UIIcon icon)
+      : RowListActivity(renderer, input, "AppSettings", name), key(key), icon(icon) {}
+
+ protected:
+  void buildRows(std::vector<Row>& rows) override {
     rows.clear();
-    rows.push_back(toggleRow(tr(STR_SHOW_ON_HOME), !vegahome::entryHidden(key),
-                             [key] { vegahome::setEntryHidden(key, !vegahome::entryHidden(key)); },
-                             key == vegahome::KeySettings ? tr(STR_SETTINGS_HIDDEN_NOTE) : ""));
     if (key == vegahome::appKey(apps::Clock)) addClockRows(rows);
     if (key == vegahome::appKey(apps::Sudoku)) addSudokuRows(rows);
-  });
-}
+  }
+
+  int headerHeight() const override { return kPlate + 20 + kButtonH + 22 + 2 + 10; }
+
+  void buildHeader(UiApp::ScreenType& screen, const freeink::ui::Rect& area) override {
+    namespace fui = freeink::ui;
+    const int cx = area.x + area.width / 2;
+    fui::fillPlate(screen.target(),
+                   fui::Rect{static_cast<int16_t>(cx - kPlate / 2), area.y, kPlate, kPlate},
+                   static_cast<fui::PlateShape>(SETTINGS.homeIconShape), fui::Paint::dither(fui::Color::LightGray));
+    if (const freeink::Icon* glyph = homeIcon(icon, 48)) {
+      drawLucideIcon(renderer, *glyph, cx - 24, area.y + (kPlate - 48) / 2);
+    }
+    // Open (not for Settings, which is open already) and Enable / Disable, side by side.
+    const bool hidden = vegahome::entryHidden(key);
+    const bool canOpen = key != vegahome::KeySettings;
+    const int16_t buttonsY = static_cast<int16_t>(area.y + kPlate + 20);
+    const int16_t buttonW = static_cast<int16_t>((area.width - 3 * kSide) / 2);
+    int16_t x = static_cast<int16_t>(canOpen ? area.x + kSide : cx - buttonW / 2);
+    const auto button = [&](const freeink::Icon& glyph, const char* label, const int value) {
+      fui::ButtonProps props;
+      props.label = label;
+      props.icon = fui::bitmapFromIcon(glyph);
+      props.action = ACTION_HEADER;
+      props.value = static_cast<int16_t>(value);
+      props.styles = grayButtonStyles();
+      props.radius = kButtonH / 2;
+      props.text = screen.theme().bodyText;
+      props.gap = 10;
+      fui::button(screen.frame(), fui::Rect{x, buttonsY, buttonW, kButtonH}, props);
+      x = static_cast<int16_t>(x + buttonW + kSide);
+    };
+    if (canOpen) button(icon_external_link_24, tr(STR_OPEN), kOpen);
+    button(hidden ? icon_eye_24 : icon_eye_off_24, hidden ? tr(STR_ENABLE) : tr(STR_DISABLE), kToggle);
+    // The rule under the buttons, gray.
+    renderer.fillRectDither(area.x + kSide, buttonsY + kButtonH + 22, area.width - 2 * kSide, 2, Color::DarkGray);
+  }
+
+  void onHeaderAction(const int value) override {
+    if (value == kToggle) {
+      vegahome::setEntryHidden(key, !vegahome::entryHidden(key));
+      return;
+    }
+    if (vegahome::isAppKey(key)) {
+      if (const apps::Info* app = apps::find(static_cast<apps::Id>(key & 0x7F))) openChild(app->create(renderer, mappedInput));
+      return;
+    }
+    switch (key) {
+      case vegahome::KeyFiles:
+        activityManager.goToFileBrowser();
+        break;
+      case vegahome::KeyLibrary:
+        activityManager.goToLibrary();
+        break;
+      case vegahome::KeyOpds:
+        activityManager.goToBrowser();
+        break;
+      case vegahome::KeyStats:
+        openChild(std::make_unique<StatsPickerActivity>(renderer, mappedInput));
+        break;
+      case vegahome::KeySaved:
+        openChild(std::make_unique<HighlightsHubActivity>(renderer, mappedInput));
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Settings has no options of its own; its page says where Settings stay when its icon is hidden.
+  const char* emptyText() const override {
+    return key == vegahome::KeySettings ? tr(STR_SETTINGS_HIDDEN_NOTE) : tr(STR_NO_APP_SETTINGS);
+  }
+
+ private:
+  static constexpr int16_t kPlate = 121;  // odd, as fillPlate wants
+  static constexpr int16_t kButtonH = 52;
+  static constexpr int kSide = 16;
+  static constexpr int kOpen = 0;
+  static constexpr int kToggle = 1;
+  uint8_t key;
+  UIIcon icon;
+};
 
 }  // namespace
 
@@ -280,8 +367,15 @@ std::unique_ptr<Activity> AppsActivity::makeSettingsPage(GfxRenderer& renderer, 
           row.kind = Row::Kind::Chevron;
           row.label = I18N.get(name);
           row.icon = static_cast<int8_t>(icon);
-          if (vegahome::entryHidden(key)) row.subtitle = tr(STR_HIDDEN_ON_HOME);
-          row.onTap = [&renderer, &input, &page, key, name] { page.openChild(appPage(renderer, input, key, I18N.get(name))); };
+          if (vegahome::entryHidden(key)) {
+            row.subtitle = tr(STR_HIDDEN_ON_HOME);
+          } else if (key == vegahome::KeyOpds && !OPDS_STORE.hasServers()) {
+            // The OPDS browser joins Home once there is a catalog to browse.
+            row.subtitle = tr(STR_OPDS_NEEDS_SERVER);
+          }
+          row.onTap = [&renderer, &input, &page, key, name, icon] {
+            page.openChild(std::make_unique<AppPageActivity>(renderer, input, key, I18N.get(name), icon));
+          };
           rows.push_back(std::move(row));
         };
         for (const vegahome::EntryInfo& entry : vegahome::kEntries) {

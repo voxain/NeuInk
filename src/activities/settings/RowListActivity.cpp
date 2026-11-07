@@ -8,6 +8,7 @@
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
 #include "components/UiAppHelpers.h"
+#include "fontIds.h"
 
 namespace fui = freeink::ui;
 
@@ -30,6 +31,7 @@ void RowListActivity::onEnter() {
   listNav.reset(selectedIndex);
   ui.reset();
   ui.app.on(ACTION_ROW, &RowListActivity::onRowEvent, this);
+  ui.app.on(ACTION_HEADER, &RowListActivity::onRowEvent, this);
   ui.app.setScreen(&RowListActivity::listScreen, this);
   requestUpdate();
 }
@@ -68,6 +70,11 @@ void RowListActivity::select(const int index) {
 void RowListActivity::onRowEvent(const fui::ActionEvent& event, void* user) {
   auto* self = static_cast<RowListActivity*>(user);
   self->ui.app.clearTapFlash();
+  if (event.action == ACTION_HEADER) {
+    self->onHeaderAction(event.value);
+    self->refresh();
+    return;
+  }
   self->activate(event.value);
 }
 
@@ -131,15 +138,38 @@ void RowListActivity::buildListScreen(UiApp::ScreenType& screen) {
       fui::Insets{static_cast<int16_t>(metrics.topPadding + TouchHeaderBackButton::height(metrics, mappedInput)), 0,
                   static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  if (headerHeight() > 0) buildHeader(screen, screen.takeTop(static_cast<int16_t>(headerHeight())));
+  if (rows.empty()) {
+    // Nothing to list: the note, centred in gray (every other pixel of it cleared).
+    const char* note = emptyText();
+    if (note == nullptr) return;
+    const fui::Rect body = screen.body();
+    const int lineH = renderer.getLineHeight(UI_10_FONT_ID);
+    int y = body.y + body.height / 4;
+    for (const auto& line : renderer.wrappedText(UI_10_FONT_ID, note, body.width - 64, 4)) {
+      const int textW = renderer.getTextWidth(UI_10_FONT_ID, line.c_str());
+      const int x = body.x + (body.width - textW) / 2;
+      renderer.drawText(UI_10_FONT_ID, x, y, line.c_str(), true);
+      for (int py = y; py < y + lineH; ++py) {
+        for (int px = x + (py & 1); px < x + textW; px += 2) renderer.drawPixel(px, py, false);
+      }
+      y += lineH;
+    }
+    return;
+  }
 
   bool anySubtitle = false;
+  bool anyIcon = false;
   std::vector<fui::ListItem> items;
   items.reserve(rows.size());
   for (size_t i = 0; i < rows.size(); ++i) {
     const Row& row = rows[i];
     fui::ListItem item;
     item.label = row.label.c_str();
-    if (row.icon >= 0) item.icon = listIconFor(static_cast<UIIcon>(row.icon));
+    if (row.icon >= 0) {
+      item.icon = listIconFor(static_cast<UIIcon>(row.icon), 32);
+      anyIcon = true;
+    }
     if (!row.subtitle.empty()) {
       item.subtitle = row.subtitle.c_str();
       anySubtitle = true;
@@ -168,8 +198,12 @@ void RowListActivity::buildListScreen(UiApp::ScreenType& screen) {
   props.subtitleText.maxLines = 3;
   props.headerText = screen.theme().bodyText;
   props.headerText.bold = true;
+  if (anyIcon) {
+    props.iconPlate = 53;  // each icon on a light-gray squircle, as the Settings groups
+    props.textGap = 14;
+  }
   const auto visible = configureUiList(props, screen.theme(), screen.body(),
-                                       anySubtitle ? UiListRowType::WithSubtitle : UiListRowType::SingleLine);
+                                       anySubtitle || anyIcon ? UiListRowType::WithSubtitle : UiListRowType::SingleLine);
   visibleRows = visible > 0 ? visible : 1;
   listNav.selected = selectedIndex;
   listNav.top = topIndex;

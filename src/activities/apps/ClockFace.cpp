@@ -34,10 +34,22 @@ const gameui::DigitSet kLargeDigits{appart::kClockLargeGlyphs, appart::kClockLar
 const gameui::DigitSet kMediumDigits{appart::kClockMediumGlyphs, appart::kClockMediumBits, appart::kClockMediumRows};
 const gameui::DigitSet kSmallDigits{appart::kClockSmallGlyphs, appart::kClockSmallBits, appart::kClockSmallRows};
 
+const gameui::DigitSet kRegularDigits{appart::kClockRegularGlyphs, appart::kClockRegularBits,
+                                      appart::kClockRegularRows};
+
 const gameui::DigitSet& digitSet(const int size) {
-  return size >= 2 ? kLargeDigits : (size == 1 ? kMediumDigits : kSmallDigits);
+  switch (size) {
+    case 1:
+      return kMediumDigits;
+    case 2:
+      return kLargeDigits;
+    case 3:
+      return kRegularDigits;
+    default:
+      return kSmallDigits;
+  }
 }
-int digitGap(const int size) { return size >= 2 ? 8 : (size == 1 ? 6 : 4); }
+int digitGap(const int size) { return size == 2 ? 8 : (size == 1 ? 6 : (size == 3 ? 5 : 4)); }
 
 // The first `count` characters of a UTF-8 string.
 void leadingCharacters(const char* text, const int count, char* out, const size_t size) {

@@ -637,6 +637,9 @@ void ActivityManager::loop() {
         currentActivity = std::move(stackActivities.back());
         stackActivities.pop_back();
         restoredActivityNeedsRender = true;
+#if NEUINK_BATTERY_HISTORY
+        AppUsage::enter(currentActivity->name);  // its time runs again (Home after Settings)
+#endif
 
         if (closedFrontlightPanel) currentActivity->onFrontlightPanelClosed();
 

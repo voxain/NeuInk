@@ -29,7 +29,7 @@ class HomeWidgetActivity final : public PanelActivity {
   freeink::ui::SheetEdge anchor() const override;
 
  private:
-  enum Part : uint8_t { Title, Sizes, Toggle, Minutes, AddRow, ShowEntry, Note };
+  enum Part : uint8_t { Title, Sizes, Toggle, Number, AddRow, ShowEntry, Note };
   struct Item {
     Part part;
     uint8_t index;  // the option (Toggle) or the widget type (AddRow)

@@ -70,7 +70,7 @@ int monthRows(const calmath::Date& shown, uint8_t weekStart);  // 4 to 6
 // The analog face centred on cx, cy (the app's has a radius of 128).
 void drawAnalog(const GfxRenderer& renderer, int cx, int cy, int radius, const calmath::DateTime& time);
 
-// The clock digits ('0'..'9' and ':') in three sizes: 0 = 38, 1 = 74, 2 = 105 px tall, tops at y.
+// The clock digits ('0'..'9' and ':') in four sizes: 0 = 38, 3 = 55, 1 = 74, 2 = 105 px tall, tops at y.
 int digitsHeight(int size);
 int digitsWidth(int size, const char* text);
 void drawDigits(const GfxRenderer& renderer, int size, const char* text, int centreX, int y);

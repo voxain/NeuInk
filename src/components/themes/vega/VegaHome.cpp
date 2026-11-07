@@ -2,6 +2,7 @@
 
 #include <Bitmap.h>
 #include <GfxRenderer.h>
+#include <HalPowerManager.h>
 #include <HalStorage.h>
 
 #include <algorithm>
@@ -15,6 +16,7 @@
 #include "activities/apps/ClockFace.h"
 #include "activities/reader/BookReadingStats.h"
 #include "activities/reader/GlobalReadingStats.h"
+#include "components/BatteryGraph.h"
 #include "components/LevelBox.h"
 #include "components/StatTile.h"
 #include "components/TouchRegistry.h"
@@ -37,24 +39,38 @@ constexpr uint8_t kS = 1 << Small;
 constexpr uint8_t kW = 1 << Wide;
 constexpr uint8_t kL = 1 << Large;
 
+// Value options: the calendar's minutes for a mark, the clock's digits, the reading goal's minutes a day.
+constexpr Value kMarkMinutes{Value::MinutesOrAny, StrId::STR_WIDGET_MINUTES, 5, 120, 0};
+constexpr Value kDigitSize{Value::DigitSize, StrId::STR_WIDGET_DIGIT_SIZE, 1, 4, 0};
+constexpr Value kGoalMinutes{Value::Minutes, StrId::STR_WIDGET_GOAL_MINUTES, 5, 240, 30};
+
 const Info kInfo[kTypeCount] = {
-    {StrId::STR_WIDGET_CURRENT_BOOK, &icon_reader_24, kS | kW | kL, Wide, BookPace | BookTimeLeft | BookFinish, 3,
-     {{StrId::STR_WIDGET_PACE, BookPace}, {StrId::STR_TIME_LEFT, BookTimeLeft},
-      {StrId::STR_STATS_EST_FINISH_DATE, BookFinish}},
-     false},
+    {StrId::STR_WIDGET_CURRENT_BOOK, &icon_reader_24, kS | kW | kL, Wide,
+     BookPace | BookTimeLeft | BookFinish | BookAuthor, 4,
+     {{StrId::STR_WIDGET_AUTHOR, BookAuthor}, {StrId::STR_WIDGET_PACE, BookPace},
+      {StrId::STR_TIME_LEFT, BookTimeLeft}, {StrId::STR_STATS_EST_FINISH_DATE, BookFinish}},
+     {}},
     {StrId::STR_WIDGET_RECENT_BOOKS, &icon_library_shelf_24, kS | kW | kL, Wide, CoverProgress, 1,
      {{StrId::STR_STATS_PROGRESS_LBL, CoverProgress}},
-     false},
+     {}},
     {StrId::STR_WIDGET_CALENDAR, &icon_calendar_24, kS | kW | kL, Small, ReadDays, 1,
      {{StrId::STR_WIDGET_READ_DAYS, ReadDays}},
-     true},
-    {StrId::STR_WIDGET_DATE, &icon_calendar_date_24, kS | kW, Small, 0, 0, {}, false},
+     kMarkMinutes},
+    {StrId::STR_WIDGET_DATE, &icon_calendar_date_24, kS | kW, Small, 0, 0, {}, {}},
     {StrId::STR_APP_CLOCK, &icon_clock_24, kS | kW | kL, Small, ClockDate, 2,
      {{StrId::STR_WIDGET_SHOW_DATE, ClockDate}, {StrId::STR_CLOCK_FACE_ANALOG, ClockAnalog}},
-     false},
-    {StrId::STR_STATS_READING_STREAK_LBL, &icon_cc_warm_24, kS | kW | kL, Small, StreakToday, 1,
-     {{StrId::STR_WIDGET_TODAY, StreakToday}},
-     false},
+     kDigitSize},
+    {StrId::STR_WIDGET_STREAK, &icon_cc_warm_24, kS | kW | kL, Small, StreakToday, 2,
+     {{StrId::STR_WIDGET_TODAY, StreakToday}, {StrId::STR_WIDGET_WEEK_SUNDAY, WeekFromSunday}},
+     {}},
+    {StrId::STR_WIDGET_GOAL, &icon_target_24, kS | kW, Small, 0, 1,
+     {{StrId::STR_WIDGET_WEEK_SUNDAY, WeekFromSunday}},
+     kGoalMinutes},
+    {StrId::STR_WIDGET_UP_NEXT, &icon_skip_forward_24, kS | kW, Wide, 0, 0, {}, {}},
+    {StrId::STR_WIDGET_HIGHLIGHT, &icon_quote_24, kW | kL, Wide, 0, 0, {}, {}},
+    {StrId::STR_BATTERY, &icon_battery_24, kS | kW | kL, Small, BatteryRuntime, 1,
+     {{StrId::STR_WIDGET_RUNTIME, BatteryRuntime}},
+     {}},
 };
 
 int widthIn(const uint8_t size) { return size == Small ? 1 : 2; }
@@ -271,11 +287,17 @@ void currentBookContents(GfxRenderer& r, const Rect& card, const Widget& widget,
       y += 2;
     }
     const int barY = card.y + card.height - kPad - kBar;
+    const bool author = (widget.flags & BookAuthor) && !book.author.empty();
     y = cover.y + cover.height + 6;
+    const int titleRoom = barY - 4 - y - (author ? lineS : 0);
     for (const auto& line : r.wrappedText(UI_10_FONT_ID, book.title.c_str(), card.width - 2 * kPad,
-                                          std::max(1, (barY - 4 - y) / line10), EpdFontFamily::BOLD)) {
+                                          std::max(1, titleRoom / line10), EpdFontFamily::BOLD)) {
       textAt(r, UI_10_FONT_ID, card.x + kPad, y, line.c_str(), EpdFontFamily::BOLD);
       y += line10;
+    }
+    if (author) {
+      textAt(r, SMALL_FONT_ID, card.x + kPad, y,
+             r.truncatedText(SMALL_FONT_ID, book.author.c_str(), card.width - 2 * kPad).c_str());
     }
     if (percent >= 0.0f) progressBar(r, card.x + kPad, barY, card.width - 2 * kPad, kBar, percent);
     return;
@@ -300,14 +322,15 @@ void currentBookContents(GfxRenderer& r, const Rect& card, const Widget& widget,
       textAt(r, SMALL_FONT_ID, tx, rowY, f.pace);
     }
   }
-  const int authorH = book.author.empty() ? 0 : line10 + 4;
+  const bool author = (widget.flags & BookAuthor) && !book.author.empty();
+  const int authorH = author ? line10 + 4 : 0;
   const int titleLines = std::clamp((rowY - 6 - cover.y - authorH) / line12, 1, size == Large ? 4 : 3);
   int y = cover.y;
   for (const auto& line : r.wrappedText(UI_12_FONT_ID, book.title.c_str(), tw, titleLines, EpdFontFamily::BOLD)) {
     textAt(r, UI_12_FONT_ID, tx, y, line.c_str(), EpdFontFamily::BOLD);
     y += line12;
   }
-  if (!book.author.empty()) {
+  if (author) {
     textAt(r, UI_10_FONT_ID, tx, y + line10 / 3, r.truncatedText(UI_10_FONT_ID, book.author.c_str(), tw).c_str());
   }
   if (size != Large || data.stats == nullptr) return;
@@ -585,24 +608,24 @@ void clockContents(GfxRenderer& r, const Rect& card, const Widget& widget, const
     const int radius = std::min(boxW, boxH) / 2;
     clockface::drawAnalog(r, cx, boxTop + boxH / 2, radius, now);
   } else {
-    // The largest digits that fit, on one line or as the hours over the minutes.
+    // The largest digits that fit, on one line or as the hours over the minutes; or the size picked in the widget's
+    // options (S 38, M 55, L 74, XL 105 px), when that fits, else the largest smaller one that does.
+    constexpr int kSetsByHeight[4] = {0, 3, 1, 2};
+    const int largest = widget.value >= 1 && widget.value <= 4 ? widget.value - 1 : 3;
     int bestSet = 0;
     bool bestStacked = false;
-    int bestHeight = 0;
-    for (int set = 2; set >= 0; --set) {
+    int bestHeight = clockface::digitsHeight(0);
+    for (int order = largest; order >= 0; --order) {
+      const int set = kSetsByHeight[order];
       const int h = clockface::digitsHeight(set);
-      const int gap = h / 10;
-      if (clockface::digitsWidth(set, both) <= boxW && h <= boxH && h > bestHeight) {
-        bestSet = set;
-        bestStacked = false;
-        bestHeight = h;
-      }
       const int stackedW = std::max(clockface::digitsWidth(set, hours), clockface::digitsWidth(set, minutes));
-      if (stackedW <= boxW && 2 * h + gap <= boxH && 2 * h + gap > bestHeight) {
-        bestSet = set;
-        bestStacked = true;
-        bestHeight = 2 * h + gap;
-      }
+      const bool single = clockface::digitsWidth(set, both) <= boxW && h <= boxH;
+      const bool stacked = stackedW <= boxW && 2 * h + h / 10 <= boxH;
+      if (!single && !stacked) continue;
+      bestSet = set;
+      bestStacked = !single;
+      bestHeight = single ? h : 2 * h + h / 10;
+      break;
     }
     const int h = clockface::digitsHeight(bestSet);
     const int top = boxTop + (boxH - bestHeight) / 2;
@@ -620,14 +643,61 @@ void clockContents(GfxRenderer& r, const Rect& card, const Widget& widget, const
   }
 }
 
-// The reading streak, today's reading and (wide) the last seven days as bars.
+// A widget's name in small bold after its icon, at the card's top left.
+void widgetTitle(const GfxRenderer& r, const Rect& card, const freeink::Icon& icon, const char* title, const int width) {
+  drawLucideIcon(r, icon, card.x + kPad, card.y + kPad);
+  textAt(r, SMALL_FONT_ID, card.x + kPad + 30, card.y + kPad + 3,
+         r.truncatedText(SMALL_FONT_ID, title, width - 2 * kPad - 30, EpdFontFamily::BOLD).c_str(), EpdFontFamily::BOLD);
+}
+
+// This week's reading, a bar a day from Monday (or Sunday): today black, the days before dark gray, the days to
+// come an empty white track. `goalSeconds` draws the goal as a line across the bars (0: none).
+void weekChart(const GfxRenderer& r, const Rect& area, const GlobalReadingStats& global,
+               const ReadingStatsDateTime& today, const bool fromSunday, const uint32_t goalSeconds) {
+  const int lineS = r.getLineHeight(SMALL_FONT_ID);
+  constexpr int kBarGap = 8;
+  const int barW = (area.width - 6 * kBarGap) / 7;
+  const int chartTop = area.y;
+  const int chartBottom = area.y + area.height - lineS - 4;
+  const int full = chartBottom - chartTop;
+  const int todayColumn = (readingStatsDayOfWeekIndex(today.date) + (fromSunday ? 1 : 0)) % 7;  // Monday = 0
+  const uint32_t todayIndex = readingStatsDayIndex(today.date);
+  uint32_t seconds[7] = {};
+  uint32_t most = std::max<uint32_t>(15 * 60, goalSeconds + goalSeconds / 5);
+  for (int d = 0; d <= todayColumn; ++d) {
+    const uint32_t back = static_cast<uint32_t>(todayColumn - d);
+    seconds[d] = todayIndex >= back ? global.secondsReadOn(todayIndex - back) : 0;
+    most = std::max(most, seconds[d]);
+  }
+  const int radius = std::min(8, barW / 2);
+  for (int d = 0; d < 7; ++d) {
+    const int x = area.x + d * (barW + kBarGap);
+    r.fillRoundedRect(x, chartTop, barW, full, radius, Color::White);
+    if (d <= todayColumn && seconds[d] > 0) {
+      const int height = std::max(barW / 2, static_cast<int>(static_cast<uint64_t>(full) * seconds[d] / most));
+      r.fillRoundedRect(x, chartBottom - height, barW, height, radius, d == todayColumn ? Color::Black : Color::DarkGray);
+    }
+    ReadingStatsDate day = today.date;
+    addDaysToReadingStatsDate(day, d - todayColumn);
+    char initial[8];
+    clockface::weekdayInitials(readingStatsDayOfWeekIndex(day), 1, initial, sizeof(initial));
+    textCentred(r, SMALL_FONT_ID, x + barW / 2, chartBottom + 4, initial,
+                d == todayColumn ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
+  }
+  if (goalSeconds > 0) {
+    const int goalY = chartBottom - static_cast<int>(static_cast<uint64_t>(full) * goalSeconds / most);
+    for (int x = area.x; x < area.x + area.width; x += 8) r.drawLine(x, goalY, std::min(x + 4, area.x + area.width), goalY, 2, true);
+  }
+}
+
+// The reading streak in large digits, today's reading under it; the wide one adds this week as bars, the large
+// one the totals.
 void streakContents(GfxRenderer& r, const Rect& card, const Widget& widget, const uint8_t size, const Data& data) {
   if (data.global == nullptr) return;
   TouchRegistry::getInstance().add(card, kTouchStats, TouchRegistry::Cover);
   const GlobalReadingStats& global = *data.global;
   ReadingStatsDateTime today;
   const bool hasToday = getCurrentLocalReadingStatsDateTime(today);
-  const uint32_t todayIndex = hasToday ? readingStatsDayIndex(today.date) : 0;
   const uint16_t streak = global.currentReadingStreak(hasToday ? &today.date : nullptr);
   const int lineS = r.getLineHeight(SMALL_FONT_ID);
   const int line10 = r.getLineHeight(UI_10_FONT_ID);
@@ -635,11 +705,7 @@ void streakContents(GfxRenderer& r, const Rect& card, const Widget& widget, cons
   const int unit = size == Large ? (card.height - kGap) / 2 : card.height;
   const int leftW = size == Small ? card.width : card.width * 2 / 5;
   const int cx = card.x + leftW / 2;
-  drawLucideIcon(r, icon_cc_warm_24, card.x + kPad, card.y + kPad);
-  textAt(r, SMALL_FONT_ID, card.x + kPad + 30, card.y + kPad + 3,
-         r.truncatedText(SMALL_FONT_ID, tr(STR_STATS_READING_STREAK_LBL), leftW - 2 * kPad - 30, EpdFontFamily::BOLD)
-             .c_str(),
-         EpdFontFamily::BOLD);
+  widgetTitle(r, card, icon_cc_warm_24, tr(STR_WIDGET_STREAK), leftW);
   char number[8];
   snprintf(number, sizeof(number), "%u", static_cast<unsigned>(streak));
   const int digitsH = clockface::digitsHeight(1);
@@ -652,41 +718,16 @@ void streakContents(GfxRenderer& r, const Rect& card, const Widget& widget, cons
   if (showToday) {
     char minutes[16];
     char line[40];
-    formatCompactReadingDuration(global.secondsReadOn(todayIndex), minutes, sizeof(minutes));
+    formatCompactReadingDuration(global.secondsReadOn(readingStatsDayIndex(today.date)), minutes, sizeof(minutes));
     snprintf(line, sizeof(line), "%s: %s", tr(STR_WIDGET_TODAY), minutes);
     textCentred(r, SMALL_FONT_ID, cx, y + line10 + 6, line);
   }
   if (size == Small) return;
 
-  // The last seven days, today on the right and black.
-  const int chartX = card.x + leftW;
-  const int chartW = card.x + card.width - kPad - chartX;
-  const int barW = (chartW - 6 * 8) / 7;
-  const int chartTop = card.y + kPad + 4;
-  const int chartBottom = card.y + unit - kPad - lineS - 4;
-  uint32_t seconds[7] = {};
-  uint32_t most = 15 * 60;
-  for (int d = 0; d < 7; ++d) {
-    seconds[d] = hasToday && todayIndex >= static_cast<uint32_t>(6 - d) ? global.secondsReadOn(todayIndex - (6 - d)) : 0;
-    most = std::max(most, seconds[d]);
-  }
-  for (int d = 0; d < 7; ++d) {
-    const int x = chartX + d * (barW + 8);
-    const int full = chartBottom - chartTop;
-    const int height = std::max(barW / 2, static_cast<int>(static_cast<uint64_t>(full) * seconds[d] / most));
-    r.fillRoundedRect(x, chartBottom - full, barW, full, std::min(8, barW / 2), Color::White);
-    if (seconds[d] > 0) {
-      r.fillRoundedRect(x, chartBottom - height, barW, height, std::min(8, barW / 2),
-                        d == 6 ? Color::Black : Color::DarkGray);
-    }
-    if (hasToday) {
-      ReadingStatsDate day = today.date;
-      addDaysToReadingStatsDate(day, d - 6);
-      char initial[8];
-      clockface::weekdayInitials(readingStatsDayOfWeekIndex(day), 1, initial, sizeof(initial));
-      textCentred(r, SMALL_FONT_ID, x + barW / 2, chartBottom + 4, initial,
-                  d == 6 ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
-    }
+  if (hasToday) {
+    const int chartX = card.x + leftW;
+    weekChart(r, Rect{chartX, card.y + kPad + 4, card.x + card.width - kPad - chartX, unit - 2 * kPad - 4}, global,
+              today, (widget.flags & WeekFromSunday) != 0, 0);
   }
   if (size != Large) return;
 
@@ -711,6 +752,147 @@ void streakContents(GfxRenderer& r, const Rect& card, const Widget& widget, cons
   }
 }
 
+// The reading goal: today's minutes against the goal (Widget::value minutes a day) as digits and a bar; the wide one
+// adds this week's bars with the goal across them.
+void goalContents(GfxRenderer& r, const Rect& card, const Widget& widget, const uint8_t size, const Data& data) {
+  if (data.global == nullptr) return;
+  TouchRegistry::getInstance().add(card, kTouchStats, TouchRegistry::Cover);
+  ReadingStatsDateTime today;
+  const bool hasToday = getCurrentLocalReadingStatsDateTime(today);
+  const uint32_t goal = std::max<uint32_t>(5, widget.value) * 60u;
+  const uint32_t read = hasToday ? data.global->secondsReadOn(readingStatsDayIndex(today.date)) : 0;
+  const int leftW = size == Small ? card.width : card.width * 2 / 5;
+  const int cx = card.x + leftW / 2;
+  const int line10 = r.getLineHeight(UI_10_FONT_ID);
+  widgetTitle(r, card, icon_target_24, tr(STR_WIDGET_GOAL), leftW);
+  char number[8];
+  char of[32];
+  snprintf(number, sizeof(number), "%u", static_cast<unsigned>(read / 60));
+  snprintf(of, sizeof(of), tr(STR_WIDGET_GOAL_OF_FORMAT), static_cast<unsigned>(goal / 60));
+  const int digitsH = clockface::digitsHeight(1);
+  const int barTop = card.y + card.height - kPad - kBar;
+  const int body = digitsH + 4 + line10;
+  int y = card.y + kPad + 28 + (barTop - 8 - (card.y + kPad + 28) - body) / 2;
+  clockface::drawDigits(r, 1, number, cx, y);
+  textCentred(r, UI_10_FONT_ID, cx, y + digitsH + 4, of);
+  progressBar(r, card.x + kPad, barTop, leftW - 2 * kPad, kBar, std::min(100.0f, 100.0f * read / goal));
+  if (size == Small || !hasToday) return;
+  const int chartX = card.x + leftW;
+  weekChart(r, Rect{chartX, card.y + kPad + 4, card.x + card.width - kPad - chartX, card.height - 2 * kPad - 4},
+            *data.global, today, (widget.flags & WeekFromSunday) != 0, goal);
+}
+
+// The book that comes next: the next in the current book's series, else the next book in its folder.
+void upNextContents(GfxRenderer& r, const Rect& card, const uint8_t size, const Data& data) {
+  if (data.upNextTitle == nullptr || data.upNextTitle->empty()) {
+    emptyNote(r, card, tr(STR_WIDGET_NOTHING_NEXT));
+    return;
+  }
+  TouchRegistry::getInstance().add(card, kTouchUpNext, TouchRegistry::Cover);
+  const int lineS = r.getLineHeight(SMALL_FONT_ID);
+  const int line12 = r.getLineHeight(UI_12_FONT_ID);
+  const int line10 = r.getLineHeight(UI_10_FONT_ID);
+  // A book's shape with the icon in it, where the other widgets have covers.
+  const int plateH = size == Small ? card.height / 2 - kPad : card.height - 2 * kPad;
+  const int plateW = plateH * 2 / 3;
+  const int plateX = size == Small ? card.x + (card.width - plateW) / 2 : card.x + kPad;
+  r.fillRoundedRect(plateX, card.y + kPad, plateW, plateH, 10, Color::White);
+  drawLucideIcon(r, icon_skip_forward_24, plateX + (plateW - 24) / 2, card.y + kPad + (plateH - 24) / 2);
+  const int tx = size == Small ? card.x + kPad : plateX + plateW + 16;
+  const int tw = card.x + card.width - kPad - tx;
+  int y = size == Small ? card.y + kPad + plateH + 8 : card.y + kPad;
+  textAt(r, SMALL_FONT_ID, tx, y, tr(STR_WIDGET_UP_NEXT), EpdFontFamily::BOLD);
+  y += lineS + 4;
+  const int font = size == Small ? UI_10_FONT_ID : UI_12_FONT_ID;
+  const int lineH = size == Small ? line10 : line12;
+  const bool detail = data.upNextDetail != nullptr && !data.upNextDetail->empty();
+  const int room = card.y + card.height - kPad - y - (detail ? lineS + 4 : 0);
+  for (const auto& line : r.wrappedText(font, data.upNextTitle->c_str(), tw, std::clamp(room / lineH, 1, 3),
+                                        EpdFontFamily::BOLD)) {
+    textAt(r, font, tx, y, line.c_str(), EpdFontFamily::BOLD);
+    y += lineH;
+  }
+  if (detail) textAt(r, SMALL_FONT_ID, tx, y + 4, r.truncatedText(SMALL_FONT_ID, data.upNextDetail->c_str(), tw).c_str());
+}
+
+// A highlight from the saved ones, a new one each day, with the book it is from.
+void highlightContents(GfxRenderer& r, const Rect& card, const Data& data) {
+  if (data.highlightText == nullptr || data.highlightText->empty()) {
+    emptyNote(r, card, tr(STR_WIDGET_NO_HIGHLIGHT));
+    return;
+  }
+  TouchRegistry::getInstance().add(card, kTouchSaved, TouchRegistry::Cover);
+  const int line10 = r.getLineHeight(UI_10_FONT_ID);
+  const int lineS = r.getLineHeight(SMALL_FONT_ID);
+  drawLucideIcon(r, icon_quote_24, card.x + kPad, card.y + kPad);
+  const int tx = card.x + kPad + 34;
+  const int tw = card.x + card.width - kPad - tx;
+  const bool source = data.highlightSource != nullptr && !data.highlightSource->empty();
+  const int room = card.height - 2 * kPad - (source ? lineS + 8 : 0);
+  int y = card.y + kPad;
+  for (const auto& line : r.wrappedText(UI_10_FONT_ID, data.highlightText->c_str(), tw, std::max(1, room / line10))) {
+    textAt(r, UI_10_FONT_ID, tx, y, line.c_str());
+    y += line10;
+  }
+  if (source) {
+    char from[96];
+    snprintf(from, sizeof(from), "\xE2\x80\x94 %s", data.highlightSource->c_str());
+    textRight(r, SMALL_FONT_ID, card.x + card.width - kPad, card.y + card.height - kPad - lineS,
+              r.truncatedText(SMALL_FONT_ID, from, card.width - 2 * kPad, EpdFontFamily::BOLD).c_str(),
+              EpdFontFamily::BOLD);
+  }
+}
+
+// The battery: a large level box with the percentage, how long the charge lasts, and (wide, large) the battery
+// graph of Settings > Battery.
+void batteryContents(GfxRenderer& r, const Rect& card, const Widget& widget, const uint8_t size) {
+  TouchRegistry::getInstance().add(card, kTouchBattery, TouchRegistry::Cover);
+  const unsigned percent = std::min<uint16_t>(powerManager.getBatteryPercentage(), 100);
+  const int lineS = r.getLineHeight(SMALL_FONT_ID);
+  const int leftW = size == Wide ? card.width * 2 / 5 : card.width;
+  widgetTitle(r, card, icon_battery_24, tr(STR_BATTERY), leftW);
+  char caption[8];
+  snprintf(caption, sizeof(caption), "%u%%", percent);
+  const int bodyW = std::min(leftW - 2 * kPad - 6, size == Large ? 220 : 170);
+  const int bodyH = size == Small ? 56 : 48;
+  int y = card.y + kPad + 34;
+  levelbox::battery(r, card.x + kPad, y + bodyH / 2, bodyW, bodyH, bodyH / 2, static_cast<int>(percent), caption,
+                    UI_12_FONT_ID, Color::White);
+  y += bodyH + 10;
+#if NEUINK_BATTERY_HISTORY
+  uint8_t levels[BatteryHistory::kBuckets];
+  const bool haveLevels = BatteryHistory::read(levels);
+  if (widget.flags & BatteryRuntime) {
+    const BatteryHistory::Rates rates = haveLevels ? BatteryHistory::rates(levels) : BatteryHistory::Rates{};
+    for (const auto& estimate : {std::pair<StrId, int>{StrId::STR_BATTERY_SCREEN_ON, rates.awakeTenths},
+                                 std::pair<StrId, int>{StrId::STR_BATTERY_ASLEEP, rates.sleepTenths}}) {
+      char value[24];
+      char line[64];
+      batterygraph::runtimeText(estimate.second, percent, value, sizeof(value));
+      snprintf(line, sizeof(line), "%s  %s", I18N.get(estimate.first), value);
+      textAt(r, SMALL_FONT_ID, card.x + kPad, y,
+             r.truncatedText(SMALL_FONT_ID, line, leftW - 2 * kPad).c_str());
+      y += lineS + 2;
+    }
+  }
+  if (size == Wide) {
+    const int plotX = card.x + leftW + 8;
+    batterygraph::draw(r, Rect{plotX, card.y + kPad, card.x + card.width - kPad - plotX, card.height - 2 * kPad},
+                       levels, haveLevels, false);
+  } else if (size == Large) {
+    // Room on the left and under it for the labels, as on the Battery page.
+    constexpr int kAxisWidth = 36;
+    const int top = std::max(y + 8, card.y + card.height / 2 - 40);
+    batterygraph::draw(r, Rect{card.x + kPad + kAxisWidth, top, card.width - 2 * kPad - kAxisWidth,
+                               card.y + card.height - kPad - lineS - 8 - top},
+                       levels, haveLevels, true);
+  }
+#else
+  (void)widget;
+  (void)lineS;
+#endif
+}
+
 template <typename Draw>
 void forEachWidget(const Plan& plan, Draw draw) {
   Place places[CrossPointSettings::HOME_WIDGET_MAX];
@@ -726,6 +908,17 @@ void forEachWidget(const Plan& plan, Draw draw) {
 }  // namespace
 
 const Info& info(const uint8_t type) { return kInfo[type < kTypeCount ? type : 0]; }
+
+void valueText(const Value& value, const uint8_t number, char* out, const size_t size) {
+  static const char* const kDigitSizes[] = {"S", "M", "L", "XL"};
+  if (value.format == Value::DigitSize) {
+    snprintf(out, size, "%s", number >= 1 && number <= 4 ? kDigitSizes[number - 1] : tr(STR_WIDGET_AUTO));
+  } else if (value.format == Value::MinutesOrAny && number == 0) {
+    snprintf(out, size, "%s", tr(STR_WIDGET_ANY));
+  } else {
+    snprintf(out, size, tr(STR_WIDGET_MINUTES_FORMAT), static_cast<unsigned>(number));
+  }
+}
 
 bool hasSize(const uint8_t type, const uint8_t size) {
   return type < kTypeCount && size < kSizeCount && (kInfo[type].sizes & (1 << size)) != 0;
@@ -876,6 +1069,18 @@ void drawWidgetContents(GfxRenderer& renderer, const Plan& plan, const Data& dat
         break;
       case Streak:
         streakContents(renderer, card, widget, size, data);
+        break;
+      case ReadingGoal:
+        goalContents(renderer, card, widget, size, data);
+        break;
+      case UpNext:
+        upNextContents(renderer, card, size, data);
+        break;
+      case Highlight:
+        highlightContents(renderer, card, data);
+        break;
+      case Battery:
+        batteryContents(renderer, card, widget, size);
         break;
       default:
         break;

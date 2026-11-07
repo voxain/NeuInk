@@ -53,14 +53,16 @@ void restore() {
   Header header{};
   std::vector<uint8_t> data(AppUsage::stateSize());
   uint8_t history[BatteryHistory::kStateSize];
-  const bool ok = file.read(&header, sizeof(header)) == static_cast<int>(sizeof(header)) && header.magic == kMagic &&
-                  header.historySize == sizeof(history) && header.usageSize == data.size() &&
-                  file.read(history, sizeof(history)) == static_cast<int>(sizeof(history)) &&
-                  file.read(data.data(), data.size()) == static_cast<int>(data.size());
+  const bool historyOk = file.read(&header, sizeof(header)) == static_cast<int>(sizeof(header)) &&
+                         header.magic == kMagic && header.historySize == sizeof(history) &&
+                         file.read(history, sizeof(history)) == static_cast<int>(sizeof(history));
+  // The app times' layout changes when apps get slots: then only they start over, the battery graph stays.
+  const bool usageOk = historyOk && header.usageSize == data.size() &&
+                       file.read(data.data(), data.size()) == static_cast<int>(data.size());
   file.close();
-  if (!ok) return;  // another firmware's layout: start over
+  if (!historyOk) return;  // another firmware's layout: start over
   BatteryHistory::restoreState(history);
-  AppUsage::restoreState(data.data());
+  if (usageOk) AppUsage::restoreState(data.data());
 }
 
 }  // namespace UsageSnapshot

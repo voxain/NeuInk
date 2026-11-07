@@ -13,11 +13,9 @@
 namespace {
 constexpr freeink::ui::ActionId ACTION_SIZE = PanelActivity::ACTION_FIRST_CONTROL;
 constexpr freeink::ui::ActionId ACTION_TOGGLE = PanelActivity::ACTION_FIRST_CONTROL + 1;
-constexpr freeink::ui::ActionId ACTION_MINUTES = PanelActivity::ACTION_FIRST_CONTROL + 2;
+constexpr freeink::ui::ActionId ACTION_NUMBER = PanelActivity::ACTION_FIRST_CONTROL + 2;
 constexpr freeink::ui::ActionId ACTION_ADD = PanelActivity::ACTION_FIRST_CONTROL + 3;
 constexpr int kTitleHeight = 48;
-constexpr int kMinuteStep = 5;
-constexpr int kMaxMinutes = 120;
 
 constexpr const char* kSizeLabel[vegahome::kSizeCount] = {"1x1", "2x1", "2x2"};
 
@@ -57,14 +55,15 @@ HomeWidgetActivity::Item HomeWidgetActivity::item(const int section) const {
   const bool sizes = (info.sizes & (info.sizes - 1)) != 0;  // more than one
   if (sizes && section == next++) return {Sizes, 0};
   if (section < next + info.optionCount) return {Toggle, static_cast<uint8_t>(section - next)};
-  return {Minutes, 0};
+  return {Number, 0};
 }
 
 int HomeWidgetActivity::sectionCount() const {
   if (target.kind == Target::Entry) return 3;
   if (widget < 0) return 1 + vegahome::kTypeCount;
   const vegahome::Info& info = vegahome::info(SETTINGS.homeWidgets[widget].type);
-  return 1 + ((info.sizes & (info.sizes - 1)) != 0 ? 1 : 0) + info.optionCount + (info.hasMinutes ? 1 : 0);
+  return 1 + ((info.sizes & (info.sizes - 1)) != 0 ? 1 : 0) + info.optionCount +
+         (info.value.format != vegahome::Value::None ? 1 : 0);
 }
 
 int HomeWidgetActivity::sectionHeight(const int section) const {
@@ -106,7 +105,7 @@ uint8_t HomeWidgetActivity::sizeForNew(const uint8_t type) const {
   for (const uint8_t size : {static_cast<uint8_t>(info.defaultSize), static_cast<uint8_t>(vegahome::Wide),
                              static_cast<uint8_t>(vegahome::Small)}) {
     if (!vegahome::hasSize(type, size)) continue;
-    widgets[SETTINGS.homeWidgetCount] = vegahome::Widget{type, size, info.defaultFlags, 0};
+    widgets[SETTINGS.homeWidgetCount] = vegahome::Widget{type, size, info.defaultFlags, info.value.initial};
     if (vegahome::fits(widgets, SETTINGS.homeWidgetCount + 1)) return size;
   }
   return vegahome::kSizeCount;
@@ -158,15 +157,12 @@ void HomeWidgetActivity::buildSection(Screen& screen, const int section, const i
                        ACTION_TOGGLE, UI_10_FONT_ID, it.index);
       break;
     }
-    case Minutes: {
+    case Number: {
+      const vegahome::Widget& w = SETTINGS.homeWidgets[widget];
+      const vegahome::Value& option = vegahome::info(w.type).value;
       char value[16];
-      const int minutes = SETTINGS.homeWidgets[widget].value;
-      if (minutes == 0) {
-        snprintf(value, sizeof(value), "%s", tr(STR_WIDGET_ANY));
-      } else {
-        snprintf(value, sizeof(value), "%d", minutes);
-      }
-      panel::stepperRow(renderer, frame, x, y, width, tr(STR_WIDGET_MINUTES), value, ACTION_MINUTES, UI_10_FONT_ID);
+      vegahome::valueText(option, w.value, value, sizeof(value));
+      panel::stepperRow(renderer, frame, x, y, width, I18N.get(option.label), value, ACTION_NUMBER, UI_10_FONT_ID);
       break;
     }
     case ShowEntry:
@@ -205,7 +201,8 @@ void HomeWidgetActivity::onChoice(const freeink::ui::ActionId action, const int 
     const uint8_t type = static_cast<uint8_t>(value);
     const uint8_t size = sizeForNew(type);
     if (size >= vegahome::kSizeCount) return;
-    SETTINGS.homeWidgets[SETTINGS.homeWidgetCount++] = vegahome::Widget{type, size, vegahome::info(type).defaultFlags, 0};
+    const vegahome::Info& info = vegahome::info(type);
+    SETTINGS.homeWidgets[SETTINGS.homeWidgetCount++] = vegahome::Widget{type, size, info.defaultFlags, info.value.initial};
     finish();
     return;
   }
@@ -226,8 +223,9 @@ void HomeWidgetActivity::onChoice(const freeink::ui::ActionId action, const int 
     }
   } else if (action == ACTION_TOGGLE && value >= 0 && value < vegahome::info(w.type).optionCount) {
     w.flags ^= vegahome::info(w.type).options[value].flag;
-  } else if (action == ACTION_MINUTES) {
-    w.value = static_cast<uint8_t>(std::clamp(w.value + value * kMinuteStep, 0, kMaxMinutes));
+  } else if (action == ACTION_NUMBER) {
+    const vegahome::Value& option = vegahome::info(w.type).value;
+    w.value = static_cast<uint8_t>(std::clamp(w.value + value * option.step, 0, static_cast<int>(option.max)));
   }
   requestUpdate();
 }

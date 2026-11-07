@@ -54,6 +54,15 @@ class HomeActivity final : public Activity {
   int editLastX = 0;
   int editLastY = 0;
   uint8_t clockWeekStart = 0;  // the Clock app's first weekday, for the calendar widget
+  bool clockOptionsLoaded = false;
+  // What the Up next and Highlight widgets show, looked up once a visit (loadVegaWidgetData).
+  bool upNextLoaded = false;
+  bool highlightLoaded = false;
+  std::string upNextPath;
+  std::string upNextTitle;
+  std::string upNextDetail;
+  std::string highlightText;
+  std::string highlightSource;
   uint32_t coverLayoutKey = 0;  // the widget layout the cover snapshot was taken with (Vega)
   int lastCarouselBookIndex = 0;  // remembered position when leaving carousel row
   // Finger travel on Carousel, so a drag slower than the SDK's flick window

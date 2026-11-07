@@ -15,7 +15,17 @@
 - Settings > Apps lists everything on Home with its icon; each page has Show on Home, and the Clock's and Sudoku's
   options. Home can be empty: the Control Center has a Settings button in its corner, and its eighth button now
   defaults to Night light instead of Settings.
-- Battery graph: one line through the whole day; the time the reader was awake is shaded under it.
+- Battery graph: one line through the whole day; the time the reader was awake is shaded under it. The graph is a
+  component of its own (components/BatteryGraph), shared with the battery widget.
+- More widgets: reading goal (minutes a day, this week's bars), up next (the series' next book, else the folder's),
+  highlight (a saved one, a new one each day) and battery. The current book can show its author (on by default,
+  also in 1x1); the streak's week starts on Monday (a switch for Sunday); the clock's digits come in a fifth size
+  (55 px) and can be picked in its options. Closing an edit panel no longer refreshes the whole screen.
+- Settings > Apps: icons on squircles; an app's page shows its icon large, Open and Enable / Disable, then its
+  options or a note that it has none.
+- Every app counts its time and charge on the Battery page: Home, Settings, Files, Library, the OPDS browser,
+  Reading stats and Saved got their own slots next to the games and the reader. The app times start empty once;
+  the battery graph is kept.
 - Fixed: installed SD-card reader fonts fell back to Lexend Deca. The Vega greeting opened the whole Bitter
   family in every reader size in the font arena the reader shares; it now opens one face at one size.
 - Reading time per day for the last 64 days, in /.crosspoint/daily_reading.bin (the stats format and the stats

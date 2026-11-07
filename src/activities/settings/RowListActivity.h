@@ -23,7 +23,7 @@ class RowListActivity : public Activity {
     std::string value;
     std::string subtitle;  // a smaller second line under the label
     bool checked = false;  // Toggle
-    int8_t icon = -1;      // a UIIcon before the label, -1 for none
+    int8_t icon = -1;      // a UIIcon before the label, on a gray squircle as in Settings; -1 for none
     std::function<void()> onTap;  // empty: an information row
   };
 
@@ -39,15 +39,27 @@ class RowListActivity : public Activity {
   }
 
  protected:
+  using UiHost = UiAppHost<24, 4>;
+  using UiApp = UiHost::App;
+
   virtual void buildRows(std::vector<Row>& rows) = 0;
+  // Above the rows: a band `headerHeight()` tall the subclass draws itself (its controls register under
+  // ACTION_HEADER, their value telling them apart, and arrive in onHeaderAction).
+  static constexpr freeink::ui::ActionId ACTION_HEADER = 2;
+  virtual int headerHeight() const { return 0; }
+  virtual void buildHeader(UiApp::ScreenType& screen, const freeink::ui::Rect& area) {
+    (void)screen;
+    (void)area;
+  }
+  virtual void onHeaderAction(int value) { (void)value; }
+  // Shown centred in gray when there are no rows (nullptr: nothing).
+  virtual const char* emptyText() const { return nullptr; }
   // Rebuild the rows and redraw (after state changed outside a tap, e.g. a popup's choice).
   void refresh();
 
   OptionPopup popup;
 
  private:
-  using UiHost = UiAppHost<24, 4>;
-  using UiApp = UiHost::App;
 
   static void listScreen(UiApp::ScreenType& screen, void* user);
   static void onRowEvent(const freeink::ui::ActionEvent& event, void* user);

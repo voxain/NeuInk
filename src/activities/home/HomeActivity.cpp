@@ -54,6 +54,8 @@
 #include "HomeLayoutActivity.h"
 #include "HomeWidgetActivity.h"
 #include "activities/apps/ClockFace.h"
+#include "activities/settings/BatteryActivity.h"
+#include "util/NextBookFinder.h"
 #include "fontIds.h"
 
 namespace {
@@ -1021,6 +1023,7 @@ void HomeActivity::onEnter() {
   updateHighlightedBookContext(false);
   editMode = false;
   editTouchActive = false;
+  clockOptionsLoaded = upNextLoaded = highlightLoaded = false;
   if (homeListsApps()) loadVegaWidgetData();
 
   if (coverGridUi) {
@@ -2041,15 +2044,13 @@ void HomeActivity::loop() {
       auto pane = std::make_unique<HomeLayoutActivity>(renderer, mappedInput);
       pane->setBackdrop([this] { renderVega(nullptr); });
       startActivityForResult(std::move(pane), [this](const ActivityResult& result) {
-                               // Its gray card ghosts under a fast refresh.
-                               initialRefreshMode = HalDisplay::HALF_REFRESH;
-                               const auto* menu = std::get_if<MenuResult>(&result.data);
-                               if (menu != nullptr && menu->action == HomeLayoutActivity::kEditHome) {
-                                 setEditMode(true);
-                               } else {
-                                 requestUpdate();
-                               }
-                             });
+        const auto* menu = std::get_if<MenuResult>(&result.data);
+        if (menu != nullptr && menu->action == HomeLayoutActivity::kEditHome) {
+          setEditMode(true);
+        } else {
+          requestUpdate();
+        }
+      });
       return;
     }
     // Swipe the grid to the next or previous page, like a phone's home screen.
@@ -2234,6 +2235,15 @@ void HomeActivity::loop() {
           onAppOpen(apps::Clock);
         } else if (touchedBookIndex == vegahome::kTouchStats) {
           onReadingStatsOpen();
+        } else if (touchedBookIndex == vegahome::kTouchUpNext) {
+          if (!upNextPath.empty()) onSelectBook(upNextPath);
+        } else if (touchedBookIndex == vegahome::kTouchSaved) {
+          onSavedItemsOpen();
+        } else if (touchedBookIndex == vegahome::kTouchBattery) {
+#if NEUINK_BATTERY_HISTORY
+          startActivityForResult(std::make_unique<BatteryActivity>(renderer, mappedInput),
+                                 [this](const ActivityResult&) { requestUpdate(); });
+#endif
         } else if (book < static_cast<int>(recentBooks.size())) {
           onSelectBook(recentBooks[book].path);
         }
@@ -2773,12 +2783,60 @@ uint32_t widgetLayoutKey(const int greetingHeight, const vegahome::Plan& plan) {
 }  // namespace
 
 void HomeActivity::loadVegaWidgetData() {
-  // Only what a widget shown needs: the recent books' progress, the calendar's first weekday.
+  // Only what a widget shown needs, and each once a visit (a panel's live preview asks on every pass).
   if (vegahome::hasWidget(vegahome::RecentBooks) && !bookStatsCached) loadAllBookStats();
-  if (vegahome::hasWidget(vegahome::Calendar)) {
+  if (vegahome::hasWidget(vegahome::Calendar) && !clockOptionsLoaded) {
+    clockOptionsLoaded = true;
     clockface::Options options;
     clockface::loadOptions(options);
     clockWeekStart = options.weekStart;
+  }
+  if (vegahome::hasWidget(vegahome::UpNext) && !upNextLoaded) {
+    // The next in the current book's series (the end-of-book offer's lookup), else the next book in its folder.
+    upNextLoaded = true;
+    upNextPath.clear();
+    upNextTitle.clear();
+    upNextDetail.clear();
+    if (!recentBooks.empty()) {
+      const std::string& current = recentBooks.front().path;
+      NextBookFinder::SeriesNext next;
+      if (NextBookFinder::findNextInSeries(current, next)) {
+        upNextPath = next.path;
+        upNextTitle = next.title;
+        char detail[96];
+        snprintf(detail, sizeof(detail), tr(STR_WIDGET_SERIES_FORMAT), next.series.c_str(), next.position.c_str());
+        upNextDetail = detail;
+      } else {
+        const auto files = NextBookFinder::findNextBooks(current, 1);
+        if (!files.empty()) {
+          const size_t slash = current.find_last_of('/');
+          upNextPath = (slash == std::string::npos ? std::string() : current.substr(0, slash)) + "/" + files.front();
+          const size_t dot = files.front().find_last_of('.');
+          upNextTitle = dot == std::string::npos ? files.front() : files.front().substr(0, dot);
+          upNextDetail = tr(STR_WIDGET_NEXT_IN_FOLDER);
+        }
+      }
+    }
+  }
+  if (vegahome::hasWidget(vegahome::Highlight) && !highlightLoaded) {
+    // A saved highlight that changes once a day: a book and one of its highlights picked by the day.
+    highlightLoaded = true;
+    highlightText.clear();
+    highlightSource.clear();
+    std::vector<ClippedBookEntry> books;
+    if (ClippingStore::getAllClippedBooks(books) && !books.empty()) {
+      ReadingStatsDateTime today;
+      const uint32_t day = getCurrentLocalReadingStatsDateTime(today) ? readingStatsDayIndex(today.date) : 0;
+      const ClippedBookEntry& book = books[day % books.size()];
+      ClippingStore& store = ClippingStore::getInstance();
+      if (store.loadForBook(book.bookPath, book.bookTitle, book.bookAuthor, book.bookType)) {
+        if (store.clippingCount() > 0) {
+          store.readClippingPreview((day * 7 + 3) % store.clippingCount(), highlightText);
+          highlightSource = book.bookTitle;
+        }
+        store.unload();
+      }
+    }
   }
 }
 
@@ -2810,8 +2868,8 @@ void HomeActivity::openWidgetPanel(HomeWidgetActivity::Target target, const Rect
     loadVegaWidgetData();
     renderVega(nullptr);
   });
+  // Home under the panel is already up to date (the live preview): a fast refresh is enough when it closes.
   startActivityForResult(std::move(panel), [this](const ActivityResult&) {
-    initialRefreshMode = HalDisplay::HALF_REFRESH;
     homeHiddenApps = apps::hiddenMask();
     loadVegaWidgetData();
     requestUpdate();
@@ -2973,6 +3031,10 @@ void HomeActivity::renderVega(const std::function<void()>& display) {
     data.progressPercent = currentBookProgressPercent;
     data.global = &globalStats;
     data.weekStart = clockWeekStart;
+    data.upNextTitle = &upNextTitle;
+    data.upNextDetail = &upNextDetail;
+    data.highlightText = &highlightText;
+    data.highlightSource = &highlightSource;
     // Vega lights the selection only while the buttons are used, a pressed item otherwise.
     data.selected = offset > 0 && (buttons ? selectorIndex == 0 : pressedSelector == 0);
     data.editing = editMode;

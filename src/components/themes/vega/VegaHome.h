@@ -3,7 +3,9 @@
 #include <I18n.h>
 
 #include <cstdint>
+#include <cstddef>
 #include <functional>
+#include <string>
 #include <vector>
 
 #include "CrossPointSettings.h"
@@ -24,7 +26,19 @@ namespace vegahome {
 
 using Widget = CrossPointSettings::HomeWidget;
 
-enum Type : uint8_t { CurrentBook = 0, RecentBooks, Calendar, Date, Clock, Streak, kTypeCount };
+enum Type : uint8_t {
+  CurrentBook = 0,
+  RecentBooks,
+  Calendar,
+  Date,
+  Clock,
+  Streak,
+  ReadingGoal,
+  UpNext,
+  Highlight,
+  Battery,
+  kTypeCount
+};
 enum Size : uint8_t { Small = 0, Wide = 1, Large = 2, kSizeCount };  // 1x1, 2x1, 2x2 cells
 
 // The widgets' optional data, a bit each in Widget::flags (the meaning depends on the type).
@@ -32,16 +46,28 @@ enum Flag : uint8_t {
   BookPace = 1,  // CurrentBook
   BookTimeLeft = 2,
   BookFinish = 4,
+  BookAuthor = 8,
   CoverProgress = 1,  // RecentBooks
   ReadDays = 1,       // Calendar: a dot on the days read on (Widget::value: the minutes it takes, 0 = any)
-  ClockDate = 1,      // Clock
+  ClockDate = 1,      // Clock (Widget::value: the digits' size, 0 = the largest that fits)
   ClockAnalog = 2,
   StreakToday = 1,  // Streak
+  WeekFromSunday = 2,  // Streak and ReadingGoal: their week's bars from Sunday instead of Monday
+  BatteryRuntime = 1,  // Battery: how long the charge lasts
 };
 
 struct Option {
   StrId label;
   uint8_t flag;
+};
+
+// The one number a widget may have (Widget::value), set with - and + in its options.
+struct Value {
+  enum Format : uint8_t { None, MinutesOrAny, Minutes, DigitSize } format = None;
+  StrId label{};
+  uint8_t step = 1;
+  uint8_t max = 0;
+  uint8_t initial = 0;
 };
 
 struct Info {
@@ -51,9 +77,12 @@ struct Info {
   Size defaultSize;
   uint8_t defaultFlags;
   uint8_t optionCount;
-  Option options[3];
-  bool hasMinutes;  // Widget::value is a number of minutes (the calendar's mark)
+  Option options[4];
+  Value value;
 };
+
+// The value as its options show it ("Any", "15 min", "Auto", "L").
+void valueText(const Value& value, uint8_t number, char* out, size_t size);
 
 const Info& info(uint8_t type);
 bool hasSize(uint8_t type, uint8_t size);
@@ -130,6 +159,9 @@ constexpr int kTouchCurrentBook = 0;
 constexpr int kTouchRecentBook = 10;  // + the book's index
 constexpr int kTouchClock = 20;       // opens the Clock app (the clock, date and calendar widgets)
 constexpr int kTouchStats = 21;       // opens the reading stats (the streak)
+constexpr int kTouchUpNext = 22;      // opens the book that comes next
+constexpr int kTouchSaved = 23;       // opens the saved highlights
+constexpr int kTouchBattery = 24;     // opens Settings > Battery
 
 // What the widgets show.
 struct Data {
@@ -140,6 +172,11 @@ struct Data {
   float progressPercent = -1.0f;            // the first book's
   const GlobalReadingStats* global = nullptr;
   uint8_t weekStart = 0;  // clockface::WeekStart
+  // Up next (empty title: nothing) and the highlight of the day (empty text: none), as Home found them.
+  const std::string* upNextTitle = nullptr;
+  const std::string* upNextDetail = nullptr;
+  const std::string* highlightText = nullptr;
+  const std::string* highlightSource = nullptr;
   bool selected = false;  // the current book is picked with the buttons
   bool editing = false;
   int picked = -1;  // the widget held in edit mode
