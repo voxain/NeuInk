@@ -16,8 +16,8 @@ Battery health and usage. The page exists (X4 Pro, 0.3.0); what is left is healt
 
 ## Lexend Deca UI font and Vega greeting (experimental)
 
-The menu font is Lexend Deca now, and the Vega Home greeting is set in Bitter. Both are experimental: nobody has measured
-their performance or RAM cost on a device yet. Pick this up before the next release.
+The menu font is Lexend Deca now, and the Vega Home greeting is set in Bitter. Both shipped in 0.4.0 without
+measurements: nobody has measured their performance or RAM cost on a device yet.
 
 - UI font: each face carries Hebrew, Arabic and IPA fallbacks, so the headers are larger than Inter's. Compare flash use,
   first-draw time and heap on the X4 Pro with the previous Inter build. The 8 px face is the one to check for legibility.
@@ -28,3 +28,17 @@ their performance or RAM cost on a device yet. Pick this up before the next rele
 - If either is not worth it, `git revert` of the commit "Lexend Deca UI font, taller header status row, Vega greeting"
   brings back Inter (the Inter source fonts are still in `lib/EpdFont/builtinFonts/source/Inter`).
 
+## Host tests after the font change
+
+`UiSymbolFallbackTest` still includes `builtinFonts/inter_10_bold.h`, which the Lexend Deca change removed, so it no
+longer builds; point it at the Lexend UI faces. (`font_catalog_index`, `scalable_fonts` and `scalable_font_adapter`
+do not link on the Linux build machine, which lacks libasan.)
+
+## Reader menu: Font size does nothing (block 0.4.0)
+
+Reported on the X4 Pro: in a book, reader menu, Font tab, the Font size option does nothing; a chevron on the left makes
+the text tiny and an invisible one on the right makes it huge. Not found yet. Checked so far: `showEnumOptions()` in
+`EpubReaderDrawerActivity.cpp` opens the sizes (`SCALABLE_READER_FONT_SIZES`, 8-22 pt, or an installed font's
+`availableSizes()`, the same list for scalable fonts) as a list; five or fewer short labels become a row of buttons
+(`usesChoiceGroup`, `CHOICE_GROUP_MAX`). Next: reproduce on the device or the simulator and see which pane and which
+control the chevrons belong to (the Reader font pane's rows, the enum pane's header back button, the sample preview).

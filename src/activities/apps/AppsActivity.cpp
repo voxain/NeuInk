@@ -12,6 +12,7 @@
 #include "MappedInputManager.h"
 #include "SudokuActivity.h"
 #include "TicTacToeActivity.h"
+#include "AppCapabilities.h"
 #include "OpdsServerStore.h"
 #include "activities/ActivityManager.h"
 #include "activities/home/HighlightsHubActivity.h"
@@ -259,6 +260,18 @@ void addSudokuRows(std::vector<Row>& rows) {
   }
 }
 
+// The File Manager's options: whether plugging into a computer offers the SD card as a USB drive.
+void addFilesRows(std::vector<Row>& rows) {
+#if CROSSINK_APP_CAP_USB_DRIVE
+  rows.push_back(toggleRow(tr(STR_USB_DRIVE_PROMPT), SETTINGS.usbDrivePrompt != 0, [] {
+    SETTINGS.usbDrivePrompt = SETTINGS.usbDrivePrompt ? 0 : 1;
+    SETTINGS.saveToFile();
+  }, tr(STR_USB_DRIVE_PROMPT_DESC)));
+#else
+  (void)rows;
+#endif
+}
+
 // One app's page: its icon large, Open and Enable / Disable (whether it shows on Home), a rule, then the app's own
 // options, or a gray note when it has none.
 class AppPageActivity final : public RowListActivity {
@@ -272,6 +285,7 @@ class AppPageActivity final : public RowListActivity {
     rows.clear();
     if (key == vegahome::appKey(apps::Clock)) addClockRows(rows);
     if (key == vegahome::appKey(apps::Sudoku)) addSudokuRows(rows);
+    if (key == vegahome::KeyFiles) addFilesRows(rows);
   }
 
   int headerHeight() const override { return kPlate + 20 + kButtonH + 22 + 2 + 10; }

@@ -874,7 +874,7 @@ tap on the top bar still does what it did before.
   beside it always move exactly 1 %.
 - **Warmth:** a second slider, cold (snowflake) on the left and warm (flame) on
   the right, with its own − and +.
-- **Settings** (unreleased): a round button in the card's top right corner, so Settings are always one
+- **Settings** (0.4.0): a round button in the card's top right corner, so Settings are always one
   swipe away, even with every icon hidden on Home.
 - **Eight buttons you choose** in **Settings → Controls → Control Center**,
   from: Tap to Look Up, Wi-Fi, Dark, Touch lock, Light, Night light, Guide Dots,
@@ -1046,12 +1046,13 @@ How to install on these readers: [README, Readers without touch](README.md#reade
 
 ## 23. The NeuInk interface (0.3.0)
 
-NeuInk's own redesign, on the X4 Pro. The screens in sections 1 to 22 show VARAGH 1.3.1; these show NeuInk 0.3.0.
+NeuInk's own redesign, on the X4 Pro. The screens in sections 1 to 22 show VARAGH 1.3.1; these show NeuInk 0.3.0
+and 0.4.0.
 
 - **Vega theme (the default).** Home is widgets over a paged grid of rounded icons (Home actions and apps). A
   swipe up from the bottom edge opens a panel for icon size (24 to 48), shape (squircle, rounded, circle,
   hexagon), the grid's columns (2 to 6) and rows (1 to 8), the names, the greeting, and the pencil that starts
-  edit mode (see [Home widgets](#home-widgets-and-edit-mode-unreleased)). Title bars are light gray with the
+  edit mode (see [Home widgets](#home-widgets-and-edit-mode-040)). Title bars are light gray with the
   app's icon.
 - **Reader menu.** A floating gray card: tabs as a black pill, white rows, switches, sliders like the Control
   Center's with round steps, and Orientation and Alignment as picture buttons in the list. The icons are Lucide,
@@ -1062,7 +1063,7 @@ NeuInk's own redesign, on the X4 Pro. The screens in sections 1 to 22 show VARAG
 - **Storage.** One segmented bar and a row per category, scanned in the background.
 - **USB.** A computer at the other end of the cable (not a charger) makes the reader offer the SD card as a drive.
 
-### Home widgets and edit mode (unreleased)
+### Home widgets and edit mode (0.4.0)
 
 Vega's first page holds widgets on a grid two cells wide and three high, the icons under them; icons that do not
 fit move to the next page, and a page full of widgets puts every icon behind a swipe. Each widget takes the first
@@ -1095,13 +1096,27 @@ and **Done** sit at the top. The first visit to Home and to edit mode explains t
 icon large, **Open** and **Enable** / **Disable** (whether it shows on Home), and under a rule its options (the
 Clock's, Sudoku's). The OPDS browser joins Home only once an OPDS server is set up. Every app counts its time and
 charge on the Battery page, Home and Settings included. Home can be left completely empty: Settings stay one tap away
-through the button at the top of the Control Center.
+through the button at the top of the Control Center. The File Manager's page has **Ask to open as USB drive**: off,
+plugging into a computer no longer offers the SD card as a drive.
 
 <table>
   <tr>
-    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/vega-homescreen.png" width="230" alt="Home"><br><sub>Home</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/vega-homescreen-big-icons.png" width="230" alt="Home with large icons"><br><sub>Home, large icons</sub></td>
-    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/vega-customization-pane.png" width="230" alt="The Home layout panel"><br><sub>Home layout panel</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/vega-homescreen-widgets.png" width="230" alt="Home with four widgets"><br><sub>Four widgets</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/vega-edit-mode.png" width="230" alt="Edit mode"><br><sub>Edit mode</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/vega-add-widget.png" width="230" alt="Adding a widget"><br><sub>Add widget</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/vega-widget-options.png" width="230" alt="A widget's options"><br><sub>Widget options</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/settings-apps.png" width="230" alt="Settings, Apps"><br><sub>Settings &gt; Apps</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/settings-app-page.png" width="230" alt="An app's page"><br><sub>An app's page</sub></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/vega-homescreen.png" width="230" alt="Home"><br><sub>Home</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/vega-homescreen-big-icons.png" width="230" alt="Home with large icons in a 3x2 grid"><br><sub>Home, large icons</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/vega-customization-pane.png" width="230" alt="The Home layout panel"><br><sub>Home layout panel</sub></td>
   </tr>
   <tr>
     <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/reader-settings.png" width="230" alt="The reader menu, Font tab"><br><sub>Reader menu</sub></td>
@@ -1109,7 +1124,7 @@ through the button at the top of the Control Center.
     <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/control-center.png" width="230" alt="The Control Center"><br><sub>Control Center</sub></td>
   </tr>
   <tr>
-    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/battery-stats.png" width="230" alt="Battery"><br><sub>Battery</sub></td>
+    <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.4.0/battery-stats.png" width="230" alt="Battery"><br><sub>Battery</sub></td>
     <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/settings-storage.png" width="230" alt="Storage"><br><sub>Storage</sub></td>
     <td align="center" width="33%" valign="top"><img src="docs/images/neuink/v0.3.0/reading-stats.png" width="230" alt="Reading stats"><br><sub>Reading stats</sub></td>
   </tr>

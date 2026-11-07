@@ -707,6 +707,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Vega Home entries hidden in Settings > Apps or edit mode, a bit per vegahome::EntryKey (the apps' own switches
   // are in apps::hiddenMask), and the one-time introductions already shown (bit 0: Home, bit 1: edit mode).
   uint16_t homeHiddenEntries = 0;
+  // Ask to open the SD card as a USB drive when a computer is plugged in (File Manager's page in Settings > Apps).
+  uint8_t usbDrivePrompt = 1;
   uint8_t homeIntroSeen = 0;
   // Vega Home: a greeting above the current-book card ("Good morning", by the time of day and language).
   uint8_t homeGreeting = 1;

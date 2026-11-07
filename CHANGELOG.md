@@ -2,34 +2,42 @@
 
 ## [Unreleased]
 
-- Vega Home widgets: current book (pace, time left, estimated finish), recent books, calendar (dots on the days
-  read, optionally from a number of minutes), date, clock (digital or analog) and reading streak, in 1x1, 2x1 and
-  2x2 on a two-by-three grid; the icons shrink to make room, rows that do not fit move to the next page. The
-  default layout is the one before (greeting, current book, icons).
-- Edit mode from the pencil in the layout panel: drag widgets and icons into place (bars at the sides take an icon
-  to another page), tap a widget for its options (shown live behind the panel, which hangs from the top for
-  widgets in the lower half), tap an icon to hide it, add widgets. Edit mode refreshes fast only and cleans the
-  screen once when it ends. One-time introductions to Home's gestures and to edit mode.
-- Layout panel: columns (2-6) and rows (1-8) as numbers side by side, scrolls a page at a time, about two thirds
-  of the screen high, and shows its changes on Home behind it.
-- Settings > Apps lists everything on Home with its icon; each page has Show on Home, and the Clock's and Sudoku's
-  options. Home can be empty: the Control Center has a Settings button in its corner, and its eighth button now
-  defaults to Night light instead of Settings.
-- Battery graph: one line through the whole day; the time the reader was awake is shaded under it. The graph is a
-  component of its own (components/BatteryGraph), shared with the battery widget.
-- More widgets: reading goal (minutes a day, this week's bars), up next (the series' next book, else the folder's),
-  highlight (a saved one, a new one each day) and battery. The current book can show its author (on by default,
-  also in 1x1); the streak's week starts on Monday (a switch for Sunday); the clock's digits come in a fifth size
-  (55 px) and can be picked in its options. Closing an edit panel no longer refreshes the whole screen.
-- Settings > Apps: icons on squircles; an app's page shows its icon large, Open and Enable / Disable, then its
-  options or a note that it has none.
-- Every app counts its time and charge on the Battery page: Home, Settings, Files, Library, the OPDS browser,
-  Reading stats and Saved got their own slots next to the games and the reader. The app times start empty once;
-  the battery graph is kept.
-- Fixed: installed SD-card reader fonts fell back to Lexend Deca. The Vega greeting opened the whole Bitter
-  family in every reader size in the font arena the reader shares; it now opens one face at one size.
-- Reading time per day for the last 64 days, in /.crosspoint/daily_reading.bin (the stats format and the stats
-  sync are unchanged). The time-left, finish-date and pace estimates are one shared copy (Home, Dashboard, stats).
+## [NeuInk 0.4.0] - 2026-11-07
+
+Widgets on Home, and everything on it is an app. The new screens are in
+[FEATURES.md](FEATURES.md#home-widgets-and-edit-mode-040). Settings, books and reading stats carry over; the time per
+app on the Battery page starts empty once (the battery graph is kept).
+
+- Vega Home widgets on a two-by-three grid at the top of the first page, in 1x1, 2x1 and 2x2: current book (author,
+  pace, time left, estimated finish; stat tiles in 2x2), recent books (covers with progress), calendar (styled as
+  the Clock app's month, a dot on the days read, optionally from a number of minutes), date, clock (digital in five
+  digit sizes or analog, with or without the date), streak (this week's bars, Monday or Sunday first; totals in
+  2x2), reading goal (minutes a day against a goal), up next (the series' next book, else the folder's), highlight
+  (a saved one, a new one each day) and battery (with the Battery page's graph). A widget takes the first free place
+  it fits in; the app icons shrink to make room and rows that do not fit move to the next page. The default layout
+  is the one before: the greeting, the current book, the icons.
+- Edit mode, from the pencil in the layout panel: drag widgets and icons into place (bars at the screen's sides take
+  an icon to another page), tap a widget for its size and data (shown live behind the panel, which hangs from the
+  top for widgets in the lower half), tap an icon to hide it, Add widget and Done at the top. Edit mode only
+  refreshes fast and cleans the screen once when it ends. One-time introductions explain Home's gestures and edit
+  mode.
+- Layout panel: columns (2-6) and rows (1-8) as numbers side by side, about two thirds of the screen high, scrolls a
+  page at a time, and shows its changes on Home behind it.
+- Settings > Apps lists everything with an icon on Home, Settings and Library included, on gray squircles. An app's
+  page shows its icon large, Open and Enable / Disable (whether it shows on Home), then its settings (the Clock's,
+  Sudoku's, the File Manager's) or a note that it has none. Home can be left empty.
+- The File Manager's page has Ask to open as USB drive: off, plugging into a computer no longer offers the SD card.
+- Control Center: a Settings button in its top right corner; the eighth button now defaults to Night light.
+- Battery page: one line through the whole day, the time the reader was awake shaded under it; time and charge for
+  every app, Home, Settings, Files, Library, the OPDS browser, Reading stats and Saved included. The graph is a
+  shared component (components/BatteryGraph).
+- Fixed: installed SD-card reader fonts fell back to Lexend Deca. The Vega greeting opened the whole Bitter family in
+  every reader size in the font arena the reader shares; it now opens one face at one size.
+- Reading time per day for the last 64 days, in /.crosspoint/daily_reading.bin (the stats format and the stats sync
+  are unchanged). The time-left, finish-date and pace estimates, the stats tile and the level bar are one shared copy
+  each.
+- New Lucide icons (calendar, calendar-1, trash-2, target, quote, skip-forward, external-link, eye, eye-off) and a
+  55 px set of clock digits.
 
 ## [NeuInk 0.3.0] - 2026-11-07
 

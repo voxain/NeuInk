@@ -493,6 +493,7 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   for (int i = 0; i < homeOrderCount && i < HOME_ORDER_MAX; ++i) homeOrderJson.add(homeOrder[i]);
   doc["homeHiddenEntries"] = homeHiddenEntries;
   doc["homeIntroSeen"] = homeIntroSeen;
+  doc["usbDrivePrompt"] = usbDrivePrompt;
   doc["homeShowNames"] = homeShowNames;
   doc["homeGreeting"] = homeGreeting;
   doc["homeIconShape"] = homeIconShape;
@@ -721,6 +722,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc, bool importingCrossPoint
   }
   homeHiddenEntries = doc["homeHiddenEntries"] | static_cast<uint16_t>(0);
   homeIntroSeen = doc["homeIntroSeen"] | static_cast<uint8_t>(0);
+  readLibraryChoice("usbDrivePrompt", usbDrivePrompt, 2);
   readLibraryChoice("homeShowNames", homeShowNames, 2);
   readLibraryChoice("homeGreeting", homeGreeting, 2);
   readLibraryChoice("homeIconShape", homeIconShape, 4);
