@@ -23,6 +23,7 @@
 #include "ClearCacheActivity.h"
 #include "AboutPage.h"
 #include "BatteryActivity.h"
+#include "StorageActivity.h"
 #include "components/icons/homeIcons.h"
 #include "activities/apps/AppsActivity.h"
 #include "ClockOffsetActivity.h"
@@ -83,6 +84,7 @@ enum SettingsGroup : int {
 #if NEUINK_BATTERY_HISTORY
   GroupBattery,  // opens the Battery page directly (X4 Pro)
 #endif
+  GroupStorage,  // opens the Storage page directly
   GroupNetwork,
   GroupDictionaries,  // opens the Dictionaries screen directly
   GroupControls,
@@ -104,6 +106,7 @@ const SettingsGroupInfo SETTINGS_GROUPS[GroupCount] = {
 #if NEUINK_BATTERY_HISTORY
     {StrId::STR_BATTERY, StrId::STR_SETTINGS_BATTERY_DESC, &icon_battery_32},
 #endif
+    {StrId::STR_STORAGE, StrId::STR_SETTINGS_STORAGE_DESC, &icon_storage_32},
     {StrId::STR_SETTINGS_NETWORK, StrId::STR_SETTINGS_NETWORK_DESC, &icon_wifi_on_32},
     {StrId::STR_DICTIONARIES, StrId::STR_SETTINGS_DICTIONARIES_DESC, &icon_dictionaries_32},
     {StrId::STR_CAT_CONTROLS, StrId::STR_SETTINGS_CONTROLS_DESC, &icon_controls_32},
@@ -878,6 +881,11 @@ void SettingsActivity::openGroup(const int group) {
     return;
   }
 #endif
+  if (group == GroupStorage) {
+    startActivityForResult(std::make_unique<StorageActivity>(renderer, mappedInput),
+                           [this](const ActivityResult&) { requestUpdate(); });
+    return;
+  }
   if (group == GroupApps || group == GroupAbout) {
     // Their own pages, made of the shared list rows.
     startActivityForResult(group == GroupApps ? AppsActivity::makeSettingsPage(renderer, mappedInput)

@@ -2,26 +2,45 @@
 
 ## [Unreleased]
 
+## [NeuInk 0.3.0] - 2026-11-07
+
+The NeuInk interface: the Vega theme, a rebuilt reader menu, Battery and Storage pages, apps, and a USB prompt. The
+new screens are in [FEATURES.md](FEATURES.md#23-the-neuink-interface-030). Reading stats, books and settings carry
+over; the Battery history and the per-app times start empty once.
+
+- USB: a computer at the other end of the cable (not a charger) is detected, and the reader asks once per
+  connection whether to open the SD card as a USB drive; saying no, or leaving USB mode, silences it until the
+  cable has been out for ten seconds. X4 Pro: enumeration by the host (`tud_mounted`); other S3 boards: USB
+  start-of-frame packets.
+- Reader menu: a floating gray card like the Home layout panel (white pill rows, tabs as a black pill, a round back
+  button); orientation and paragraph alignment are rows of picture buttons in the Layout list, no longer
+  behind a submenu (the orientation buttons are one device icon turned in 90 degree steps). Sliders are the
+  Control Center's level sliders with round - and + buttons (`panel::levelSlider`, shared with the quick settings
+  panel). Other short choices that fit become a row of buttons; the picked entry of a list is black. The reader's
+  status bars use the header's level-box battery, smaller.
+- Icons: the toolkit turns any icon in 90 degree steps, so the chevrons (left, up, down), the double chevrons and
+  the down arrow are the one right-facing icon, turned, instead of a copy each. The reader menu's icons are
+  Lucide; the five style-B tab icons and their generator code are gone.
+- Settings > Battery and Storage have an icon and a title in the title bar.
+- Settings > Storage (between Battery and Network): the SD card's used space in large type and one rounded, segmented
+  bar in four grays for Books, Images and screenshots, Fonts and dictionaries, App data and caches, and Other, with a
+  row per category and what is free. The page opens at once; "--" and a spinner on the bar stand in until the scan,
+  which runs in the background, is done. The SD card and used-space rows left About.
 - Settings > Battery: the charge in large type, two runtime estimates (screen on, from the loss between neighbouring
   points; asleep, from the loss across the gaps where the reader slept), and no explanatory text under the graph.
 - Battery graph and the time and charge per app survive software restarts (RTC_NOINIT instead of RTC_DATA, which
   a restart resets) and, through a 0.6 KB copy in /.crosspoint/usage.bin written before sleep and before an OTA or SD
   update restarts, a power-off or a flash.
-- Reader: the pop-up menu is now the same floating gray card as the Home layout panel, with white pill rows,
-  tabs as a black pill, a round back button, the toolkit's slider rows with step buttons and black picked
-  options. Paragraph alignment and orientation are rows of picture buttons that apply at once (the page above
-  previews alignment); other short choices become a button row when their names fit. The status bars use the
-  header's level-box battery, smaller. Settings > Battery lists the reader's time too. The tabs, back, backspace,
-  alignment and orientation icons are Lucide; the style-B copies of the five tab icons are gone.
 - Vega Home: swipe up from the bottom edge for a layout panel (icon size 24/32/42/48, icon shape squircle,
   rounded square, circle or hexagon, grid 4x3/4x4/3x4/3x3, names on or off, and an experimental true gray
   for the plates). Library: Recently Opened lists never-opened books after the recent ones, by title; grid
   covers and page dots are round. Settings: rows keep a fixed size and scroll, and are ordered General,
-  Display, Reader, Battery, Network, Dictionaries, Controls, Library, Apps, Stats, About.
+  Display, Reader, Battery, Storage, Network, Dictionaries, Controls, Library, Apps, Stats, About.
 - X4 Pro: Settings > Battery shows the charge level, a graph of the last 24 hours (a point every five minutes)
-  with an estimate for the next 24, and the time spent in the reader and each app today and over the last week. It takes the levels from the reads the status bar already does and keeps about 0.5 KB in RTC memory:
-  no extra gauge reads, no SD writes, nothing during deep sleep. App time is added up when a screen starts and
-  ends, so sleeping with an app open never counts.
+  with an estimate for the next 24, the time spent in the reader and each app today and over the last week, and
+  the percent of charge each costs per hour (the loss between two gauge reads goes to what was in front; screen
+  changes, charging and sleep never count). It takes the levels from the reads the status bar already does: no
+  extra gauge reads and nothing during deep sleep. About 0.8 KB of RTC memory.
 - Games: fixed the broken Chess, Checkers and Go boards (the board now fits the screen),
   black chess pieces are filled with gray and outlined, "New" in the title bar is a plain tap
   (nothing resets until Start), and the new-game popup has a rule above Start and Cancel.
@@ -42,8 +61,8 @@
   squircles and tiles use 32 px, where the Library's pillars and the Stats bars are moved onto
   whole pixels so their gaps are equal.
 - Settings: each group's icon sits on a light-gray squircle (all Lucide now) with a smaller
-  description under the title; new About page (version, build, device, chip, memory, SD card,
-  battery, uptime, reading totals), which replaces the version line under the group list;
+  description under the title; new About page (version, build, device, chip, memory,
+  battery, uptime, reading totals; the SD card moved to Storage), which replaces the version line under the group list;
   Apps has its own entry; General is split into Date and time and Software updates.
 - Shared UI components: switches are a rounded track with a round knob (light gray off,
   dark on, knob inverted); a value is now a size smaller than its label; submenu rows show a

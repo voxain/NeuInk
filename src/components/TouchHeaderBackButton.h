@@ -33,6 +33,8 @@ void draw(GfxRenderer& renderer, const Rect& header, const char* title, bool rea
 void draw(GfxRenderer& renderer, freeink::ui::GfxRendererTarget& target, const Rect& header, const char* title,
           bool readerContext, int rightReserve = 0, const char* subtitle = nullptr,
           int verticalOffset = TITLE_VERTICAL_OFFSET, bool showStatus = true);
+// The standard page header, as the settings pages draw it: with the back arrow on a touch screen. Returns it.
+Rect drawPageHeader(GfxRenderer& renderer, const MappedInputManager& input, const char* title);
 void drawCompact(GfxRenderer& renderer, const char* title, bool readerContext = false, bool showDate = false,
                  int verticalOffset = TITLE_VERTICAL_OFFSET);
 

@@ -73,6 +73,16 @@ Rect compactHeaderRect(const GfxRenderer& renderer) {
               CompactHeader::headerBottomY(metrics) - metrics.topPadding};
 }
 
+Rect drawPageHeader(GfxRenderer& renderer, const MappedInputManager& input, const char* title) {
+  const Rect header = headerRect(renderer, input);
+  if (input.hasTouchHardware()) {
+    draw(renderer, header, title, false);  // binds the UI fonts: a bare target draws no text
+  } else {
+    GUI.drawHeader(renderer, header, title);
+  }
+  return header;
+}
+
 bool wasTapped(const MappedInputManager& input, const Rect& header) {
   if (!input.hasTouchHardware()) return false;
   const Rect touchRect = layout(header).touchRect;

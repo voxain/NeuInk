@@ -26,7 +26,7 @@ void holdFullSpeed(const bool hold) {
 
 }  // namespace
 
-bool GameThinker::start(const Work work, void* context, const uint32_t timeLimitMs) {
+bool GameThinker::start(const Work work, void* context, const uint32_t timeLimitMs, const BaseType_t core) {
   if (running()) return false;
   work_ = work;
   context_ = context;
@@ -37,8 +37,8 @@ bool GameThinker::start(const Work work, void* context, const uint32_t timeLimit
   state_.store(State::Running, std::memory_order_release);
   holdFullSpeed(true);
   // On the two-core boards the search gets the core the screen is not drawn from.
-  const BaseType_t core = portNUM_PROCESSORS > 1 ? 0 : tskNO_AFFINITY;
-  if (xTaskCreatePinnedToCore(taskEntry, "AppThinker", kStackBytes, this, 1, nullptr, core) != pdPASS) {
+  const BaseType_t pinned = core != kAutoCore ? core : (portNUM_PROCESSORS > 1 ? 0 : tskNO_AFFINITY);
+  if (xTaskCreatePinnedToCore(taskEntry, "AppThinker", kStackBytes, this, 1, nullptr, pinned) != pdPASS) {
     LOG_ERR("APPS", "Could not start the thinking task (free heap %u)", ESP.getFreeHeap());
     holdFullSpeed(false);
     state_.store(State::Idle, std::memory_order_release);

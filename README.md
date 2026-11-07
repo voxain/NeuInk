@@ -32,14 +32,53 @@ no touch screen or front light, so their code path works with the buttons only (
 > NeuInk is an independent community project, not affiliated with or endorsed by
 > Xteink, CrossInk, CrossPoint or VARAGH.
 
+## A look around
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/vega-homescreen.png" width="230" alt="Home: the last book and a grid of rounded icons"><br><b>Home</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/library.png" width="230" alt="Library with book covers in a grid"><br><b>Library</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/reader.png" width="230" alt="A book page in the reader"><br><b>Reader</b></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/reader-settings.png" width="230" alt="The reader menu: a floating card with rows and switches"><br><b>Reader menu</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/reader-orientation-settings.png" width="230" alt="The Layout tab with orientation and alignment as picture buttons"><br><b>Layout, in line</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/control-center.png" width="230" alt="The Control Center with light and warmth sliders and round buttons"><br><b>Control Center</b></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/battery-stats.png" width="230" alt="Battery: the charge in large type, a 24-hour graph and time per app"><br><b>Battery</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/settings-storage.png" width="230" alt="Storage: a segmented bar for books, images, fonts and data"><br><b>Storage</b></td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/vega-customization-pane.png" width="230" alt="The Home layout panel with icon size, shape and grid"><br><b>Home layout</b></td>
+  </tr>
+</table>
+
 **Contents:** [What it adds](#what-neuink-adds) · [Install](#install) ·
 [Build from source](#build-from-source) · [Contributing](#contributing) ·
 [Credits](#credits-and-licences)
 
 ## What NeuInk adds
 
-These are the features this fork inherits from VARAGH on top of CrossInk. The full
-list, with photos and how to use each one, is in **[FEATURES.md](FEATURES.md)**.
+NeuInk's own interface comes first, then the features this fork inherits from VARAGH on
+top of CrossInk. The full list, with photos and how to use each one, is in
+**[FEATURES.md](FEATURES.md)**.
+
+### The NeuInk interface
+
+NeuInk's own redesign, 0.3.0, on the X4 Pro. Details are in [FEATURES.md](FEATURES.md#23-the-neuink-interface-030).
+
+- **Vega theme (the default):** the last book as a card over a paged grid of rounded icons for every
+  action and app; light-gray title bars with the app's icon. A swipe up from the bottom edge opens a
+  panel for icon size, shape and grid.
+- **Reader menu:** a floating gray card with tabs, white rows and switches, sliders like the Control
+  Center's, and orientation and paragraph alignment as picture buttons in the list. All icons are
+  [Lucide](https://lucide.dev).
+- **Battery:** the charge in large type, a graph of the last 24 hours (a point every five minutes)
+  with an estimate for the next 24, how long the charge lasts with the screen on and asleep, and time
+  and charge per app and for the reader. It survives restarts and updates.
+- **Storage:** what fills the SD card as one segmented bar (books, images, fonts and dictionaries,
+  app data, other), scanned in the background.
+- **USB:** plug into a computer and the reader offers to open the SD card as a drive.
+- **Apps:** Sudoku, Chess, Checkers, Go, Tic Tac Toe and a Clock with a calendar.
 
 ### Words and dictionaries
 
@@ -113,7 +152,7 @@ keyboard layout is included.
 <table>
   <tr>
     <td align="center" width="50%"><img src="docs/images/neuink/v1.3.1/flashcards.png" width="280" alt="A flashcard deck with German words and the Practice button"><br><b>Flashcards</b></td>
-    <td align="center" width="50%"><img src="docs/images/neuink/v1.3.1/home.png" width="280" alt="Home with a book cover and the menu"><br><b>Home</b></td>
+    <td align="center" width="50%"><img src="docs/images/neuink/v0.3.0/vega-homescreen.png" width="280" alt="Home with the last book and a grid of icons"><br><b>Home</b></td>
   </tr>
 </table>
 
@@ -154,7 +193,7 @@ If you have one and test a build, a report in
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/images/neuink/v1.3.1/control-center.png" width="230" alt="X4 Pro: the Control Center"><br><b>X4 Pro</b>: Control Center</td>
+    <td align="center" width="33%"><img src="docs/images/neuink/v0.3.0/control-center.png" width="230" alt="X4 Pro: the Control Center"><br><b>X4 Pro</b>: Control Center</td>
     <td align="center" width="33%"><img src="docs/images/neuink/v1.3.1/x4-classic-apps.png" width="230" alt="X4 Classic: Apps with a frame on Tic Tac Toe"><br><b>X4 Classic</b>: apps with buttons</td>
     <td align="center" width="33%"><img src="docs/images/neuink/v1.3.1/x3-button-selection.png" width="230" alt="X3: three words selected with the buttons and Look Up, Highlight, Add to"><br><b>X3</b>: Look Up / Highlight / Add to</td>
   </tr>

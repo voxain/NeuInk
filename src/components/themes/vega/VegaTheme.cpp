@@ -187,7 +187,7 @@ const freeink::Icon* VegaTheme::headerIcon() const {
       {"CrossPointWebServer", UIIcon::Transfer}, {"NetworkModeSelection", UIIcon::Transfer},
       {"WifiSelection", UIIcon::Wifi},           {"BookStats", UIIcon::Chart},           {"StatsPicker", UIIcon::Chart},
       {"HighlightsHub", UIIcon::BookmarkIcon},   {"HighlightCategory", UIIcon::BookmarkIcon},
-      {"SavedItemsHome", UIIcon::BookmarkIcon},
+      {"SavedItemsHome", UIIcon::BookmarkIcon}, {"Battery", UIIcon::Battery},   {"Storage", UIIcon::StorageIcon},
   };
   for (const Screen& screen : kScreens) {
     if (name == screen.name) return homeIcon(screen.icon, kHeaderIconSize);
