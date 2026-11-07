@@ -464,6 +464,16 @@ bool HalGPIO::isUsbConnected() const {
 #endif
 }
 
+bool HalGPIO::isUsbHostConnected() const {
+#if FREEINK_DEVICE_X4PRO && !ARDUINO_USB_MODE
+  return tud_mounted();  // the host has enumerated the composite CDC+MSC device
+#elif FREEINK_MCU_S3
+  return usbHostSofActive();
+#else
+  return false;
+#endif
+}
+
 bool HalGPIO::isUsbConnectedCached() const { return usbStateSampled ? lastUsbConnected : isUsbConnected(); }
 
 bool HalGPIO::coldBootImpliesPowerButton() const {

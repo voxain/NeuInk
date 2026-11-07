@@ -209,14 +209,11 @@ void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const b
   constexpr int gap = 8;
   const int centerY = rect.y + 11;  // where the classic icon centers on the clock's line
   const int bodyX = batteryLeft ? rect.x : rect.x + rect.width - nubW - bodyW;
-  const int bodyY = centerY - bodyH / 2;
-  const int radius = bodyH / 3;
 
   // The empty part is light gray, or white where the bar itself is that gray.
-  const Color empty = onBand ? Color::White : Color::LightGray;
-  renderer.fillRoundedRect(bodyX + bodyW, centerY - 4, nubW, 8, nubW / 2, empty);
-  levelbox::draw(renderer, bodyX, bodyY, bodyW, bodyH, radius, (bodyW * percentage + 50) / 100,
-                 showPercentage ? std::to_string(percentage).c_str() : nullptr, SMALL_FONT_ID, empty);
+  levelbox::battery(renderer, bodyX, centerY, bodyW, bodyH, 8, percentage,
+                    showPercentage ? std::to_string(percentage).c_str() : nullptr, SMALL_FONT_ID,
+                    onBand ? Color::White : Color::LightGray);
 
   // Beside the body, on the side away from the screen edge.
   int x = batteryLeft ? bodyX + bodyW + nubW + gap : bodyX - gap;

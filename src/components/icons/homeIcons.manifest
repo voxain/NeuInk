@@ -76,3 +76,20 @@ book_marked = book-marked
 type_usb = usb
 type_download = download
 battery = battery-medium
+# The reader's panel: its tabs, back and backspace buttons, and the picture buttons for paragraph alignment and
+# orientation. The orientation buttons draw the one device icon turned in 90 degree steps (RadioOption::iconRotation).
+tab_font = case-sensitive
+tab_layout = text-align-start
+tab_more = ellipsis
+tab_bookmark = bookmark
+backspace = delete
+align_left = align-left
+align_center = align-center
+align_right = align-right
+align_justify = align-justify
+align_book = book-type
+orient = smartphone
+# Turned in 90 degree steps where the other directions are needed (see components/icons/turnedIcons.h): the chevron
+# for left, up and down, the double chevron for the four directions, the arrow for down.
+chevrons_right = chevrons-right
+arrow_up = arrow-up

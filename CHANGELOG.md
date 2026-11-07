@@ -2,13 +2,24 @@
 
 ## [Unreleased]
 
+- Settings > Battery: the charge in large type, two runtime estimates (screen on, from the loss between neighbouring
+  points; asleep, from the loss across the gaps where the reader slept), and no explanatory text under the graph.
+- Battery graph and the time and charge per app survive software restarts (RTC_NOINIT instead of RTC_DATA, which
+  a restart resets) and, through a 0.6 KB copy in /.crosspoint/usage.bin written before sleep and before an OTA or SD
+  update restarts, a power-off or a flash.
+- Reader: the pop-up menu is now the same floating gray card as the Home layout panel, with white pill rows,
+  tabs as a black pill, a round back button, the toolkit's slider rows with step buttons and black picked
+  options. Paragraph alignment and orientation are rows of picture buttons that apply at once (the page above
+  previews alignment); other short choices become a button row when their names fit. The status bars use the
+  header's level-box battery, smaller. Settings > Battery lists the reader's time too. The tabs, back, backspace,
+  alignment and orientation icons are Lucide; the style-B copies of the five tab icons are gone.
 - Vega Home: swipe up from the bottom edge for a layout panel (icon size 24/32/42/48, icon shape squircle,
   rounded square, circle or hexagon, grid 4x3/4x4/3x4/3x3, names on or off, and an experimental true gray
   for the plates). Library: Recently Opened lists never-opened books after the recent ones, by title; grid
   covers and page dots are round. Settings: rows keep a fixed size and scroll, and are ordered General,
   Display, Reader, Battery, Network, Dictionaries, Controls, Library, Apps, Stats, About.
-- X4 Pro: Settings > Battery shows the charge level, a graph of the last 24 hours (a point every quarter hour)
-  with an estimate for the next 24, and the time spent in each app today and over the last week. It takes the levels from the reads the status bar already does and keeps 48 bytes in RTC memory:
+- X4 Pro: Settings > Battery shows the charge level, a graph of the last 24 hours (a point every five minutes)
+  with an estimate for the next 24, and the time spent in the reader and each app today and over the last week. It takes the levels from the reads the status bar already does and keeps about 0.5 KB in RTC memory:
   no extra gauge reads, no SD writes, nothing during deep sleep. App time is added up when a screen starts and
   ends, so sleeping with an app open never counts.
 - Games: fixed the broken Chess, Checkers and Go boards (the board now fits the screen),

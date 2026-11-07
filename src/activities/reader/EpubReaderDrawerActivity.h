@@ -79,7 +79,7 @@ class EpubReaderDrawerActivity final : public Activity {
   PercentLandingProvider landingProvider;
   using RowId = ReaderDrawerCatalogItem;
 
-  using UiApp = freeink::ui::FreeInkApp<48, 11>;
+  using UiApp = freeink::ui::FreeInkApp<48, 12>;
   static constexpr freeink::ui::ActionId ACTION_ROW = 1;
   static constexpr freeink::ui::ActionId ACTION_TAB = 2;
   static constexpr freeink::ui::ActionId ACTION_DISMISS = 3;
@@ -91,6 +91,7 @@ class EpubReaderDrawerActivity final : public Activity {
   // ACTION_STEP + 3); the keypad grid's digit/dot/OK keys share one action.
   static constexpr freeink::ui::ActionId ACTION_KEYPAD_KEY = 10;
   static constexpr freeink::ui::ActionId ACTION_KEYPAD_BACKSPACE = 11;
+  static constexpr freeink::ui::ActionId ACTION_CHOICE = 12;
   static constexpr size_t WINDOW_SIZE = 20;
 
   std::shared_ptr<Epub> epub;
@@ -161,6 +162,8 @@ class EpubReaderDrawerActivity final : public Activity {
   ReaderDrawerPane enumOptionReturnPane = ReaderDrawerPane::Root;
   int16_t enumOptionSelectedIndex = 0;
   int16_t previewedEnumOptionIndex = -1;
+  // The options are one row of buttons (see buildChoiceGroup) rather than a list.
+  bool enumChoiceGroup = false;
   std::vector<std::string> dictionaryLabels;
   std::vector<std::string> dictionaryPaths;
   std::string bookDictionaryPath;
@@ -192,6 +195,7 @@ class EpubReaderDrawerActivity final : public Activity {
 
   static void drawerScreen(UiApp::ScreenType& screen, void* user);
   static void onRowEvent(const freeink::ui::ActionEvent& event, void* user);
+  static void onChoiceEvent(const freeink::ui::ActionEvent& event, void* user);
   static void onTabEvent(const freeink::ui::ActionEvent& event, void* user);
   static void onDismissEvent(const freeink::ui::ActionEvent& event, void* user);
   static void onBackEvent(const freeink::ui::ActionEvent& event, void* user);
@@ -207,6 +211,13 @@ class EpubReaderDrawerActivity final : public Activity {
   void renderPreviewUnavailable();
   void renderSamplePreviewText(const ReaderSettingsDraft& settings, int fontId);
   void buildTabBar(UiApp::ScreenType& screen, freeink::ui::Rect rect, bool drawBottomRule);
+  void buildRows(UiApp::ScreenType& screen);
+  void buildSliderPair(UiApp::ScreenType& screen, const char* firstLabel, const char* firstValue,
+                       int16_t firstPermille, const char* secondLabel, const char* secondValue,
+                       int16_t secondPermille);
+  void buildChoiceGroup(UiApp::ScreenType& screen);
+  void buildInlineChoice(UiApp::ScreenType& screen, RowId row);
+  void applyChoice(RowId row, uint8_t value);
   void buildPaneHeader(UiApp::ScreenType& screen);
   void buildRootRows(UiApp::ScreenType& screen);
   void buildSimplePane(UiApp::ScreenType& screen);
@@ -226,10 +237,9 @@ class EpubReaderDrawerActivity final : public Activity {
   void buildDictionaryPane(UiApp::ScreenType& screen);
   void buildFontFamilyPane(UiApp::ScreenType& screen);
   void buildEnumOptionsPane(UiApp::ScreenType& screen);
-  void buildTtfRenderingPane(UiApp::ScreenType& screen);
 
   const std::vector<RowId>& activeRows() const;
-  int activeTopIndex() const;
+  int16_t& activeTopIndex();
   void activateRow(RowId row);
   void activateListIndex(int index);
   void openPane(ReaderDrawerPane pane);
@@ -250,6 +260,7 @@ class EpubReaderDrawerActivity final : public Activity {
   void completePercentSelection();
   void completeStablePageSelection();
   void completeAutoPageTurnSelection();
+  bool usesChoiceGroup() const;
   void notifyDictionaryFontChanged();
   void toggleSetting(RowId row);
   void adjustActiveSlider(int delta);

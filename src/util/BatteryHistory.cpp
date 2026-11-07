@@ -5,24 +5,27 @@
 #include <cstring>
 
 #include "activities/reader/ReadingStatsUtils.h"
+#include "util/AppUsage.h"
 
 #ifndef SIMULATOR
 #include <esp_attr.h>
 #else
-#define RTC_DATA_ATTR
+#define RTC_NOINIT_ATTR
 #endif
 
 namespace {
-constexpr uint32_t kMagic = 0x42415432;  // "BAT2"
+constexpr uint32_t kMagic = 0x42415433;  // "BAT3"
 
 struct History {
   uint32_t magic;
-  uint32_t newest;  // the quarter hour (minutes since day 0 / 15) of the latest sample
+  uint32_t newest;  // the bucket (minutes since day 0 / kBucketMinutes) of the latest sample
   uint8_t levels[BatteryHistory::kBuckets];
 };
-RTC_DATA_ATTR History history;
+// RTC_NOINIT, not RTC_DATA: plain RTC data is set to its initial value again on a software reset (an update, a Wi-Fi
+// session's restart); only deep sleep keeps it. The magic tells a valid copy from the garbage of a power-on.
+RTC_NOINIT_ATTR History history;
 
-// The current quarter hour, from the local clock; false while there is none.
+// The current bucket, from the local clock; false while there is none.
 bool currentBucket(uint32_t& bucket) {
   ReadingStatsDateTime now;
   if (!getCurrentLocalReadingStatsDateTime(now) || !now.isValid()) return false;
@@ -37,7 +40,7 @@ void clear(const uint32_t bucket) {
   memset(history.levels, BatteryHistory::kNone, sizeof(history.levels));
 }
 
-// Brings the ring up to `bucket`: quarter hours since the last sample are empty; a clock that went back, or a gap
+// Brings the ring up to `bucket`: buckets since the last sample are empty; a clock that went back, or a gap
 // of a day, starts again.
 void advance(const uint32_t bucket) {
   if (history.magic != kMagic || bucket < history.newest || bucket - history.newest >= BatteryHistory::kBuckets) {
@@ -52,10 +55,59 @@ void advance(const uint32_t bucket) {
 namespace BatteryHistory {
 
 void note(const uint16_t percent) {
+  AppUsage::chargeSample(static_cast<uint8_t>(percent > 100 ? 100 : percent));
   uint32_t bucket;
   if (!currentBucket(bucket)) return;
   advance(bucket);
   history.levels[bucket % kBuckets] = static_cast<uint8_t>(percent > 100 ? 100 : percent);
+}
+
+static_assert(sizeof(History) == kStateSize, "History is the file's layout");
+
+bool saveState(uint8_t (&out)[kStateSize]) {
+  if (history.magic != kMagic) return false;
+  memcpy(out, &history, kStateSize);
+  return true;
+}
+
+bool restoreState(const uint8_t (&in)[kStateSize]) {
+  if (history.magic == kMagic) return false;
+  History restored;
+  memcpy(&restored, in, kStateSize);
+  if (restored.magic != kMagic) return false;
+  history = restored;  // advance() later empties the buckets the time away covered
+  return true;
+}
+
+Rates rates(const uint8_t (&levels)[kBuckets]) {
+  constexpr int kSleepGapBuckets = 30 / kBucketMinutes;
+  constexpr int kAwakeMinBuckets = 30 / kBucketMinutes;  // half an hour of neighbouring points
+  constexpr int kSleepMinBuckets = 60 / kBucketMinutes;  // an hour of gap
+  int awakeDrop = 0, awakeBuckets = 0, sleepDrop = 0, sleepBuckets = 0;
+  int previous = -1;
+  for (int i = 0; i < kBuckets; ++i) {
+    if (levels[i] == kNone) continue;
+    if (previous >= 0 && levels[i] <= levels[previous] + 1) {  // a rise is a recharge, not a drain
+      const int drop = levels[i] < levels[previous] ? levels[previous] - levels[i] : 0;
+      const int gap = i - previous;
+      if (gap == 1) {
+        awakeDrop += drop;
+        awakeBuckets += 1;
+      } else if (gap >= kSleepGapBuckets) {
+        sleepDrop += drop;
+        sleepBuckets += gap;
+      }
+    }
+    previous = i;
+  }
+  Rates result;
+  const int perHour = 60 / kBucketMinutes;
+  if (awakeBuckets >= kAwakeMinBuckets && awakeDrop > 0) result.awakeTenths = awakeDrop * 10 * perHour / awakeBuckets;
+  if (sleepBuckets >= kSleepMinBuckets) {
+    result.sleepTenths = (sleepDrop > 0 ? sleepDrop : 1) * 10 * perHour / sleepBuckets;
+    if (result.sleepTenths == 0) result.sleepTenths = 1;
+  }
+  return result;
 }
 
 bool read(uint8_t (&levels)[kBuckets]) {

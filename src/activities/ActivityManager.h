@@ -143,6 +143,8 @@ class ActivityManager {
   void goToJoinNetworkFileTransfer(const std::string& returnBookPath = {});
   void goToHotspotFileTransfer(const std::string& returnBookPath = {});
   void goToUsbDrive();
+  // A computer was plugged in: asks whether to enter USB file transfer mode, on top of what is open.
+  void offerUsbDrive();
   bool resumeFileTransferFromNetworkBoot(uint32_t payload);
   void goToNearbyStatsSync();
   bool goToNearbyBookSend(std::string path, bool returnToReader);

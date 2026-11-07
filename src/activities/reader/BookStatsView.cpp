@@ -15,7 +15,7 @@
 #include "components/TouchHeaderBackButton.h"
 #include "components/TouchRegistry.h"
 #include "components/UITheme.h"
-#include "components/icons/listIcons.h"
+#include "components/icons/turnedIcons.h"
 #include "fontIds.h"
 
 namespace {
@@ -456,7 +456,8 @@ void drawDateField(const GfxRenderer& renderer, const int x, const int y, const 
 }
 
 void drawDateAdjustButton(const GfxRenderer& renderer, const int x, const int y, const int size,
-                          const freeink::Icon& icon, const int touchTarget) {
+                          const TurnedIcon& turnedIcon, const int touchTarget) {
+  const freeink::Icon& icon = *turnedIcon.icon;
   TouchRegistry::getInstance().add(Rect(x, y, size, size), touchTarget, TouchRegistry::Item);
   renderer.fillRoundedRect(x, y, size, size, size / 2, Color::White);
   const freeink::ui::BitmapRef bitmap{icon.bits, icon.w, icon.h, freeink::ui::BitmapFormat::Mask1, true};
@@ -464,7 +465,7 @@ void drawDateAdjustButton(const GfxRenderer& renderer, const int x, const int y,
       freeink::ui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(size),
                         static_cast<int16_t>(size)},
       bitmap, freeink::ui::BitmapMode::Center,
-      [&renderer](const int16_t px, const int16_t py) { renderer.drawPixel(px, py, true); });
+      [&renderer](const int16_t px, const int16_t py) { renderer.drawPixel(px, py, true); }, turnedIcon.rotation);
 }
 }  // namespace
 
@@ -746,9 +747,9 @@ void renderEditBookDatesPage(GfxRenderer& renderer, const MappedInputManager* ma
   if (showTouchControls) {
     const int fieldH = renderer.getLineHeight(UI_12_FONT_ID) + 10;
     drawDateAdjustButton(renderer, adjustButtonX, row1Y + (fieldH - adjustButtonSize) / 2, adjustButtonSize,
-                         icon_chevron_up_32, BookStatsTouchTarget::DateAdjustUp);
+                         turned::chevronUp(), BookStatsTouchTarget::DateAdjustUp);
     drawDateAdjustButton(renderer, adjustButtonX, row2Y + (fieldH - adjustButtonSize) / 2, adjustButtonSize,
-                         icon_chevron_down_32, BookStatsTouchTarget::DateAdjustDown);
+                         turned::chevronDown(), BookStatsTouchTarget::DateAdjustDown);
 
     constexpr int actionHeight = TouchActionButtons::kDefaultHeight;
     constexpr int actionGap = TouchActionButtons::kDefaultGap;

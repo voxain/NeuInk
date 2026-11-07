@@ -837,20 +837,11 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   const int right = x1 - CC_CARD_PAD;
   int y = CC_CARD_TOP + CC_CARD_PAD;
   const int stepCy = y + CC_LIGHT_H / 2;
-  // A round light-gray button with a Lucide icon in it.
-  const auto roundButton = [&](const int bx, const int by, const int d, const freeink::Icon& icon) {
-    renderer.fillRoundedRect(bx, by, d, d, d / 2, Color::White);
-    target.bitmap(fui::Rect{static_cast<int16_t>(bx + (d - CC_ICON) / 2), static_cast<int16_t>(by + (d - CC_ICON) / 2),
-                            CC_ICON, CC_ICON},
-                  fui::bitmapFromIcon(icon), fui::BitmapMode::Center);
-  };
   if (steps) {
     for (const int side : {-1, +1}) {
-      const int bx = side < 0 ? left : right - CC_STEP_D;
-      roundButton(bx, stepCy - CC_STEP_D / 2, CC_STEP_D, side < 0 ? icon_cc_minus_24 : icon_cc_plus_24);
-      screen.frame().hit(fui::Rect{static_cast<int16_t>(bx - 6), static_cast<int16_t>(y),
-                                   static_cast<int16_t>(CC_STEP_D + 12), CC_LIGHT_H},
-                         ACTION_BRIGHTNESS_STEP, static_cast<int16_t>(side), fui::InputTouch);
+      panel::stepButton(renderer, screen.frame(), side < 0 ? left : right - CC_STEP_D, stepCy - CC_STEP_D / 2,
+                        CC_STEP_D, side < 0 ? icon_cc_minus_24 : icon_cc_plus_24, ACTION_BRIGHTNESS_STEP, side, 6,
+                        (CC_LIGHT_H - CC_STEP_D) / 2);
     }
   }
   const int stepSpace = steps ? CC_STEP_D + CC_STEP_GAP : 0;
@@ -860,11 +851,9 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
   char percent[8];
   std::snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(shown));
   lightSliderW = sliderR - sliderL;
-  levelbox::draw(renderer, sliderL, stepCy - CC_LIGHT_BOX_H / 2, lightSliderW, CC_LIGHT_BOX_H, CC_BOX_RADIUS,
-                 lightSliderW * lightPermilleFromPercent(shown) / 1000, percent, UI_10_FONT_ID, Color::White);
-  screen.frame().hit(fui::Rect{static_cast<int16_t>(sliderL), static_cast<int16_t>(y),
-                               static_cast<int16_t>(lightSliderW), CC_LIGHT_H},
-                     ACTION_BRIGHTNESS, 0, fui::InputTouch | fui::InputDrag);
+  panel::levelSlider(renderer, screen.frame(), sliderL, stepCy - CC_LIGHT_BOX_H / 2, lightSliderW, CC_LIGHT_BOX_H,
+                     CC_BOX_RADIUS, lightPermilleFromPercent(shown), percent, UI_10_FONT_ID, ACTION_BRIGHTNESS,
+                     (CC_LIGHT_H - CC_LIGHT_BOX_H) / 2);
   y += CC_LIGHT_H;
 
   // Warmth: cold (snowflake) and warm (flame) at the ends of a box like the light's.
@@ -874,11 +863,9 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
     if (steps) {
       const int stepInset = (CC_STEP_D - CC_SMALL_STEP_D) / 2;  // centred under the light's - / +
       for (const int side : {-1, +1}) {
-        const int bx = side < 0 ? left + stepInset : right - stepInset - CC_SMALL_STEP_D;
-        roundButton(bx, midY - CC_SMALL_STEP_D / 2, CC_SMALL_STEP_D, side < 0 ? icon_cc_minus_24 : icon_cc_plus_24);
-        screen.frame().hit(fui::Rect{static_cast<int16_t>(bx - 8), static_cast<int16_t>(y - 10),
-                                     static_cast<int16_t>(CC_SMALL_STEP_D + 16), static_cast<int16_t>(CC_WARMTH_H + 20)},
-                           ACTION_WARMTH_STEP, static_cast<int16_t>(side), fui::InputTouch);
+        panel::stepButton(renderer, screen.frame(), side < 0 ? left + stepInset : right - stepInset - CC_SMALL_STEP_D,
+                          midY - CC_SMALL_STEP_D / 2, CC_SMALL_STEP_D, side < 0 ? icon_cc_minus_24 : icon_cc_plus_24,
+                          ACTION_WARMTH_STEP, side, 8, 10);
       }
     }
     const int coldX = left + stepSpace;
@@ -891,11 +878,8 @@ void FrontlightPanelActivity::buildControlCenter(UiApp::ScreenType& screen) {
     const int trackR = warmX - 8;
     warmthSliderW = trackR - trackL;
     std::snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(warmth));
-    levelbox::draw(renderer, trackL, midY - CC_WARMTH_H / 2, warmthSliderW, CC_WARMTH_H, CC_BOX_RADIUS - 6,
-                   warmthSliderW * warmth / 100, percent, SMALL_FONT_ID, Color::White);
-    screen.frame().hit(fui::Rect{static_cast<int16_t>(trackL), static_cast<int16_t>(y - 8),
-                                 static_cast<int16_t>(trackR - trackL), static_cast<int16_t>(CC_WARMTH_H + 16)},
-                       ACTION_WARMTH, 0, fui::InputTouch | fui::InputDrag);
+    panel::levelSlider(renderer, screen.frame(), trackL, midY - CC_WARMTH_H / 2, warmthSliderW, CC_WARMTH_H,
+                       CC_BOX_RADIUS - 6, warmth * 10, percent, SMALL_FONT_ID, ACTION_WARMTH, 8);
     y += CC_WARMTH_H;
   }
 

@@ -39,6 +39,8 @@
 #include "network/NearbyBookTransferActivity.h"
 #include "network/NearbyStatsSyncActivity.h"
 #include "network/UsbDriveActivity.h"
+#include "activities/util/ConfirmationActivity.h"
+#include "util/UsbPrompt.h"
 #include "reader/BookReadingStats.h"
 #include "reader/BookStatsActivity.h"
 #include "reader/BookStatsTracking.h"
@@ -934,6 +936,25 @@ void ActivityManager::goToUsbDrive() {
   replaceActivity(std::move(activity));
 #else
   LOG_ERR("ACT", "USB Drive requested in a build without USB Drive capability");
+#endif
+}
+
+void ActivityManager::offerUsbDrive() {
+#if CROSSINK_APP_CAP_USB_DRIVE
+  if (pendingAction != PendingAction::None || !currentActivity) return;
+  if (currentActivity->name == "UsbDrive" || currentActivity->name == "Confirmation") return;
+  auto prompt = makeUniqueNoThrow<ConfirmationActivity>(renderer, mappedInput, tr(STR_USB_HOST_FOUND),
+                                                        tr(STR_USB_HOST_ASK), false, true, 30000);
+  if (!prompt) return;
+  // The answer goes to the screen underneath, as with startActivityForResult().
+  currentActivity->resultHandler = [this](const ActivityResult& result) {
+    if (result.isCancelled) {
+      UsbPrompt::suppress();
+    } else {
+      goToUsbDrive();
+    }
+  };
+  pushActivity(std::move(prompt));
 #endif
 }
 

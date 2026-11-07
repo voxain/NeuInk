@@ -60,6 +60,7 @@
 #include "components/UiAppHelpers.h"
 #include "components/icons/frontlightHeaderIcons.h"
 #include "components/icons/listIcons.h"
+#include "components/icons/turnedIcons.h"
 #include "components/icons/readingStatsIcons.h"
 #include "fontIds.h"
 #include "util/DictionaryRegistry.h"
@@ -218,27 +219,6 @@ std::string formatSettingValue(const SettingInfo& setting) {
     return formatUtcOffset(SETTINGS.*(setting.valuePtr));
   }
   return std::to_string(SETTINGS.*(setting.valuePtr));
-}
-
-fui::BitmapRef swipeActionIcon(const StrId nameId) {
-  switch (nameId) {
-    case StrId::STR_LEFT_EDGE_UP:
-    case StrId::STR_RIGHT_EDGE_UP:
-      return fui::bitmapFromIcon(icon_arrow_up_24);
-    case StrId::STR_LEFT_EDGE_DOWN:
-    case StrId::STR_RIGHT_EDGE_DOWN:
-      return fui::bitmapFromIcon(icon_arrow_down_24);
-    case StrId::STR_TWO_FINGER_SWIPE_UP:
-      return fui::bitmapFromIcon(icon_arrows_up_24);
-    case StrId::STR_TWO_FINGER_SWIPE_DOWN:
-      return fui::bitmapFromIcon(icon_arrows_down_24);
-    case StrId::STR_TWO_FINGER_SWIPE_LEFT:
-      return fui::bitmapFromIcon(icon_arrows_left_24);
-    case StrId::STR_TWO_FINGER_SWIPE_RIGHT:
-      return fui::bitmapFromIcon(icon_arrows_right_24);
-    default:
-      return {};
-  }
 }
 
 fui::BitmapRef frontlightScheduleEndpointIcon(const SettingInfo& setting) {
@@ -1604,7 +1584,8 @@ void SettingsActivity::buildSettingsScreen(UiApp::ScreenType& screen) {
     values[i] = settingValueText(settings[i]);
     const bool isSectionHeader = settings[i].type == SettingType::SECTION_HEADER;
     fui::ListItem item;
-    const fui::BitmapRef directionIcon = swipeActionIcon(settings[i].nameId);
+    const TurnedIcon swipe = turned::swipeAction(settings[i].nameId);
+    const fui::BitmapRef directionIcon = swipe.icon ? fui::bitmapFromIcon(*swipe.icon) : fui::BitmapRef{};
     const fui::BitmapRef endpointIcon = frontlightScheduleEndpointIcon(settings[i]);
     const fui::BitmapRef itemIcon = directionIcon ? directionIcon : endpointIcon;
     const char* sectionLabel =
@@ -1614,6 +1595,7 @@ void SettingsActivity::buildSettingsScreen(UiApp::ScreenType& screen) {
     item.label = isSectionHeader ? uiListSectionHeaderLabel(values[i], sectionLabel)
                                  : (directionIcon ? "" : I18N.get(settings[i].nameId));
     item.icon = itemIcon;
+    item.iconRotation = directionIcon ? swipe.rotation : fui::Rotation::None;
     if (!isSectionHeader && !values[i].empty()) item.value = values[i].c_str();
     item.isHeader = isSectionHeader;
     item.toggle = !isSectionHeader && settings[i].type == SettingType::TOGGLE;
