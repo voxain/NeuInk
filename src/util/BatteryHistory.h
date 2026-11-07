@@ -31,6 +31,16 @@ bool restoreState(const uint8_t (&in)[kStateSize]);
 // Stores a level the gauge was just read at, in this bucket. Needs the clock; without one it does nothing.
 void note(uint16_t percent);
 
+// What the last 24 hours say about the drain, in tenths of a percent lost per hour; -1 where they do not tell yet.
+// Awake: the loss between neighbouring points (the status bar reads the gauge on every redraw). Asleep: the loss
+// across a gap of at least half an hour, where no point exists because nothing ran (a recharge ends a pair).
+// A sleep that lost nothing counts as one percent, so that estimate is a lower bound of the runtime.
+struct Rates {
+  int awakeTenths = -1;
+  int sleepTenths = -1;
+};
+Rates rates(const uint8_t (&levels)[kBuckets]);
+
 // The last 24 hours, oldest first, the last entry being the current bucket: a level 0-100 or kNone.
 // Returns false when there is no clock.
 bool read(uint8_t (&levels)[kBuckets]);

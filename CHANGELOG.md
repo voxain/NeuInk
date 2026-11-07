@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Settings > Battery: the charge in large type, two runtime estimates (screen on, from the loss between neighbouring
+  points; asleep, from the loss across the gaps where the reader slept), and no explanatory text under the graph.
 - Battery graph and the time and charge per app survive a power-off or an update: a 0.6 KB copy goes to
   /.crosspoint/usage.bin just before the reader sleeps and is read back at boot when RTC memory was wiped.
 - Reader: the pop-up menu is now the same floating gray card as the Home layout panel, with white pill rows,

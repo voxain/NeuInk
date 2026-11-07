@@ -73,6 +73,37 @@ bool restoreState(const uint8_t (&in)[kStateSize]) {
   return true;
 }
 
+Rates rates(const uint8_t (&levels)[kBuckets]) {
+  constexpr int kSleepGapBuckets = 30 / kBucketMinutes;
+  constexpr int kAwakeMinBuckets = 30 / kBucketMinutes;  // half an hour of neighbouring points
+  constexpr int kSleepMinBuckets = 60 / kBucketMinutes;  // an hour of gap
+  int awakeDrop = 0, awakeBuckets = 0, sleepDrop = 0, sleepBuckets = 0;
+  int previous = -1;
+  for (int i = 0; i < kBuckets; ++i) {
+    if (levels[i] == kNone) continue;
+    if (previous >= 0 && levels[i] <= levels[previous] + 1) {  // a rise is a recharge, not a drain
+      const int drop = levels[i] < levels[previous] ? levels[previous] - levels[i] : 0;
+      const int gap = i - previous;
+      if (gap == 1) {
+        awakeDrop += drop;
+        awakeBuckets += 1;
+      } else if (gap >= kSleepGapBuckets) {
+        sleepDrop += drop;
+        sleepBuckets += gap;
+      }
+    }
+    previous = i;
+  }
+  Rates result;
+  const int perHour = 60 / kBucketMinutes;
+  if (awakeBuckets >= kAwakeMinBuckets && awakeDrop > 0) result.awakeTenths = awakeDrop * 10 * perHour / awakeBuckets;
+  if (sleepBuckets >= kSleepMinBuckets) {
+    result.sleepTenths = (sleepDrop > 0 ? sleepDrop : 1) * 10 * perHour / sleepBuckets;
+    if (result.sleepTenths == 0) result.sleepTenths = 1;
+  }
+  return result;
+}
+
 bool read(uint8_t (&levels)[kBuckets]) {
   uint32_t bucket;
   if (!currentBucket(bucket)) return false;
