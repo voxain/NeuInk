@@ -31,6 +31,9 @@ app on the Battery page starts empty once (the battery graph is kept).
 - Battery page: one line through the whole day, the time the reader was awake shaded under it; time and charge for
   every app, Home, Settings, Files, Library, the OPDS browser, Reading stats and Saved included. The graph is a
   shared component (components/BatteryGraph).
+- Fixed: the reader menu's Font size for a font with five sizes or fewer (an SD-card bitmap font) opened an empty
+  card whose invisible buttons jumped to the smallest or largest size; its row of size buttons now shows.
+- Fixed: the Battery page's list of apps ran off the screen; it scrolls a page at a time now.
 - Fixed: installed SD-card reader fonts fell back to Lexend Deca. The Vega greeting opened the whole Bitter family in
   every reader size in the font arena the reader shares; it now opens one face at one size.
 - Reading time per day for the last 64 days, in /.crosspoint/daily_reading.bin (the stats format and the stats sync

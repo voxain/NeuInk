@@ -53,6 +53,7 @@ BatteryActivity::BatteryActivity(GfxRenderer& renderer, MappedInputManager& mapp
 
 void BatteryActivity::onEnter() {
   Activity::onEnter();
+  firstRow = 0;
   requestUpdate();
 }
 
@@ -60,6 +61,17 @@ void BatteryActivity::loop() {
   if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     finish();
+    return;
+  }
+  const auto swipe = mappedInput.wasSwipe();
+  if ((swipe == MappedInputManager::SwipeDir::Up || mappedInput.wasReleased(MappedInputManager::Button::Down)) &&
+      moreBelow) {
+    firstRow += std::max(1, shownRows);
+    requestUpdate();
+  } else if ((swipe == MappedInputManager::SwipeDir::Down || mappedInput.wasReleased(MappedInputManager::Button::Up)) &&
+             firstRow > 0) {
+    firstRow = std::max(0, firstRow - std::max(1, shownRows));
+    requestUpdate();
   }
 }
 
@@ -115,7 +127,14 @@ void BatteryActivity::render(RenderLock&&) {
   renderer.drawText(UI_10_FONT_ID, kSide, y, tr(STR_APPS_TIME), true, EpdFontFamily::BOLD);
   y += renderer.getLineHeight(UI_10_FONT_ID) + 8;
   bool any = false;
-  // The reader first, then the apps.
+  // More apps than fit scroll a page at a time (a swipe or the up and down buttons): rows before firstRow are
+  // skipped, and the rows stop at the button hints.
+  constexpr int rowHeight = 40;
+  const int listTop = y;
+  const int listBottom = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight - 8;
+  int rowIndex = 0;
+  shownRows = 0;
+  moreBelow = false;
   const auto row = [&](const StrId name, const uint8_t slot) {
     const uint32_t week = AppUsage::secondsWeek(slot);
     const int rate = AppUsage::drainTenthsPerHour(slot);
@@ -123,7 +142,13 @@ void BatteryActivity::render(RenderLock&&) {
     const bool other = slot == 0;
     if (other ? rate < 0 : week == 0) return;
     any = true;
-    constexpr int rowHeight = 40;
+    const int index = rowIndex++;
+    if (index < firstRow) return;
+    if (moreBelow || y + rowHeight > listBottom) {
+      moreBelow = true;
+      return;
+    }
+    ++shownRows;
     renderer.fillRoundedRect(kSide, y, width - 2 * kSide, rowHeight, rowHeight / 2, Color::LightGray);
     const int textY = y + (rowHeight - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
     renderer.drawText(UI_10_FONT_ID, kSide + 20, textY, I18N.get(name), true);
@@ -160,6 +185,14 @@ void BatteryActivity::render(RenderLock&&) {
   }
   row(StrId::STR_APPS_OTHER, 0);
   if (!any) renderer.drawText(SMALL_FONT_ID, kSide, y, tr(STR_NO_APP_TIME), true);
+  if (firstRow > 0 || moreBelow) {
+    // A thin bar at the right edge: which part of the list shows.
+    const int trackH = listBottom - listTop;
+    const int thumbY = listTop + trackH * firstRow / rowIndex;
+    const int thumbH = std::max(16, trackH * shownRows / rowIndex);
+    renderer.fillRoundedRect(width - 8, listTop, 4, trackH, 2, Color::LightGray);
+    renderer.fillRoundedRect(width - 8, std::min(thumbY, listTop + trackH - thumbH), 4, thumbH, 2, Color::Black);
+  }
 
   const auto labels = mappedInput.mapLabels(mappedInput.withBackArrow(tr(STR_BACK)), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
