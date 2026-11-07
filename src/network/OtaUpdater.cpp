@@ -2,6 +2,7 @@
 #include "OtaUpdater.h"
 
 bool OtaUpdater::isUpdateNewer() const { return false; }
+bool OtaUpdater::isNewerThanInstalled(const char*) { return false; }
 const std::string& OtaUpdater::getLatestVersion() const { return latestVersion; }
 OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() { return NO_UPDATE; }
 OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate(ProgressCallback, void*, std::atomic<bool>*) { return NO_UPDATE; }
@@ -348,6 +349,8 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
   LOG_DBG("OTA", "Firmware URL: %s", otaUrl.c_str());
   return OK;
 }
+
+bool OtaUpdater::isNewerThanInstalled(const char* version) { return compareVersions(version, CROSSINK_VERSION) > 0; }
 
 bool OtaUpdater::isUpdateNewer() const {
   if (!updateAvailable || latestVersion.empty()) return false;

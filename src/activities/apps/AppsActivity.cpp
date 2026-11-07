@@ -13,7 +13,6 @@
 #include "SudokuActivity.h"
 #include "TicTacToeActivity.h"
 #include "AppCapabilities.h"
-#include "OpdsServerStore.h"
 #include "activities/ActivityManager.h"
 #include "activities/home/HighlightsHubActivity.h"
 #include "activities/home/StatsPickerActivity.h"
@@ -381,12 +380,7 @@ std::unique_ptr<Activity> AppsActivity::makeSettingsPage(GfxRenderer& renderer, 
           row.kind = Row::Kind::Chevron;
           row.label = I18N.get(name);
           row.icon = static_cast<int8_t>(icon);
-          if (vegahome::entryHidden(key)) {
-            row.subtitle = tr(STR_HIDDEN_ON_HOME);
-          } else if (key == vegahome::KeyOpds && !OPDS_STORE.hasServers()) {
-            // The OPDS browser joins Home once there is a catalog to browse.
-            row.subtitle = tr(STR_OPDS_NEEDS_SERVER);
-          }
+          if (vegahome::entryHidden(key)) row.subtitle = tr(STR_HIDDEN_ON_HOME);
           row.onTap = [&renderer, &input, &page, key, name, icon] {
             page.openChild(std::make_unique<AppPageActivity>(renderer, input, key, I18N.get(name), icon));
           };

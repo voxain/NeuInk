@@ -11,7 +11,8 @@ class GfxRenderer;
 #if NEUINK_BATTERY_HISTORY
 // The battery graph of Settings > Battery and Home's battery widget: the last 24 hours of charge on the left half
 // of `plot` (one line through the day, the time the reader was awake shaded under it), and on the right half the
-// next 24 hours as a dashed estimate that continues the trend since the last recharge. White gridlines at 0, 50
+// next 24 hours as a dashed estimate: down from the current level at BatteryHistory::rates' drain, the figure the
+// runtimes come from. White gridlines at 0, 50
 // and 100 %; `axes` adds their labels left of the plot and the time labels under it (outside `plot`).
 namespace batterygraph {
 

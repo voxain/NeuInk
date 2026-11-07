@@ -494,6 +494,7 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["homeHiddenEntries"] = homeHiddenEntries;
   doc["homeIntroSeen"] = homeIntroSeen;
   doc["usbDrivePrompt"] = usbDrivePrompt;
+  if (lastSeenVersion[0] != '\0') doc["lastSeenVersion"] = lastSeenVersion;
   doc["homeShowNames"] = homeShowNames;
   doc["homeGreeting"] = homeGreeting;
   doc["homeIconShape"] = homeIconShape;
@@ -723,6 +724,8 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc, bool importingCrossPoint
   homeHiddenEntries = doc["homeHiddenEntries"] | static_cast<uint16_t>(0);
   homeIntroSeen = doc["homeIntroSeen"] | static_cast<uint8_t>(0);
   readLibraryChoice("usbDrivePrompt", usbDrivePrompt, 2);
+  strncpy(lastSeenVersion, doc["lastSeenVersion"] | "", sizeof(lastSeenVersion) - 1);
+  lastSeenVersion[sizeof(lastSeenVersion) - 1] = '\0';
   readLibraryChoice("homeShowNames", homeShowNames, 2);
   readLibraryChoice("homeGreeting", homeGreeting, 2);
   readLibraryChoice("homeIconShape", homeIconShape, 4);

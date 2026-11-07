@@ -5,7 +5,10 @@
 #include <I18n.h>
 #include <WiFi.h>
 
+#include <cstring>
+
 #include "AppVersion.h"
+#include "CrossPointSettings.h"
 #include "MappedInputManager.h"
 #include "SdCardFontSystem.h"
 #include "SilentRestart.h"
@@ -84,6 +87,13 @@ void OtaUpdateActivity::onWifiSelectionComplete(const bool success) {
     }
     requestUpdate(true);
     return;
+  }
+
+  if (!updater.isCrossGrade()) {
+    // Software updates shows what the check found, installed or not.
+    strncpy(SETTINGS.lastSeenVersion, updater.getLatestVersion().c_str(), sizeof(SETTINGS.lastSeenVersion) - 1);
+    SETTINGS.lastSeenVersion[sizeof(SETTINGS.lastSeenVersion) - 1] = '\0';
+    SETTINGS.saveToFile();
   }
 
   if (!updater.isUpdateNewer()) {

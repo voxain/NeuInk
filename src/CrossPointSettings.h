@@ -709,6 +709,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint16_t homeHiddenEntries = 0;
   // Ask to open the SD card as a USB drive when a computer is plugged in (File Manager's page in Settings > Apps).
   uint8_t usbDrivePrompt = 1;
+  // The NeuInk version the last update check found (General > Software updates); empty before the first check.
+  char lastSeenVersion[16] = "";
   uint8_t homeIntroSeen = 0;
   // Vega Home: a greeting above the current-book card ("Good morning", by the time of day and language).
   uint8_t homeGreeting = 1;

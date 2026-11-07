@@ -1057,11 +1057,14 @@ and 0.4.0.
 - **Reader menu.** A floating gray card: tabs as a black pill, white rows, switches, sliders like the Control
   Center's with round steps, and Orientation and Alignment as picture buttons in the list. The icons are Lucide,
   turned in software where one icon serves several directions.
-- **Battery.** The charge in large type, a 24-hour graph with an estimate for the next 24, runtime with the screen
-  on and asleep, and time and charge per app and for the reader. It is kept in RTC memory and a small file, so
+- **Battery.** The charge in large type, a 24-hour graph with an estimate for the next 24 (the drain with charging
+  left out, the figure the runtimes come from), runtime with the screen on and asleep, and time and charge per app,
+  the most used first. It is kept in RTC memory and a small file, so
   it survives sleep, restarts, updates and a power-off.
 - **Storage.** One segmented bar and a row per category, scanned in the background.
 - **USB.** A computer at the other end of the cable (not a charger) makes the reader offer the SD card as a drive.
+- **Software updates** (General, 0.4.0). The NeuInk logo and the installed version; after a check, the version it
+  found, and Update now when a newer one was not installed yet.
 
 ### Home widgets and edit mode (0.4.0)
 
@@ -1094,7 +1097,7 @@ and **Done** sit at the top. The first visit to Home and to edit mode explains t
 
 **Settings > Apps** lists everything with an icon on Home (Settings and Library too). Each app's page shows its
 icon large, **Open** and **Enable** / **Disable** (whether it shows on Home), and under a rule its options (the
-Clock's, Sudoku's). The OPDS browser joins Home only once an OPDS server is set up. Every app counts its time and
+Clock's, Sudoku's). Every app counts its time and
 charge on the Battery page, Home and Settings included. Home can be left completely empty: Settings stay one tap away
 through the button at the top of the Control Center. The File Manager's page has **Ask to open as USB drive**: off,
 plugging into a computer no longer offers the SD card as a drive.

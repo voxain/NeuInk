@@ -29,8 +29,12 @@ app on the Battery page starts empty once (the battery graph is kept).
 - The File Manager's page has Ask to open as USB drive: off, plugging into a computer no longer offers the SD card.
 - Control Center: a Settings button in its top right corner; the eighth button now defaults to Night light.
 - Battery page: one line through the whole day, the time the reader was awake shaded under it; time and charge for
-  every app, Home, Settings, Files, Library, the OPDS browser, Reading stats and Saved included. The graph is a
-  shared component (components/BatteryGraph).
+  every app, Home, Settings, Files, Library, the OPDS browser, Reading stats and Saved included, the most used first.
+  The runtimes and the graph's estimate come from one drain figure that leaves out every rise (a slow charge climbs
+  one percent at a time and counted as no loss before), so the estimate can no longer climb and the runtimes follow
+  the drain. The graph is a shared component (components/BatteryGraph).
+- General > Software updates: the NeuInk logo large and the installed version; after an update check, the version
+  it found, and when that one is newer but was not installed, "New version available" with an Update now button.
 - Fixed: the reader menu's Font size for a font with five sizes or fewer (an SD-card bitmap font) opened an empty
   card whose invisible buttons jumped to the smallest or largest size; its row of size buttons now shows.
 - Fixed: the Battery page's list of apps ran off the screen; it scrolls a page at a time now.
@@ -39,6 +43,8 @@ app on the Battery page starts empty once (the battery graph is kept).
 - Reading time per day for the last 64 days, in /.crosspoint/daily_reading.bin (the stats format and the stats sync
   are unchanged). The time-left, finish-date and pace estimates, the stats tile and the level bar are one shared copy
   each.
+- Icons and the boot logo are `inline constexpr`: each is in the firmware once instead of once per file that uses
+  it (22 KB less).
 - New Lucide icons (calendar, calendar-1, trash-2, target, quote, skip-forward, external-link, eye, eye-off) and a
   55 px set of clock digits.
 

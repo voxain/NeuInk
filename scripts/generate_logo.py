@@ -73,7 +73,7 @@ def write_boot_header(rows):
         "// 1 bit per pixel (1 = white). Stored rotated like Logo120 for the portrait",
         "// draw path. The shadow of the page is a dot screen. Generated from",
         "// src/images/neuink-logo.png by scripts/generate_logo.py; do not edit.",
-        "static const uint8_t BootLogo192[] = {",
+        "inline constexpr uint8_t BootLogo192[] = {",
     ]
     for start in range(0, len(data), 19):
         chunk = ", ".join(f"0x{b:02x}" for b in data[start : start + 19])
@@ -114,7 +114,7 @@ def write_wordmark_header():
         "// 1 bit per pixel (1 = white), stored rotated like BootLogo192 for the portrait",
         "// draw path. Generated from lib/EpdFont/builtinFonts/source/GasoekOne by",
         "// scripts/generate_logo.py; do not edit.",
-        "static const uint8_t NeuInkWordmark[] = {",
+        "inline constexpr uint8_t NeuInkWordmark[] = {",
     ]
     for start in range(0, len(data), 19):
         chunk = ", ".join(f"0x{b:02x}" for b in data[start : start + 19])

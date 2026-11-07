@@ -61,10 +61,8 @@ void draw(const GfxRenderer& renderer, const Rect& plot, const uint8_t (&levels)
     int previousY = 0;
     bool havePrevious = false;
     int lastIndex = -1;
-    int fitFrom = 0;  // the trend starts after the latest recharge
     for (int i = 0; i <= last; ++i) {
       if (levels[i] == BatteryHistory::kNone) continue;  // asleep: the line joins the levels either side
-      if (lastIndex >= 0 && levels[i] > levels[lastIndex] + 1) fitFrom = i;
       const int px = plotX + half * i / last;
       const int py = levelY(levels[i]);
       if (havePrevious) renderer.drawLine(previousX, previousY, px, py, 3, true);
@@ -74,32 +72,23 @@ void draw(const GfxRenderer& renderer, const Rect& plot, const uint8_t (&levels)
       lastIndex = i;
     }
 
-    // Least-squares line through the points since the last recharge, continued from the current level.
-    float count = 0, sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-    for (int i = fitFrom; i <= last; ++i) {
-      if (levels[i] == BatteryHistory::kNone) continue;
-      count += 1;
-      sumX += i;
-      sumY += levels[i];
-      sumXY += static_cast<float>(i) * levels[i];
-      sumXX += static_cast<float>(i) * i;
-    }
-    const float denominator = count * sumXX - sumX * sumX;
-    if (lastIndex >= 0 && count >= 3 && denominator > 0.0f) {
-      const float slope = (count * sumXY - sumX * sumY) / denominator;  // percent per bucket
+    // The estimate: from the current level down at the drain BatteryHistory::rates measures (the runtimes' own
+    // figure, rises left out), so it never climbs.
+    const BatteryHistory::Rates rates = BatteryHistory::rates(levels);
+    if (lastIndex >= 0 && rates.overallTenths > 0) {
+      const float perBucket = rates.overallTenths / 10.0f * BatteryHistory::kBucketMinutes / 60.0f;
       const float from = levels[lastIndex];
       const int steps = BatteryHistory::kBuckets;
       int fromX = plotX + half * lastIndex / last;
       int fromY = levelY(from);
       for (int k = 1; k <= steps; ++k) {
-        float level = from + slope * static_cast<float>(last + k - lastIndex);
-        level = level < 0.0f ? 0.0f : (level > 100.0f ? 100.0f : level);
+        const float level = std::max(0.0f, from - perBucket * static_cast<float>(last + k - lastIndex));
         const int toX = middle + half * k / steps;
         const int toY = levelY(level);
         if ((k / 12) % 2 == 0) renderer.drawLine(fromX, fromY, toX, toY, 3, true);  // dashed: an estimate
         fromX = toX;
         fromY = toY;
-        if (level <= 0.0f || level >= 100.0f) break;
+        if (level <= 0.0f) break;
       }
     }
   }

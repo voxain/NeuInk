@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <utility>
+#include <vector>
 
 #include "MappedInputManager.h"
 #include "components/BatteryGraph.h"
@@ -135,8 +136,7 @@ void BatteryActivity::render(RenderLock&&) {
   int rowIndex = 0;
   shownRows = 0;
   moreBelow = false;
-  const auto row = [&](const StrId name, const uint8_t slot) {
-    const uint32_t week = AppUsage::secondsWeek(slot);
+  const auto row = [&](const StrId name, const uint8_t slot, const uint32_t week) {
     const int rate = AppUsage::drainTenthsPerHour(slot);
     // Everything that is not an app has no clock, only the rate.
     const bool other = slot == 0;
@@ -174,16 +174,24 @@ void BatteryActivity::render(RenderLock&&) {
                       textY, duration, true, EpdFontFamily::BOLD);
     y += rowHeight + 6;
   };
-  // The reader and Home, then everything with an icon on Home, in Home's order, then what ran outside all of them.
-  row(StrId::STR_CAT_READER, AppUsage::kReader);
-  row(StrId::STR_HOME, AppUsage::kHome);
-  for (const vegahome::EntryInfo& entry : vegahome::kEntries) {
-    if (entry.key == vegahome::KeySettings) {
-      for (const apps::Info& app : apps::kAll) row(app.name, app.id);
-    }
-    row(entry.name, usageSlotOf(entry.key));
-  }
-  row(StrId::STR_APPS_OTHER, 0);
+  // The reader, Home and everything with an icon on Home, the most used first; then what ran outside all of them.
+  struct Used {
+    StrId name;
+    uint8_t slot;
+    uint32_t week;
+  };
+  std::vector<Used> used;
+  used.reserve(AppUsage::kSlots);
+  const auto add = [&used](const StrId name, const uint8_t slot) {
+    used.push_back({name, slot, AppUsage::secondsWeek(slot)});
+  };
+  add(StrId::STR_CAT_READER, AppUsage::kReader);
+  add(StrId::STR_HOME, AppUsage::kHome);
+  for (const vegahome::EntryInfo& entry : vegahome::kEntries) add(entry.name, usageSlotOf(entry.key));
+  for (const apps::Info& app : apps::kAll) add(app.name, app.id);
+  std::stable_sort(used.begin(), used.end(), [](const Used& a, const Used& b) { return a.week > b.week; });
+  for (const Used& entry : used) row(entry.name, entry.slot, entry.week);
+  row(StrId::STR_APPS_OTHER, 0, 0);
   if (!any) renderer.drawText(SMALL_FONT_ID, kSide, y, tr(STR_NO_APP_TIME), true);
   if (firstRow > 0 || moreBelow) {
     // A thin bar at the right edge: which part of the list shows.
