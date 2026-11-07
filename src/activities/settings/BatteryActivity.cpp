@@ -5,13 +5,12 @@
 #include <HalPowerManager.h>
 #include <I18n.h>
 
-#include <Utf8.h>
-
 #include <algorithm>
 #include <cstdio>
 #include <utility>
 
 #include "MappedInputManager.h"
+#include "components/BigText.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "activities/apps/AppRegistry.h"
@@ -44,14 +43,7 @@ void BatteryActivity::loop() {
 
 void BatteryActivity::render(RenderLock&&) {
   renderer.clearScreen();
-  const Rect header = TouchHeaderBackButton::headerRect(renderer, mappedInput);
-  const char* title = tr(STR_BATTERY);
-  if (mappedInput.hasTouchHardware()) {
-    freeink::ui::GfxRendererTarget target(renderer);
-    TouchHeaderBackButton::draw(renderer, target, header, title, false);
-  } else {
-    GUI.drawHeader(renderer, header, title);
-  }
+  const Rect header = TouchHeaderBackButton::drawPageHeader(renderer, mappedInput, tr(STR_BATTERY));
 
   const int width = renderer.getScreenWidth();
   int y = header.y + header.height + 24;
@@ -65,15 +57,7 @@ void BatteryActivity::render(RenderLock&&) {
 
   char text[24];
   snprintf(text, sizeof(text), "%u%%", percent);
-  // UI_12 bold drawn 2.6 times its size, glyph by glyph.
-  constexpr int kBigScale = 666;  // of 256
-  const int bigAscent = renderer.getFontAscenderSize(UI_12_FONT_ID) * kBigScale / 256;
-  const int bigHeight = renderer.getLineHeight(UI_12_FONT_ID) * kBigScale / 256;
-  int digitX = kSide;
-  const auto* cursor = reinterpret_cast<const unsigned char*>(text);
-  while (const uint32_t cp = utf8NextCodepoint(&cursor)) {
-    digitX += renderer.drawScaledCodepoint(UI_12_FONT_ID, cp, EpdFontFamily::BOLD, digitX, y + bigAscent, kBigScale);
-  }
+  const int bigHeight = drawBigText(renderer, UI_12_FONT_ID, text, kSide, y);
   const int volts = powerManager.getBatteryMillivolts();
   snprintf(text, sizeof(text), "%d.%02d V", volts / 1000, (volts % 1000) / 10);
   renderer.drawText(UI_10_FONT_ID, kSide, y + bigHeight, text, true);

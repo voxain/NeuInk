@@ -93,3 +93,7 @@ orient = smartphone
 # for left, up and down, the double chevron for the four directions, the arrow for down.
 chevrons_right = chevrons-right
 arrow_up = arrow-up
+# Settings > Storage: its row, the scan's spinner and the categories without a file-type icon.
+storage = hard-drive
+loader = loader-circle
+database = database

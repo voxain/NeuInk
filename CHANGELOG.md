@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Settings > Storage (between Battery and Network): the SD card's used space in large type and one rounded, segmented
+  bar in four grays for Books, Images and screenshots, Fonts and dictionaries, App data and caches, and Other, with a
+  row per category and what is free. The page opens at once; "--" and a spinner on the bar stand in until the scan,
+  which runs in the background, is done. The SD card and used-space rows left About.
 - Settings > Battery: the charge in large type, two runtime estimates (screen on, from the loss between neighbouring
   points; asleep, from the loss across the gaps where the reader slept), and no explanatory text under the graph.
 - Battery graph and the time and charge per app survive software restarts (RTC_NOINIT instead of RTC_DATA, which
