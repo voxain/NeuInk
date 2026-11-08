@@ -278,18 +278,14 @@ class BaseTheme {
 
   // Component drawing methods
   void drawProgressBar(const GfxRenderer& renderer, Rect rect, size_t current, size_t total) const;
-  void drawBatteryLeft(const GfxRenderer& renderer, Rect rect, bool showPercentage = true,
-                       bool foregroundBlack = true) const;  // Left aligned (reader mode)
-  void drawBatteryRight(const GfxRenderer& renderer, Rect rect, bool showPercentage = true,
-                        bool foregroundBlack = true) const;  // Right aligned (UI headers)
+  void drawBatteryLeft(const GfxRenderer& renderer, Rect rect, bool showPercentage = true) const;  // Left aligned (reader mode)
+  void drawBatteryRight(const GfxRenderer& renderer, Rect rect, bool showPercentage = true) const;  // Right aligned (UI headers)
   // The reader status bar's battery: the header's level box, smaller, with the percentage beside it and a bolt
   // while charging. Left to right: [bolt] box [percentage], or on the right-hand side [percentage] [bolt] box.
   // readerBatteryWidth() is the room it takes.
   int readerBatteryWidth(const GfxRenderer& renderer, bool showPercentage) const;
-  void drawReaderBattery(const GfxRenderer& renderer, int x, int y, bool showPercentage, bool percentageFirst,
-                         bool foregroundBlack) const;
-  virtual void fillBatteryIcon(const GfxRenderer& renderer, Rect rect, uint16_t percentage,
-                               bool foregroundBlack = true) const;
+  void drawReaderBattery(const GfxRenderer& renderer, int x, int y, bool showPercentage, bool percentageFirst) const;
+  virtual void fillBatteryIcon(const GfxRenderer& renderer, Rect rect, uint16_t percentage) const;
   // Button hint labels use three states: non-empty labels draw an active hint,
   // an empty string clears an inactive slot, and nullptr preserves the existing
   // background without drawing or registering a target.
@@ -371,7 +367,6 @@ class BaseTheme {
   static constexpr int headerStatusRowHeight = 24;
   static int homeHeaderClockTextYOffset(const GfxRenderer& renderer);
   static Rect buttonMenuTouchTarget(Rect rowRect, Rect menuRect, bool isLastItem, int rowSpacing);
-  static void drawBatteryOutline(const GfxRenderer& renderer, int x, int y, int battWidth, int rectHeight,
-                                 bool foregroundBlack = true);
-  static void drawBatteryLightningBolt(const GfxRenderer& renderer, int boltX, int boltY, bool foregroundBlack = false);
+  static void drawBatteryOutline(const GfxRenderer& renderer, int x, int y, int battWidth, int rectHeight);
+  static void drawBatteryLightningBolt(const GfxRenderer& renderer, int boltX, int boltY);
 };

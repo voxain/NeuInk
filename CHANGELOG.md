@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [NeuInk 0.4.1] - 2026-11-08
+
+A cleanup release: the same features, less duplicated code, a firmware about 1.5 KB smaller (6,047,872 bytes). Nothing
+is added; a few screens changed their look slightly.
+
+- Buttons: every button drawn outside a FreeInkUI frame is now the kit's own button (`drawButton`, with the new
+  `ButtonProps::iconPlacement` and `shrinkFont`): the games' buttons, Flashcards, the font download's Cancel, the
+  online dictionary's "back to book", the rating's Clear, the highlights page's study pill and the stats date fields.
+  Flashcards, Clear and the font download's Cancel were outlined or black before and are gray now; the games' icon
+  buttons set their label at its natural line height.
+- One copy instead of many: calendar math (`lib/hal/CalendarMath.h`, six copies before), little-endian byte access
+  (`lib/Serialization/ByteOrder.h`), ASCII text comparison (`lib/Utf8/AsciiText.h`), the games' random number step,
+  the reader's toast message, the settings option helpers, and the em-space and visible-word checks.
+- Removed: the reader's dark-mode stub and everything behind it (`drawImageInverted`, the battery drawers'
+  `foregroundBlack` parameter), eight functions nothing called, one unused header, and 98 translation keys no code
+  uses (the build already left them out of the firmware and the language packs).
+- Tests: the symbol-fallback test follows the Lexend UI fonts; the calendar test and the stats test find
+  `CalendarMath.h` and `ByteOrder.h` in their new places.
+
 ## [NeuInk 0.4.0] - 2026-11-07
 
 Widgets on Home, and everything on it is an app. The new screens are in

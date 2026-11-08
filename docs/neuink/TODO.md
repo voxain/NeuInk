@@ -2,20 +2,6 @@
 
 Things deliberately left for later. Each one says when to pick it up.
 
-## Cleanup follow-ups
-
-Left over from the cleanup sweep on `chore/cleanup-sweep`. Each is behaviour-neutral; batch them with a build.
-
-- The web server's `isTwoFingerSwipeSetting(SettingInfo)` and `enumDisplayIndexForWeb` repeat the settings helpers in
-  `SettingsActivity.h` (by name id instead of member pointer); derive one from the other.
-- `BaseTheme::drawReaderStatusBar` still carries a local `foregroundBlack = true` and passes it down to the battery
-  drawing helpers (the dark-mode option behind it is gone): drop the parameter through `drawBatteryOutline`,
-  `fillBatteryIcon` and the battery/percentage drawers.
-- `homeIcons.h` holds 51 icon sizes nothing uses (the other size of the same icon is used). The linker drops them; to
-  remove them from the source `gen_icons.py` would need a size list per manifest entry.
-- The dictionary ask bubble (`DictionaryWordSelectActivity`) is a black bubble with a pointer and white segments, so
-  it stays hand-drawn.
-
 ## Battery statistics
 
 Battery health and usage. The page exists (X4 Pro, 0.3.0); what is left is health and cycles.

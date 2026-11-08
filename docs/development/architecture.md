@@ -173,6 +173,21 @@ Server behavior:
 
 Endpoint reference: `docs/webserver-endpoints.md`.
 
+## Shared helpers
+
+Look here before writing a second copy of one of these:
+
+- `lib/hal/CalendarMath.h` (`calmath`): leap years, days in a month, weekdays, adding days, ISO weeks, local time, the
+  Persian date. `DaylightSaving.h`, the RTC code and the stats code all use it.
+- `lib/Serialization/ByteOrder.h` (`byteorder`): little-endian reads and writes at an offset.
+- `lib/Utf8/AsciiText.h` (`ascii`): `lower`, `equalsIgnoreCase`, `startsWith`, `endsWith`, `endsWithIgnoreCase`.
+- `src/games/Xorshift.h`: the games' random number step.
+- `src/components/UiAppHelpers.h`: `drawButton` (a kit button on the renderer, gray, black when picked; icon above
+  the label; `whiteButtonStyles()` on gray cards), `grayButtonStyles()`, `drawLucideIcon`, `listIconFor`.
+- `src/activities/reader/ReaderUtils.h`: `drawToast`, `hasVisibleWordText`, page-turn and menu gestures.
+- `src/activities/settings/SettingsActivity.h`: `enumDisplayIndexForRawValue`, `enumRawValueForDisplayIndex`,
+  `isTwoFingerSwipeSetting`.
+
 ## Build-time generated assets
 
 Some sources are generated and should not be edited manually.
