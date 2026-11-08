@@ -1130,18 +1130,17 @@ void drawGrid(GfxRenderer& renderer, const Plan& plan, const int page, const int
 }
 
 Hit hitTest(const Plan& plan, const int page, const int entries, const int x, const int y) {
-  const auto inside = [x, y](const Rect& r) { return x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height; };
   Hit hit;
   if (page == 0) {
     forEachWidget(plan, [&](const int i, const Widget&, const uint8_t, const Rect& card) {
-      if (inside(card)) hit = Hit{Hit::Widget, i};
+      if (contains(card, x, y)) hit = Hit{Hit::Widget, i};
     });
     if (hit.kind != Hit::None) return hit;
   }
   const int count = page == 0 ? plan.firstCount() : plan.otherCount();
   const int first = plan.firstOn(page);
   for (int i = first; i < entries && i < first + count; ++i) {
-    if (inside(plan.cellRect(page, i - first))) return Hit{Hit::Entry, i};
+    if (contains(plan.cellRect(page, i - first), x, y)) return Hit{Hit::Entry, i};
   }
   return hit;
 }
