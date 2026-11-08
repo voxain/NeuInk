@@ -20,6 +20,7 @@
 #include "SilentRestart.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "activities/util/ConfirmationActivity.h"
+#include "components/UiAppHelpers.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
@@ -1288,11 +1289,8 @@ void FontDownloadActivity::render(RenderLock&&) {
 
     if (mappedInput.hasTouchHardware()) {
       const Rect cancelButton = downloadCancelButtonRect(renderer, metrics, downloadAttemptTotal_);
-      renderer.fillRoundedRect(cancelButton.x, cancelButton.y, cancelButton.width, cancelButton.height, 6,
-                               Color::White);
-      renderer.drawRoundedRect(cancelButton.x, cancelButton.y, cancelButton.width, cancelButton.height, 1, 6, true);
-      const int textY = cancelButton.y + (cancelButton.height - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
-      renderer.drawCenteredText(UI_10_FONT_ID, textY, tr(STR_CANCEL));
+      drawButton(renderer, cancelButton.x, cancelButton.y, cancelButton.width, cancelButton.height,
+                 tr(STR_CANCEL), false, UI_10_FONT_ID, false);
     }
 
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");

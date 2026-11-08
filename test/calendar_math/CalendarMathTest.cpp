@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "src/util/CalendarMath.h"
+#include "CalendarMath.h"
 
 using calmath::Date;
 

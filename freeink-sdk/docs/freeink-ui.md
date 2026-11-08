@@ -1420,6 +1420,10 @@ component set:
   8 px/1 px indicator was invisible on e-paper).
 - **`ButtonProps.iconSize`** — scales a button icon to any square size via
   nearest-neighbor `Contain`, so one asset serves several button sizes.
+- **`paintButton()`, `ButtonProps::iconPlacement`, `ButtonProps::shrinkFont`** — `paintButton(target, assets, rect,
+  props, state)` draws a button on any `DrawTarget` without registering a hit area, for screens that are not a
+  `Frame`; `button()` is `paintButton` plus the hit. `iconPlacement = IconPlacement::Above` puts the label under the
+  icon, and `shrinkFont` names the font the label falls back to when it is wider than the button.
 - **`DisplayTarget::setOrientation()`** — runtime portrait/landscape (and
   flipped) switching; refresh your `DeviceContext` via `deviceContext()`
   and repaint. Touch mapping follows automatically.

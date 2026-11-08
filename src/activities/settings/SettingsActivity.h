@@ -210,6 +210,24 @@ struct SettingInfo {
   }
 };
 
+// The position of a stored value in the option list, and the stored value at a position.
+inline uint8_t enumDisplayIndexForRawValue(const SettingInfo& setting, const uint8_t rawValue) {
+  if (setting.enumRawValues.empty()) return rawValue;
+  const auto it = std::find(setting.enumRawValues.begin(), setting.enumRawValues.end(), rawValue);
+  return it == setting.enumRawValues.end() ? 0 : static_cast<uint8_t>(std::distance(setting.enumRawValues.begin(), it));
+}
+
+inline uint8_t enumRawValueForDisplayIndex(const SettingInfo& setting, const uint8_t displayIndex) {
+  if (setting.enumRawValues.empty()) return displayIndex;
+  return displayIndex >= setting.enumRawValues.size() ? setting.enumRawValues.front()
+                                                      : setting.enumRawValues[displayIndex];
+}
+
+inline bool isTwoFingerSwipeSetting(const uint8_t CrossPointSettings::* const valuePtr) {
+  return valuePtr == &CrossPointSettings::twoFingerSwipeUp || valuePtr == &CrossPointSettings::twoFingerSwipeDown ||
+         valuePtr == &CrossPointSettings::twoFingerSwipeLeft || valuePtr == &CrossPointSettings::twoFingerSwipeRight;
+}
+
 inline size_t settingEnumOptionCount(const SettingInfo& setting) {
   return setting.enumStringValues.empty() ? setting.enumValues.size() : setting.enumStringValues.size();
 }

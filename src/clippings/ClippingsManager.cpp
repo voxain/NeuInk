@@ -1,5 +1,6 @@
 #include "ClippingsManager.h"
 
+#include <CalendarMath.h>
 #include <HalClock.h>
 #include <HalStorage.h>
 #include <Logging.h>
@@ -17,61 +18,19 @@ constexpr const char* WEEKDAY_NAMES[] = {"Monday", "Tuesday", "Wednesday", "Thur
 constexpr const char* MONTH_NAMES[] = {"January", "February", "March",     "April",   "May",      "June",
                                        "July",    "August",   "September", "October", "November", "December"};
 
-bool isLeapYear(const uint16_t year) { return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0; }
-
-uint8_t daysInMonth(const uint16_t year, const uint8_t month) {
-  static constexpr uint8_t DAYS[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-  if (month < 1 || month > 12) return 0;
-  if (month == 2 && isLeapYear(year)) return 29;
-  return DAYS[month - 1];
-}
-
 bool isValidDate(const uint16_t year, const uint8_t month, const uint8_t day) {
   if (year < 2000 || year > 2099) return false;
-  const uint8_t monthDays = daysInMonth(year, month);
+  const uint8_t monthDays = calmath::daysInMonth(year, month);
   return monthDays > 0 && day >= 1 && day <= monthDays;
-}
-
-void adjustDateByDays(uint16_t& year, uint8_t& month, uint8_t& day, int delta) {
-  while (delta > 0) {
-    const uint8_t monthDays = daysInMonth(year, month);
-    if (day < monthDays) {
-      day++;
-    } else {
-      day = 1;
-      if (month < 12) {
-        month++;
-      } else {
-        month = 1;
-        year++;
-      }
-    }
-    delta--;
-  }
-
-  while (delta < 0) {
-    if (day > 1) {
-      day--;
-    } else {
-      if (month > 1) {
-        month--;
-      } else {
-        month = 12;
-        year--;
-      }
-      day = daysInMonth(year, month);
-    }
-    delta++;
-  }
 }
 
 uint32_t dayIndexSince2000(const uint16_t year, const uint8_t month, const uint8_t day) {
   uint32_t dayIndex = 0;
   for (uint16_t y = 2000; y < year; ++y) {
-    dayIndex += isLeapYear(y) ? 366u : 365u;
+    dayIndex += calmath::isLeapYear(y) ? 366u : 365u;
   }
   for (uint8_t m = 1; m < month; ++m) {
-    dayIndex += daysInMonth(year, m);
+    dayIndex += calmath::daysInMonth(year, m);
   }
   return dayIndex + static_cast<uint32_t>(day - 1);
 }
@@ -90,11 +49,11 @@ bool formatKindleAddedOn(char* buf, const size_t bufSize) {
   const int offsetMinutes = (static_cast<int>(offsetQ) - 48) * 15;
   int localMinutes = static_cast<int>(hour) * 60 + static_cast<int>(minute) + offsetMinutes;
   while (localMinutes < 0) {
-    adjustDateByDays(year, month, day, -1);
+    calmath::addDaysTo(year, month, day, -1);
     localMinutes += 24 * 60;
   }
   while (localMinutes >= 24 * 60) {
-    adjustDateByDays(year, month, day, 1);
+    calmath::addDaysTo(year, month, day, 1);
     localMinutes -= 24 * 60;
   }
   if (!isValidDate(year, month, day)) return false;

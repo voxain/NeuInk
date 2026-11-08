@@ -193,7 +193,7 @@ void BatteryActivity::render(RenderLock&&) {
   for (const Used& entry : used) row(entry.name, entry.slot, entry.week);
   row(StrId::STR_APPS_OTHER, 0, 0);
   if (!any) renderer.drawText(SMALL_FONT_ID, kSide, y, tr(STR_NO_APP_TIME), true);
-  if (firstRow > 0 || moreBelow) {
+  if (rowIndex > 0 && (firstRow > 0 || moreBelow)) {
     // A thin bar at the right edge: which part of the list shows.
     const int trackH = listBottom - listTop;
     const int thumbY = listTop + trackH * firstRow / rowIndex;

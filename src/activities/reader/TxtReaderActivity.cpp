@@ -99,21 +99,8 @@ int getReaderLineHeight(const GfxRenderer& renderer, const int fontId) {
   return std::max(1, static_cast<int>(renderer.getLineHeight(fontId) * SETTINGS.getReaderLineCompression() + 0.5f));
 }
 
-void drawToast(const GfxRenderer& renderer, const char* msg) {
-  constexpr int toastPadX = 20;
-  constexpr int toastPadY = 12;
-  const bool toastBackgroundBlack = ReaderUtils::readerForegroundBlack();
-  const int msgW = renderer.getTextWidth(UI_10_FONT_ID, msg);
-  const int msgH = renderer.getLineHeight(UI_10_FONT_ID);
-  const int toastW = msgW + toastPadX * 2;
-  const int toastH = msgH + toastPadY * 2;
-  const int toastX = (renderer.getScreenWidth() - toastW) / 2;
-  const int toastY = (renderer.getScreenHeight() - toastH) / 2;
-  renderer.fillRect(toastX, toastY, toastW, toastH, toastBackgroundBlack);
-  renderer.drawRect(toastX, toastY, toastW, toastH, !toastBackgroundBlack);
-  renderer.drawText(UI_10_FONT_ID, toastX + toastPadX, toastY + toastPadY, msg, !toastBackgroundBlack);
-  renderer.displayBuffer();
-}
+using ReaderUtils::drawToast;
+
 }  // namespace
 
 void TxtReaderActivity::onEnter() {
@@ -799,7 +786,7 @@ void TxtReaderActivity::render(RenderLock&&) {
   }
 
   if (pageOffsets.empty()) {
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
     renderer.drawCenteredText(UI_12_FONT_ID, 300, tr(STR_EMPTY_FILE), ReaderUtils::readerForegroundBlack(),
                               EpdFontFamily::BOLD);
     renderer.displayBuffer();
@@ -816,7 +803,7 @@ void TxtReaderActivity::render(RenderLock&&) {
   currentPageLines.clear();
   loadPageAtOffset(offset, currentPageLines, nextOffset);
 
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   renderPage();
 
   if (!queueProgressSave()) {
@@ -907,7 +894,6 @@ void TxtReaderActivity::renderStatusBar() const {
   content.bookTitle = title.c_str();
   // TXT has no chapter metadata; preserve its existing title fallback.
   content.chapterTitle = content.bookTitle;
-  content.darkMode = ReaderUtils::readerDarkModeEnabled();
   GUI.drawReaderStatusBar(renderer, ReaderStatusBarPosition::Top, content);
   GUI.drawReaderStatusBar(renderer, ReaderStatusBarPosition::Bottom, content);
 }
@@ -1268,7 +1254,7 @@ bool TxtReaderActivity::drawCurrentPageToBuffer(const std::string& filePath, Gfx
   if (pageLines.empty()) return false;
 
   // Render lines to frame buffer (no displayBuffer call)
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   int y = marginTop;
   for (const auto& line : pageLines) {
     if (!line.empty()) {

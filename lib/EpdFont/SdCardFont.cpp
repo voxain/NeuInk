@@ -1,5 +1,6 @@
 #include "SdCardFont.h"
 
+#include <ByteOrder.h>
 #include <HalStorage.h>
 #include <Logging.h>
 #include <Memory.h>
@@ -40,10 +41,9 @@ constexpr char CPFONT_MAGIC[8] = {'C', 'P', 'F', 'O', 'N', 'T', '\0', '\0'};
 constexpr uint32_t HEADER_SIZE = 32;
 constexpr uint32_t STYLE_TOC_ENTRY_SIZE = 32;
 
-// Helper to read little-endian values from byte buffer
-inline uint16_t readU16(const uint8_t* p) { return p[0] | (p[1] << 8); }
-inline int16_t readI16(const uint8_t* p) { return static_cast<int16_t>(p[0] | (p[1] << 8)); }
-inline uint32_t readU32(const uint8_t* p) { return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24); }
+using byteorder::readLe16;
+using byteorder::readLe32;
+inline int16_t readI16(const uint8_t* p) { return static_cast<int16_t>(readLe16(p)); }
 
 // Walks a null-terminated UTF-8 string and appends each unique codepoint to
 // codepoints[0..cpCount-1] via O(n²) dedup.  Returns true if the buffer
@@ -593,7 +593,7 @@ bool SdCardFont::load(const char* path) {
     return false;
   }
 
-  uint16_t fileVersion = readU16(headerBuf + 8);
+  uint16_t fileVersion = readLe16(headerBuf + 8);
   if (fileVersion != CPFONT_VERSION) {
     LOG_ERR("SDCF", "Unsupported version: %u (expected %u)", fileVersion, CPFONT_VERSION);
     return false;
@@ -602,7 +602,7 @@ bool SdCardFont::load(const char* path) {
   // Begin content hash: accumulate global header
   uint32_t hash = fnv1a(headerBuf, HEADER_SIZE);
 
-  bool is2Bit = (readU16(headerBuf + 10) & 1) != 0;
+  bool is2Bit = (readLe16(headerBuf + 10) & 1) != 0;
 
   uint8_t styleCount = headerBuf[12];
   if (styleCount == 0 || styleCount > MAX_STYLES) {
@@ -632,13 +632,13 @@ bool SdCardFont::load(const char* path) {
 
     auto& s = styles_[styleId];
     s.present = true;
-    s.header.intervalCount = readU32(tocBuf + 4);
-    s.header.glyphCount = readU32(tocBuf + 8);
+    s.header.intervalCount = readLe32(tocBuf + 4);
+    s.header.glyphCount = readLe32(tocBuf + 8);
     s.header.advanceY = tocBuf[12];
     s.header.ascender = readI16(tocBuf + 13);
     s.header.descender = readI16(tocBuf + 15);
-    s.header.kernLeftEntryCount = readU16(tocBuf + 17);
-    s.header.kernRightEntryCount = readU16(tocBuf + 19);
+    s.header.kernLeftEntryCount = readLe16(tocBuf + 17);
+    s.header.kernRightEntryCount = readLe16(tocBuf + 19);
     s.header.kernLeftClassCount = tocBuf[21];
     s.header.kernRightClassCount = tocBuf[22];
     s.header.ligaturePairCount = tocBuf[23];
@@ -659,7 +659,7 @@ bool SdCardFont::load(const char* path) {
       return false;
     }
 
-    uint32_t dataOffset = readU32(tocBuf + 24);
+    uint32_t dataOffset = readLe32(tocBuf + 24);
     computeStyleFileOffsets(s, dataOffset);
   }
 

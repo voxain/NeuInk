@@ -1,5 +1,6 @@
 #include "GlobalReadingStats.h"
 
+#include <ByteOrder.h>
 #include <HalStorage.h>
 #include <Logging.h>
 #include <esp_mac.h>
@@ -9,6 +10,9 @@
 #include <cstring>
 #include <limits>
 #include <string>
+
+using byteorder::readLe16;
+using byteorder::readLe32;
 
 namespace {
 enum class StatsLoadResult : uint8_t { Ok, Invalid, NewerFormat };
@@ -91,19 +95,10 @@ static void addDailySeconds(GlobalReadingStats& stats, const uint32_t day, const
 }
 static bool s_blockDestructiveSave = false;
 
-uint32_t readLe32(const uint8_t* data, const int offset) {
-  return static_cast<uint32_t>(data[offset]) | (static_cast<uint32_t>(data[offset + 1]) << 8) |
-         (static_cast<uint32_t>(data[offset + 2]) << 16) | (static_cast<uint32_t>(data[offset + 3]) << 24);
-}
-
 void loadCommonFields(const uint8_t* data, GlobalReadingStats& out) {
   out.totalSessions = readLe32(data, 1);
   out.totalReadingSeconds = readLe32(data, 5);
   out.totalPagesTurned = readLe32(data, 9);
-}
-
-uint16_t readLe16(const uint8_t* data, const int offset) {
-  return static_cast<uint16_t>(data[offset]) | (static_cast<uint16_t>(data[offset + 1]) << 8);
 }
 
 uint32_t addSaturated(const uint32_t a, const uint32_t b) {

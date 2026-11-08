@@ -1,5 +1,6 @@
 #include "StorageScan.h"
 
+#include <AsciiText.h>
 #include <HalStorage.h>
 #include <Logging.h>
 
@@ -18,21 +19,14 @@ namespace {
 GameThinker thinker;
 StorageScan::Result scanResult;
 
-bool equalsIgnoreCase(const char* a, const char* b) {
-  for (; *a && *b; ++a, ++b) {
-    if (tolower(static_cast<unsigned char>(*a)) != tolower(static_cast<unsigned char>(*b))) return false;
-  }
-  return *a == *b;
-}
-
 // A whole folder's kind where it decides it (the caches, the dictionaries); otherwise the file's own extension does.
 enum class Folder : uint8_t { None, AppData, Resources };
 
 Folder folderKind(const Folder parent, const bool atRoot, const char* name) {
   if (parent != Folder::None) return parent;
   if (!atRoot) return Folder::None;
-  if (equalsIgnoreCase(name, ".crosspoint")) return Folder::AppData;
-  if (equalsIgnoreCase(name, ".dictionaries") || equalsIgnoreCase(name, "dictionaries")) return Folder::Resources;
+  if (ascii::equalsIgnoreCase(name, ".crosspoint")) return Folder::AppData;
+  if (ascii::equalsIgnoreCase(name, ".dictionaries") || ascii::equalsIgnoreCase(name, "dictionaries")) return Folder::Resources;
   return Folder::None;
 }
 
@@ -75,7 +69,7 @@ void scan(void*) {
       if (thinker.shouldStop()) return;  // also gives the other tasks their turn
       entry.getName(name, sizeof(name));
       if (entry.isDirectory()) {
-        if (atRoot && equalsIgnoreCase(name, "System Volume Information")) continue;
+        if (atRoot && ascii::equalsIgnoreCase(name, "System Volume Information")) continue;
         pending.push_back({(atRoot ? "/" : dir.path + "/") + name, folderKind(dir.folder, atRoot, name)});
         continue;
       }

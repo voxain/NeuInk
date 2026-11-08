@@ -1,11 +1,17 @@
 #include "BookReadingStats.h"
 
+#include <ByteOrder.h>
 #include <HalStorage.h>
 #include <I18n.h>
 #include <Logging.h>
 
 #include <algorithm>
 #include <cstring>
+
+using byteorder::readLe16;
+using byteorder::readLe32;
+using byteorder::writeLe16;
+using byteorder::writeLe32;
 
 namespace {
 // Binary layout v1 (11 bytes):
@@ -129,31 +135,10 @@ bool openStatsFileForRead(const std::string& cachePath, FsFile& f) {
   return false;
 }
 
-uint16_t readLe16(const uint8_t* data, const int offset) {
-  return static_cast<uint16_t>(data[offset]) | (static_cast<uint16_t>(data[offset + 1]) << 8);
-}
-
-uint32_t readLe32(const uint8_t* data, const int offset) {
-  return static_cast<uint32_t>(data[offset]) | (static_cast<uint32_t>(data[offset + 1]) << 8) |
-         (static_cast<uint32_t>(data[offset + 2]) << 16) | (static_cast<uint32_t>(data[offset + 3]) << 24);
-}
-
 void readCommonStats(const uint8_t* data, BookReadingStats& stats) {
   stats.sessionCount = readLe16(data, 1);
   stats.totalReadingSeconds = readLe32(data, 3);
   stats.totalPagesTurned = readLe32(data, 7);
-}
-
-void writeLe16(uint8_t* data, const int offset, const uint16_t value) {
-  data[offset] = value & 0xFF;
-  data[offset + 1] = (value >> 8) & 0xFF;
-}
-
-void writeLe32(uint8_t* data, const int offset, const uint32_t value) {
-  data[offset] = value & 0xFF;
-  data[offset + 1] = (value >> 8) & 0xFF;
-  data[offset + 2] = (value >> 16) & 0xFF;
-  data[offset + 3] = (value >> 24) & 0xFF;
 }
 
 ReadingStatsDate readDate(const uint8_t* data, const int offset) {

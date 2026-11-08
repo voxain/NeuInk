@@ -1,6 +1,7 @@
 #include "Epub.h"
 
 #include <ArduinoJson.h>
+#include <ByteOrder.h>
 #include <FsHelpers.h>
 #include <GfxRenderer.h>
 #include <HalStorage.h>
@@ -220,11 +221,6 @@ float clampUnit(const float value) {
   return value;
 }
 
-int32_t readLe32(const uint8_t* data) {
-  return static_cast<int32_t>(static_cast<uint32_t>(data[0]) | (static_cast<uint32_t>(data[1]) << 8) |
-                              (static_cast<uint32_t>(data[2]) << 16) | (static_cast<uint32_t>(data[3]) << 24));
-}
-
 void normalizeThumbDimensions(int& width, int& height) {
   if (height <= 0) {
     height = kDefaultThumbHeight;
@@ -266,8 +262,8 @@ bool cachedBmpMatchesDimensions(const std::string& path, const int width, const 
   const bool hasHeader = file.size() >= sizeof(header) && file.read(header, sizeof(header)) == sizeof(header);
   file.close();
   const bool isBmp = hasHeader && header[0] == 'B' && header[1] == 'M';
-  const int32_t bmpWidth = isBmp ? readLe32(header + 18) : 0;
-  const int32_t bmpHeight = isBmp ? readLe32(header + 22) : 0;
+  const int32_t bmpWidth = isBmp ? static_cast<int32_t>(byteorder::readLe32(header + 18)) : 0;
+  const int32_t bmpHeight = isBmp ? static_cast<int32_t>(byteorder::readLe32(header + 22)) : 0;
   const int32_t absHeight = bmpHeight < 0 ? -bmpHeight : bmpHeight;
   const bool exactMatch = isBmp && bmpWidth == width && absHeight == height;
   const bool containedMatch = allowContainedDimensions && isBmp && bmpWidth > 0 && absHeight > 0 && bmpWidth <= width &&

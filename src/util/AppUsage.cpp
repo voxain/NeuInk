@@ -69,11 +69,13 @@ uint8_t slotOf(const std::string& activityName) {
     const char* name;
     uint8_t slot;
   };
+  // BookStats has no entry: it opens from the reader, Home's book menu or the Stats picker, so its time counts toward
+  // whichever of those it opened over.
   static constexpr Screen kScreens[] = {
       {"Reader", AppUsage::kReader},         {"EpubReader", AppUsage::kReader},    {"TxtReader", AppUsage::kReader},
       {"XtcReader", AppUsage::kReader},      {"Home", AppUsage::kHome},            {"Settings", AppUsage::kSettings},
       {"FileBrowser", AppUsage::kFiles},     {"Library", AppUsage::kLibrary},      {"OpdsServerList", AppUsage::kOpds},
-      {"OpdsBookBrowser", AppUsage::kOpds},  {"StatsPicker", AppUsage::kStats},    {"BookStats", AppUsage::kStats},
+      {"OpdsBookBrowser", AppUsage::kOpds},  {"StatsPicker", AppUsage::kStats},
       {"HighlightsHub", AppUsage::kSaved},   {"SavedItemsHome", AppUsage::kSaved},
   };
   for (const Screen& screen : kScreens) {

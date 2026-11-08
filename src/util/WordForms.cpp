@@ -1,5 +1,7 @@
 #include "WordForms.h"
 
+#include <AsciiText.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
@@ -31,10 +33,7 @@ std::vector<std::string> englishCandidates(const std::string& word) {
   size_t len = normalized.size();
   if (len < 3) return variants;
 
-  auto endsWith = [&normalized, len](const char* suffix) {
-    size_t slen = strlen(suffix);
-    return len >= slen && normalized.compare(len - slen, slen, suffix) == 0;
-  };
+  auto endsWith = [&normalized](const char* suffix) { return ascii::endsWith(normalized, suffix); };
 
   std::string scratch;
   scratch.reserve(len + 4);

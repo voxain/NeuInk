@@ -1,5 +1,7 @@
 #include "GermanStemmer.h"
 
+#include <AsciiText.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -18,16 +20,6 @@ constexpr unsigned char UPPER_AE = 0x84, UPPER_OE = 0x96, UPPER_UE = 0x9C;
 constexpr const char* SEPARABLE_PREFIXES[] = {"zurück", "zusammen", "weiter", "nach", "fest", "fort", "heim", "vorbei",
                                               "weg",    "auf",      "aus",    "bei",  "ein",  "mit",  "vor",  "her",
                                               "hin",    "los",      "ab",     "an",   "zu"};
-
-bool endsWith(const std::string& s, const char* suffix) {
-  const size_t n = strlen(suffix);
-  return s.size() >= n && s.compare(s.size() - n, n, suffix) == 0;
-}
-
-bool startsWith(const std::string& s, const char* prefix) {
-  const size_t n = strlen(prefix);
-  return s.size() >= n && s.compare(0, n, prefix) == 0;
-}
 
 // ASCII and Ä/Ö/Ü to lower case; other bytes pass through.
 std::string toLower(const std::string& word) {
@@ -94,7 +86,7 @@ class VariantList {
   // A verb stem mapped to its infinitive: "mach" -> "machen", "wander" -> "wandern".
   void addInfinitive(const std::string& stem) {
     if (stem.size() < 2) return;
-    if (endsWith(stem, "el") || endsWith(stem, "er")) add(stem + "n");
+    if (ascii::endsWith(stem, "el") || ascii::endsWith(stem, "er")) add(stem + "n");
     add(stem + "en");
   }
 
@@ -110,11 +102,11 @@ std::string strip(const std::string& word, size_t n) { return word.size() > n ? 
 // Past participle without a separable prefix: "gemacht" -> "machen",
 // "gearbeitet" -> "arbeiten", "gefahren" -> "fahren".
 void addParticiple(VariantList& out, const std::string& word, const std::string& prefix = {}) {
-  if (!startsWith(word, "ge") || word.size() < 5) return;
+  if (!ascii::startsWith(word, "ge") || word.size() < 5) return;
   const std::string inner = word.substr(2);
-  if (endsWith(inner, "et")) out.addInfinitive(prefix + strip(inner, 2));
-  if (endsWith(inner, "t")) out.addInfinitive(prefix + strip(inner, 1));
-  if (endsWith(inner, "en")) out.add(prefix + inner);
+  if (ascii::endsWith(inner, "et")) out.addInfinitive(prefix + strip(inner, 2));
+  if (ascii::endsWith(inner, "t")) out.addInfinitive(prefix + strip(inner, 1));
+  if (ascii::endsWith(inner, "en")) out.add(prefix + inner);
 }
 
 }  // namespace
@@ -131,27 +123,27 @@ std::vector<std::string> variants(const std::string& word) {
   out.add(removeLastUmlaut(w));
 
   // Feminine plural: "Lehrerinnen" -> "Lehrerin".
-  if (endsWith(w, "innen")) out.add(strip(w, 3));
+  if (ascii::endsWith(w, "innen")) out.add(strip(w, 3));
 
   // Comparative/superlative with adjective endings: "größeren" -> "groß",
   // "schönsten" -> "schön".
   for (const char* suffix : {"sten", "ster", "stem", "stes", "ste", "eren", "erem", "erer", "eres", "ere"}) {
-    if (endsWith(w, suffix)) out.addStem(strip(w, strlen(suffix)));
+    if (ascii::endsWith(w, suffix)) out.addStem(strip(w, strlen(suffix)));
   }
 
   // Noun plural/case and adjective endings, longest first.
-  if (endsWith(w, "ern")) out.addStem(strip(w, 3));  // Kindern -> Kind
+  if (ascii::endsWith(w, "ern")) out.addStem(strip(w, 3));  // Kindern -> Kind
   for (const char* suffix : {"en", "em", "er", "es"}) {
-    if (endsWith(w, suffix)) {
+    if (ascii::endsWith(w, suffix)) {
       out.addStem(strip(w, 2));  // Frauen -> Frau, Hauses -> Haus, Häuser -> Haus
       out.addStem(strip(w, 1));  // Blumen -> Blume
     }
   }
-  if (endsWith(w, "e") || endsWith(w, "n") || endsWith(w, "s")) out.addStem(strip(w, 1));  // Hunde, Autos
+  if (ascii::endsWith(w, "e") || ascii::endsWith(w, "n") || ascii::endsWith(w, "s")) out.addStem(strip(w, 1));  // Hunde, Autos
 
   // Weak-verb past tense: "machte" / "arbeitete" -> infinitive.
   for (const char* suffix : {"etest", "eten", "etet", "ete", "test", "ten", "tet", "te"}) {
-    if (endsWith(w, suffix)) {
+    if (ascii::endsWith(w, suffix)) {
       out.addInfinitive(strip(w, strlen(suffix)));
       break;
     }
@@ -159,7 +151,7 @@ std::vector<std::string> variants(const std::string& word) {
 
   // Present tense: "machst" / "macht" / "arbeitet" / "mache" -> infinitive.
   for (const char* suffix : {"est", "et", "st", "t", "e"}) {
-    if (endsWith(w, suffix)) {
+    if (ascii::endsWith(w, suffix)) {
       out.addInfinitive(strip(w, strlen(suffix)));
       break;
     }
@@ -168,7 +160,7 @@ std::vector<std::string> variants(const std::string& word) {
   // Participles, also when used as adjectives ("die gemachte Arbeit").
   addParticiple(out, w);
   for (const char* suffix : {"en", "em", "er", "es", "e"}) {
-    if (endsWith(w, suffix)) {
+    if (ascii::endsWith(w, suffix)) {
       addParticiple(out, strip(w, strlen(suffix)));
       break;
     }
@@ -176,10 +168,10 @@ std::vector<std::string> variants(const std::string& word) {
 
   // Separable verbs: "aufgemacht" -> "aufmachen", "anzurufen" -> "anrufen".
   for (const char* prefix : SEPARABLE_PREFIXES) {
-    if (!startsWith(w, prefix)) continue;
+    if (!ascii::startsWith(w, prefix)) continue;
     const std::string rest = w.substr(strlen(prefix));
     addParticiple(out, rest, prefix);
-    if (startsWith(rest, "zu") && endsWith(rest, "en") && rest.size() > 5) out.add(prefix + rest.substr(2));
+    if (ascii::startsWith(rest, "zu") && ascii::endsWith(rest, "en") && rest.size() > 5) out.add(prefix + rest.substr(2));
   }
 
   return out.take();
@@ -188,7 +180,7 @@ std::vector<std::string> variants(const std::string& word) {
 bool isGermanSource(const char* lang, const char* bookname, const char* folderPath) {
   if (lang && lang[0]) {
     const std::string l = toLower(lang);
-    return startsWith(l, "de") && (l.size() == 2 || !isalpha(static_cast<unsigned char>(l[2])));
+    return ascii::startsWith(l, "de") && (l.size() == 2 || !isalpha(static_cast<unsigned char>(l[2])));
   }
 
   std::string haystack = toLower(bookname ? bookname : "");

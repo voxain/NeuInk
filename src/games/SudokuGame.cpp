@@ -1,5 +1,7 @@
 #include "SudokuGame.h"
 
+#include "Xorshift.h"
+
 #include <algorithm>
 #include <cstring>
 
@@ -21,12 +23,7 @@ int lowestDigit(const uint16_t mask) { return __builtin_ctz(mask); }
 struct Rng {
   uint32_t state;
   explicit Rng(const uint32_t seed) : state(seed ? seed : 0x9E3779B9u) {}
-  uint32_t next() {
-    state ^= state << 13;
-    state ^= state >> 17;
-    state ^= state << 5;
-    return state;
-  }
+  uint32_t next() { return xorshift32(state); }
   uint32_t below(const uint32_t bound) { return next() % bound; }
 };
 

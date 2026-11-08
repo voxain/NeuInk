@@ -65,19 +65,7 @@ bool containsDictionaryWordPartSeparator(const char* text, const size_t length) 
   return false;
 }
 
-bool hasVisibleWordText(const char* text) {
-  if (!text) return false;
-  const char* cursor = text;
-  if (static_cast<unsigned char>(cursor[0]) == 0xE2 && cursor[1] != '\0' && cursor[2] != '\0' &&
-      static_cast<unsigned char>(cursor[1]) == 0x80 && static_cast<unsigned char>(cursor[2]) == 0x83) {
-    cursor += 3;
-  }
-  while (*cursor) {
-    if (*cursor != ' ' && *cursor != '\t' && *cursor != '\r' && *cursor != '\n') return true;
-    ++cursor;
-  }
-  return false;
-}
+using ReaderUtils::hasVisibleWordText;
 
 bool addBudgetBytes(size_t& total, const size_t bytes) {
   if (bytes > std::numeric_limits<size_t>::max() - total) return false;
@@ -352,7 +340,7 @@ void DictionaryWordSelectActivity::renderDefinitionBackground() {
     return;
   }
   const bool foregroundBlack = ReaderUtils::readerForegroundBlack();
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
 
   // Dictionary layout can evict the reader font's bitmap glyph cache. Rebuild
   // it before redrawing the page behind the modal; the persistent advance
@@ -1618,7 +1606,7 @@ void DictionaryWordSelectActivity::render(RenderLock&&) {
   }
 
   // Full repaint path.
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   if (controller.render()) {
     // Controller drew an overlay; framebuffer state is unknown.
     nextRenderMode_ = RenderMode::FullPage;
@@ -1630,7 +1618,7 @@ void DictionaryWordSelectActivity::render(RenderLock&&) {
     GfxRenderer::FrameBufferLoan loan(renderer);
     page->prepareImageCaches();
     loan.end();
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
   }
 
   // Font prewarm: scan pass accumulates text, then prewarm, then real render.

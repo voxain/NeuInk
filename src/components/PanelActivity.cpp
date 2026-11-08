@@ -119,10 +119,12 @@ void PanelActivity::screenBuilder(Screen& screen, void* user) {
 }
 
 void PanelActivity::loop() {
+  bool releasedOnControl = false;
   if (uiReady) {
     const auto snap = touchSnapshotFrom(mappedInput);
     if (snap.touchPressed || snap.touchHeld || snap.touchReleased) {
-      app.route(snap);
+      const freeink::ui::ActionEvent event = app.route(snap);
+      releasedOnControl = snap.touchReleased && static_cast<bool>(event);
       if (app.invalidated()) requestUpdate();
     }
   }
@@ -138,6 +140,8 @@ void PanelActivity::loop() {
     scrollPage(direction == MappedInputManager::SwipeDir::Up);
     return;
   }
+  // A tap that a control took is not also a dismiss: its action may have closed the panel already.
+  if (releasedOnControl) return;
   if (DrawerHandle::wasDismissSwipe(mappedInput, handle, anchor()) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     finish();

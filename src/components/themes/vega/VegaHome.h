@@ -209,6 +209,11 @@ enum Intro : uint8_t { IntroHome = 1, IntroEdit = 2 };
 void drawIntro(GfxRenderer& renderer, Intro intro);
 Rect introButton(const GfxRenderer& renderer);
 
+// Whether (x, y) is inside `rect`: the left and top edges count, the right and bottom ones do not.
+inline bool contains(const Rect& rect, const int x, const int y) {
+  return x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;
+}
+
 // Moves item `from` to where `to` is (both widgets or both entries); entries are written as their keys.
 void moveWidget(int from, int to);
 void moveEntry(const std::vector<uint8_t>& keys, int from, int to);

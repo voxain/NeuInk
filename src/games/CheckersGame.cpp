@@ -1,5 +1,9 @@
 #include "CheckersGame.h"
 
+#include <ByteOrder.h>
+
+#include "Xorshift.h"
+
 #include <cstring>
 
 namespace checkers {
@@ -143,26 +147,7 @@ struct Searcher {
   }
 };
 
-uint32_t nextRandom(uint32_t& state) {
-  state ^= state << 13;
-  state ^= state >> 17;
-  state ^= state << 5;
-  return state;
-}
-
 constexpr uint8_t kSaveMagic[4] = {'V', 'C', 'K', '1'};
-
-void putU32(uint8_t* out, const uint32_t value) {
-  out[0] = static_cast<uint8_t>(value);
-  out[1] = static_cast<uint8_t>(value >> 8);
-  out[2] = static_cast<uint8_t>(value >> 16);
-  out[3] = static_cast<uint8_t>(value >> 24);
-}
-
-uint32_t getU32(const uint8_t* in) {
-  return static_cast<uint32_t>(in[0]) | (static_cast<uint32_t>(in[1]) << 8) | (static_cast<uint32_t>(in[2]) << 16) |
-         (static_cast<uint32_t>(in[3]) << 24);
-}
 
 // The 32 playable squares, numbered row by row.
 constexpr int squareOf(const int index) { return (index / 4) * 8 + (index % 4) * 2 + (((index / 4) & 1) ? 0 : 1); }
@@ -312,7 +297,7 @@ SearchResult search(const Position& root, const SearchOptions& options, const St
       for (int i = 0; i < count; ++i) {
         if (scores[i] >= best - margin) ++candidates;
       }
-      int pick = static_cast<int>(nextRandom(random) % static_cast<uint32_t>(candidates));
+      int pick = static_cast<int>(xorshift32(random) % static_cast<uint32_t>(candidates));
       for (int i = 0; i < count; ++i) {
         if (scores[i] >= best - margin && pick-- == 0) chosen = i;
       }
@@ -469,10 +454,10 @@ size_t Game::save(uint8_t out[kSaveBytes]) const {
   uint8_t* cursor = out + 8;
   for (int i = -1; i < kept; ++i) {
     const Snapshot snapshot = i < 0 ? pack(pos_) : history_[historyCount_ - kept + i];
-    putU32(cursor, snapshot.men[0]);
-    putU32(cursor + 4, snapshot.men[1]);
-    putU32(cursor + 8, snapshot.kings[0]);
-    putU32(cursor + 12, snapshot.kings[1]);
+    byteorder::writeLe32(cursor, 0, snapshot.men[0]);
+    byteorder::writeLe32(cursor + 4, 0, snapshot.men[1]);
+    byteorder::writeLe32(cursor + 8, 0, snapshot.kings[0]);
+    byteorder::writeLe32(cursor + 12, 0, snapshot.kings[1]);
     cursor[16] = snapshot.side;
     cursor[17] = snapshot.jumper;
     cursor[18] = snapshot.quiet;
@@ -492,10 +477,10 @@ bool Game::load(const uint8_t* data, const size_t size) {
   const uint8_t* cursor = data + 8;
   for (int i = -1; i < kept; ++i) {
     Snapshot snapshot;
-    snapshot.men[0] = getU32(cursor);
-    snapshot.men[1] = getU32(cursor + 4);
-    snapshot.kings[0] = getU32(cursor + 8);
-    snapshot.kings[1] = getU32(cursor + 12);
+    snapshot.men[0] = byteorder::readLe32(cursor);
+    snapshot.men[1] = byteorder::readLe32(cursor + 4);
+    snapshot.kings[0] = byteorder::readLe32(cursor + 8);
+    snapshot.kings[1] = byteorder::readLe32(cursor + 12);
     snapshot.side = cursor[16];
     snapshot.jumper = cursor[17];
     snapshot.quiet = cursor[18];

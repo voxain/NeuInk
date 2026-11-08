@@ -175,27 +175,16 @@ inline void bigDigit(const GfxRenderer& renderer, const int digit, const bool bo
   }
 }
 
-// The look of the shared UI components: a light-gray rounded box, black when chosen, no outline.
-inline void buttonBody(const GfxRenderer& renderer, const Box& box, const bool filled, const int radius = 14) {
-  renderer.fillRoundedRect(box.x, box.y, box.w, box.h, radius, filled ? Color::Black : Color::LightGray);
-}
-
-// A label wider than its button (a long translation) is drawn in the small font.
+// A button of the kit, drawn on the renderer: gray, black when chosen; a label too wide is set in the small font.
 inline void button(const GfxRenderer& renderer, const Box& box, const char* label, const bool filled,
                    const int fontId = UI_10_FONT_ID) {
-  buttonBody(renderer, box, filled);
-  const bool fits = renderer.getTextWidth(fontId, label, EpdFontFamily::BOLD) <= box.w - 8;
-  centredText(renderer, fits ? fontId : SMALL_FONT_ID, box, label, !filled, EpdFontFamily::BOLD);
+  drawButton(renderer, box.x, box.y, box.w, box.h, label, filled, fontId);
 }
 
 // A button with a picture above its word.
 inline void iconButton(const GfxRenderer& renderer, const Box& box, const freeink::Icon& icon, const char* label,
                        const bool filled) {
-  buttonBody(renderer, box, filled, 16);
-  constexpr int labelHeight = 30;
-  const int iconY = box.y + (box.h - icon.h - labelHeight - 4) / 2;
-  drawLucideIcon(renderer, icon, box.x + (box.w - icon.w) / 2, iconY, !filled);
-  fittedText(renderer, {box.x + 3, iconY + icon.h + 4, box.w - 6, labelHeight}, label, !filled);
+  drawButton(renderer, box.x, box.y, box.w, box.h, label, filled, UI_10_FONT_ID, true, &icon, 16);
 }
 
 // Diagonal hatching, the dark squares of a printed chess diagram.

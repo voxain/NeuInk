@@ -31,6 +31,7 @@ bool SoftwareUpdatesActivity::updateWaiting() const {
 
 void SoftwareUpdatesActivity::buildRows(std::vector<Row>& rows) {
   rows.clear();
+  waiting = updateWaiting();  // read once per rebuild: the header draws from it every frame
   const auto action = [&](const char* label, std::function<void()> onTap) {
     Row row;
     row.kind = Row::Kind::Chevron;
@@ -48,7 +49,7 @@ int SoftwareUpdatesActivity::headerHeight() const {
   const int line10 = renderer.getLineHeight(UI_10_FONT_ID);
   int height = kLogo + 8 + line12 + 16;
   if (SETTINGS.lastSeenVersion[0] != '\0') height += line10 * 2 + 8;
-  if (updateWaiting()) height += kButtonH + 16;
+  if (waiting) height += kButtonH + 16;
   return height + 8;
 }
 
@@ -67,7 +68,6 @@ void SoftwareUpdatesActivity::buildHeader(UiApp::ScreenType& screen, const freei
   if (SETTINGS.lastSeenVersion[0] == '\0') return;
 
   // After a check: what it found, against what is installed.
-  const bool waiting = updateWaiting();
   centred(UI_10_FONT_ID, y, waiting ? tr(STR_NEW_UPDATE) : tr(STR_UP_TO_DATE), EpdFontFamily::BOLD);
   y += renderer.getLineHeight(UI_10_FONT_ID);
   snprintf(line, sizeof(line), waiting ? "%s  \xE2\x86\x92  %s" : "%s  =  %s", CROSSINK_VERSION, SETTINGS.lastSeenVersion);

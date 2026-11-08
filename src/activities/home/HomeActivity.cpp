@@ -107,10 +107,6 @@ struct HomeMenuEntries {
   const HomeMenuEntry& operator[](int index) const { return entries[index]; }
 };
 
-bool containsPoint(const Rect& rect, const int x, const int y) {
-  return x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;
-}
-
 struct CarouselCacheHeader {
   uint32_t magic;
   uint16_t version;
@@ -244,8 +240,6 @@ bool coverFailedBefore(const RecentBook& book) {
 bool homeListsApps() {
   return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::VEGA;
 }
-
-bool rectContains(const Rect& rect, int x, int y);  // defined with the Vega edit mode below
 
 static_assert(static_cast<uint8_t>(HomeMenuAction::BrowseFiles) == vegahome::KeyFiles &&
                   static_cast<uint8_t>(HomeMenuAction::Library) == vegahome::KeyLibrary &&
@@ -1610,7 +1604,7 @@ void HomeActivity::loop() {
     int x = 0;
     int y = 0;
     const Rect button = vegahome::introButton(renderer);
-    if ((mappedInput.wasScreenTapped(x, y) && rectContains(button, x, y)) ||
+    if ((mappedInput.wasScreenTapped(x, y) && vegahome::contains(button, x, y)) ||
         mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       SETTINGS.homeIntroSeen |= pendingIntro();
       SETTINGS.saveToFile();
@@ -1743,7 +1737,7 @@ void HomeActivity::loop() {
       int touchX = 0;
       int touchY = 0;
       if (mappedInput.wasScreenTouchDown(touchX, touchY) &&
-          !containsPoint(MinimalTheme::buttonMenuPanelRect(renderer, menuCount), touchX, touchY)) {
+          !vegahome::contains(MinimalTheme::buttonMenuPanelRect(renderer, menuCount), touchX, touchY)) {
         minimalMenuOpen = false;
         minimalHomeNavIndex = -1;
         requestUpdate();
@@ -1946,7 +1940,7 @@ void HomeActivity::loop() {
     }
   }
   const bool carouselSwipeStartsInMenu =
-      hasCarouselSwipe && containsPoint(LyraCarouselTheme::buttonMenuTouchRect(renderer, carouselMenuItemCount),
+      hasCarouselSwipe && vegahome::contains(LyraCarouselTheme::buttonMenuTouchRect(renderer, carouselMenuItemCount),
                                         carouselSwipeStartX, carouselSwipeStartY);
   if (hasCarouselSwipe && carouselMenuTouchDownIndex >= 0) {
     carouselMenuTouchDownIndex = -1;
@@ -2763,10 +2757,6 @@ void drawEditBar(const GfxRenderer& renderer) {
                     textY, tr(STR_DONE), false, EpdFontFamily::BOLD);
 }
 
-bool rectContains(const Rect& rect, const int x, const int y) {
-  return x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;
-}
-
 // Changes to these redraw the widgets' snapshot (the cards and covers).
 uint32_t widgetLayoutKey(const int greetingHeight, const vegahome::Plan& plan) {
   uint32_t hash = 2166136261u;
@@ -2882,10 +2872,15 @@ bool HomeActivity::loopVegaEdit() {
     setEditMode(false);
     return true;
   }
-  const vegahome::Plan plan = vegahome::plan(renderer, vegaGreetingHeight(renderer));
-  const auto menuItems = buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings, false);
-  const int entries = menuItems.size();
-  const int pages = plan.pageCount(entries);
+  // The layout as it is when a touch starts and when it is dropped (nothing moves in between), not on every tick.
+  struct Layout {
+    vegahome::Plan plan;
+    HomeMenuEntries menu;
+  };
+  const auto layoutNow = [this] {
+    return Layout{vegahome::plan(renderer, vegaGreetingHeight(renderer)),
+                  buildSelectableHomeMenuItems(hasOpdsServers, hasReadingStats, hasBookmarks, hasClippings, false)};
+  };
 
   int x = 0;
   int y = 0;
@@ -2893,7 +2888,8 @@ bool HomeActivity::loopVegaEdit() {
     editTouchActive = true;
     editStartX = editLastX = x;
     editStartY = editLastY = y;
-    const vegahome::Hit hit = vegahome::hitTest(plan, homePage, entries, x, y);
+    const Layout start = layoutNow();
+    const vegahome::Hit hit = vegahome::hitTest(start.plan, homePage, start.menu.size(), x, y);
     editHeldKind = hit.kind;
     editHeldIndex = hit.index;
     // What is held shows black (an entry) or strongly outlined (a widget) until it is dropped.
@@ -2914,15 +2910,20 @@ bool HomeActivity::loopVegaEdit() {
   const int dx = editLastX - editStartX;
   const int dy = editLastY - editStartY;
   requestUpdate();
+  const Layout layout = layoutNow();
+  const vegahome::Plan& plan = layout.plan;
+  const auto& menuItems = layout.menu;
+  const int entries = menuItems.size();
+  const int pages = plan.pageCount(entries);
 
   if (std::abs(dx) < kEditDragSlop && std::abs(dy) < kEditDragSlop) {
     Rect add;
     Rect done;
     editBarRects(renderer, add, done);
     HomeWidgetActivity::Target target;
-    if (rectContains(done, editStartX, editStartY)) {
+    if (vegahome::contains(done, editStartX, editStartY)) {
       setEditMode(false);
-    } else if (rectContains(add, editStartX, editStartY)) {
+    } else if (vegahome::contains(add, editStartX, editStartY)) {
       openWidgetPanel(target, Rect{});
     } else if (kind == vegahome::Hit::Widget) {
       target.kind = HomeWidgetActivity::Target::Widget;

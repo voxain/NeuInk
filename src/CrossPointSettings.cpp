@@ -47,7 +47,6 @@ constexpr char LEGACY_SETTINGS_FILE_JSON[] = "/.crosspoint/settings.json";
 constexpr char SETTINGS_FILE_BAK[] = "/.crosspoint/settings.bin.bak";
 constexpr char LANG_FILE_BIN[] = "/.crosspoint/language.bin";
 constexpr char LANG_FILE_BAK[] = "/.crosspoint/language.bin.bak";
-constexpr uint8_t INVALID_READER_FONT_SIZE = 0xFF;
 constexpr uint8_t TILT_DIRECTION_SCHEMA_CURRENT = 2;
 // 2: Automatic indexing exists and is the default (VARAGH 1.1).
 constexpr uint8_t INDEXING_METHOD_SCHEMA_CURRENT = 2;
@@ -1332,16 +1331,6 @@ uint8_t CrossPointSettings::getActiveReaderFontSizeCount() {
   return static_cast<uint8_t>(std::count_if(std::begin(READER_FONT_SIZE_STORAGE_ORDER),
                                             std::end(READER_FONT_SIZE_STORAGE_ORDER),
                                             [](const FONT_SIZE size) { return isReaderFontSizeAvailable(size); }));
-}
-
-uint8_t CrossPointSettings::getStoredReaderFontSize(const FONT_SIZE size) {
-  uint8_t stored = 0;
-  for (const FONT_SIZE activeSize : READER_FONT_SIZE_STORAGE_ORDER) {
-    if (!isReaderFontSizeAvailable(activeSize)) continue;
-    if (size == activeSize) return stored;
-    stored++;
-  }
-  return INVALID_READER_FONT_SIZE;
 }
 
 uint8_t CrossPointSettings::getReaderFontPointSize(const FONT_SIZE size) {

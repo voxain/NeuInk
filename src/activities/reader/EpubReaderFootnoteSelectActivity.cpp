@@ -177,14 +177,14 @@ void EpubReaderFootnoteSelectActivity::render(RenderLock&&) {
     if (!prewarmSucceeded) {
       LOG_ERR("FNS", "Font page prewarm failed after retry (font=%d free=%u maxAlloc=%u)", fontId, ESP.getFreeHeap(),
               ESP.getMaxAllocHeap());
-      renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+      renderer.clearScreen();
       GUI.drawPopup(renderer, tr(STR_MEMORY_ERROR));
       renderer.displayBuffer(HalDisplay::FAST_REFRESH);
       return;
     }
   }
 
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   page->render(renderer, fontId, marginLeft, marginTop, ReaderUtils::readerForegroundBlack());
   drawHighlightWithSnapshot();
   drawChrome();

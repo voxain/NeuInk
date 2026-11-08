@@ -52,23 +52,9 @@ constexpr uint16_t LOCAL_UDP_PORT = 8134;
 // Static pointer for WebSocket callback (WebSocketsServer requires C-style callback)
 CrossPointWebServer* wsInstance = nullptr;
 
-uint8_t enumRawValueForDisplayIndex(const SettingInfo& setting, uint8_t displayIndex) {
-  if (setting.enumRawValues.empty()) {
-    return displayIndex;
-  }
-  if (displayIndex >= setting.enumRawValues.size()) {
-    return setting.enumRawValues.front();
-  }
-  return setting.enumRawValues[displayIndex];
-}
-
-bool isTwoFingerSwipeSetting(const SettingInfo& setting) {
-  return setting.nameId == StrId::STR_TWO_FINGER_SWIPE_UP || setting.nameId == StrId::STR_TWO_FINGER_SWIPE_DOWN ||
-         setting.nameId == StrId::STR_TWO_FINGER_SWIPE_LEFT || setting.nameId == StrId::STR_TWO_FINGER_SWIPE_RIGHT;
-}
 
 bool isSwipeActionSetting(const SettingInfo& setting) {
-  return isTwoFingerSwipeSetting(setting) || setting.nameId == StrId::STR_LEFT_EDGE_UP ||
+  return isTwoFingerSwipeSetting(setting.valuePtr) || setting.nameId == StrId::STR_LEFT_EDGE_UP ||
          setting.nameId == StrId::STR_LEFT_EDGE_DOWN || setting.nameId == StrId::STR_RIGHT_EDGE_UP ||
          setting.nameId == StrId::STR_RIGHT_EDGE_DOWN;
 }
@@ -130,17 +116,15 @@ bool isWebSettingAvailable(const SettingInfo& setting) {
       setting.nameId == StrId::STR_TOUCH_READER_CONTROLS || setting.nameId == StrId::STR_DISABLE_TOUCHSCREEN ||
       setting.nameId == StrId::STR_NEXT_PAGE || setting.nameId == StrId::STR_PREV_PAGE ||
       setting.nameId == StrId::STR_TAP_HIDE_STATUS_BAR || setting.nameId == StrId::STR_PINCH_FONT_RESIZE ||
-      setting.nameId == StrId::STR_TWO_FINGER_ROTATION || setting.nameId == StrId::STR_TWO_FINGER_SWIPE_UP ||
-      setting.nameId == StrId::STR_TWO_FINGER_SWIPE_DOWN || setting.nameId == StrId::STR_TWO_FINGER_SWIPE_LEFT ||
-      setting.nameId == StrId::STR_TWO_FINGER_SWIPE_RIGHT || setting.nameId == StrId::STR_LEFT_EDGE_UP ||
-      setting.nameId == StrId::STR_LEFT_EDGE_DOWN || setting.nameId == StrId::STR_RIGHT_EDGE_UP ||
+      setting.nameId == StrId::STR_TWO_FINGER_ROTATION || isTwoFingerSwipeSetting(setting.valuePtr) ||
+      setting.nameId == StrId::STR_LEFT_EDGE_UP || setting.nameId == StrId::STR_LEFT_EDGE_DOWN || setting.nameId == StrId::STR_RIGHT_EDGE_UP ||
       setting.nameId == StrId::STR_RIGHT_EDGE_DOWN;
   if (isTouchSetting && !gpio.hasTouch()) {
     return false;
   }
 
   const bool isMultiTouchSetting = setting.nameId == StrId::STR_PINCH_FONT_RESIZE ||
-                                   setting.nameId == StrId::STR_TWO_FINGER_ROTATION || isTwoFingerSwipeSetting(setting);
+                                   setting.nameId == StrId::STR_TWO_FINGER_ROTATION || isTwoFingerSwipeSetting(setting.valuePtr);
   if (isMultiTouchSetting && !gpio.supportsMultiTouch()) {
     return false;
   }

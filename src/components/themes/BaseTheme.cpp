@@ -40,29 +40,26 @@ constexpr int detachedHeaderBatteryTopInset = 5;
 
 // VARAGH 1.3.0 battery: a rounded body with a nub, filled smoothly to the
 // charge, a bolt in a white notch while charging, and "!" when nearly empty.
-void BaseTheme::drawBatteryOutline(const GfxRenderer& renderer, int x, int y, int battWidth, int rectHeight,
-                                   const bool foregroundBlack) {
+void BaseTheme::drawBatteryOutline(const GfxRenderer& renderer, int x, int y, int battWidth, int rectHeight) {
   const int right = x + battWidth - 3;  // body's right edge; the nub follows
-  renderer.drawLine(x + 1, y, right - 1, y, foregroundBlack);
-  renderer.drawLine(x + 1, y + rectHeight - 1, right - 1, y + rectHeight - 1, foregroundBlack);
-  renderer.drawLine(x, y + 1, x, y + rectHeight - 2, foregroundBlack);
-  renderer.drawLine(right, y + 1, right, y + rectHeight - 2, foregroundBlack);
-  renderer.fillRect(x + battWidth - 2, y + rectHeight / 2 - 2, 2, 4, foregroundBlack);
+  renderer.drawLine(x + 1, y, right - 1, y, true);
+  renderer.drawLine(x + 1, y + rectHeight - 1, right - 1, y + rectHeight - 1, true);
+  renderer.drawLine(x, y + 1, x, y + rectHeight - 2, true);
+  renderer.drawLine(right, y + 1, right, y + rectHeight - 2, true);
+  renderer.fillRect(x + battWidth - 2, y + rectHeight / 2 - 2, 2, 4, true);
 }
 
-void BaseTheme::drawBatteryLightningBolt(const GfxRenderer& renderer, int boltX, int boltY,
-                                         const bool foregroundBlack) {
+void BaseTheme::drawBatteryLightningBolt(const GfxRenderer& renderer, int boltX, int boltY) {
   // 8x12, one row per byte, MSB = leftmost pixel.
   static constexpr uint8_t BOLT[12] = {0x0C, 0x1C, 0x18, 0x38, 0x7F, 0x7E, 0xFE, 0x1C, 0x18, 0x30, 0x30, 0x20};
   for (int row = 0; row < 12; ++row) {
     for (int col = 0; col < 8; ++col) {
-      if (BOLT[row] & (0x80 >> col)) renderer.drawPixel(boltX + col, boltY + row, foregroundBlack);
+      if (BOLT[row] & (0x80 >> col)) renderer.drawPixel(boltX + col, boltY + row, true);
     }
   }
 }
 
-void BaseTheme::fillBatteryIcon(const GfxRenderer& renderer, Rect rect, uint16_t percentage,
-                                const bool foregroundBlack) const {
+void BaseTheme::fillBatteryIcon(const GfxRenderer& renderer, Rect rect, uint16_t percentage) const {
   const bool charging = gpio.isUsbConnected() && percentage < 100;
   const int innerX = rect.x + 2;
   const int innerY = rect.y + 2;
@@ -70,23 +67,22 @@ void BaseTheme::fillBatteryIcon(const GfxRenderer& renderer, Rect rect, uint16_t
   const int innerHeight = rect.height - 4;
   int fill = (innerWidth * std::min<int>(percentage, 100) + 50) / 100;
   if (percentage > 0 && fill == 0) fill = 1;
-  if (fill > 0) renderer.fillRect(innerX, innerY, fill, innerHeight, foregroundBlack);
+  if (fill > 0) renderer.fillRect(innerX, innerY, fill, innerHeight, true);
 
   if (charging) {
     // A white notch through the body with the bolt in it.
     const int boltX = rect.x + (rect.width - 3 - 8) / 2;
-    renderer.fillRect(boltX, rect.y + 1, 8, rect.height - 2, !foregroundBlack);
-    drawBatteryLightningBolt(renderer, boltX, rect.y, foregroundBlack);
+    renderer.fillRect(boltX, rect.y + 1, 8, rect.height - 2, false);
+    drawBatteryLightningBolt(renderer, boltX, rect.y);
   } else if (percentage <= 15) {
     // Nearly empty: "!" in the empty part of the body.
     const int markX = innerX + innerWidth - 5;
-    renderer.fillRect(markX, innerY, 2, innerHeight - 3, foregroundBlack);
-    renderer.fillRect(markX, innerY + innerHeight - 2, 2, 2, foregroundBlack);
+    renderer.fillRect(markX, innerY, 2, innerHeight - 3, true);
+    renderer.fillRect(markX, innerY + innerHeight - 2, 2, 2, true);
   }
 }
 
-void BaseTheme::drawBatteryLeft(const GfxRenderer& renderer, Rect rect, const bool showPercentage,
-                                const bool foregroundBlack) const {
+void BaseTheme::drawBatteryLeft(const GfxRenderer& renderer, Rect rect, const bool showPercentage) const {
   // Left aligned: icon on left, percentage on right (reader mode)
   const uint16_t percentage = powerManager.getBatteryPercentage();
   // The icon's nub makes its visual center sit slightly below its bounding
@@ -95,17 +91,15 @@ void BaseTheme::drawBatteryLeft(const GfxRenderer& renderer, Rect rect, const bo
 
   if (showPercentage) {
     const auto percentageText = std::to_string(percentage) + "%";
-    renderer.drawText(SMALL_FONT_ID, rect.x + batteryPercentSpacing + rect.width, rect.y, percentageText.c_str(),
-                      foregroundBlack);
+    renderer.drawText(SMALL_FONT_ID, rect.x + batteryPercentSpacing + rect.width, rect.y, percentageText.c_str(), true);
   }
 
   const Rect iconRect{rect.x, y, rect.width, rect.height};
-  drawBatteryOutline(renderer, rect.x, y, rect.width, rect.height, foregroundBlack);
-  fillBatteryIcon(renderer, iconRect, percentage, foregroundBlack);
+  drawBatteryOutline(renderer, rect.x, y, rect.width, rect.height);
+  fillBatteryIcon(renderer, iconRect, percentage);
 }
 
-void BaseTheme::drawBatteryRight(const GfxRenderer& renderer, Rect rect, const bool showPercentage,
-                                 const bool foregroundBlack) const {
+void BaseTheme::drawBatteryRight(const GfxRenderer& renderer, Rect rect, const bool showPercentage) const {
   // Right aligned: percentage on left, icon on right (UI headers)
   // rect.x is already positioned for the icon (drawHeader calculated it)
   const uint16_t percentage = powerManager.getBatteryPercentage();
@@ -114,13 +108,12 @@ void BaseTheme::drawBatteryRight(const GfxRenderer& renderer, Rect rect, const b
   if (showPercentage) {
     const auto percentageText = std::to_string(percentage) + "%";
     const int textWidth = renderer.getTextWidth(SMALL_FONT_ID, percentageText.c_str());
-    renderer.drawText(SMALL_FONT_ID, rect.x - textWidth - batteryPercentSpacing, rect.y, percentageText.c_str(),
-                      foregroundBlack);
+    renderer.drawText(SMALL_FONT_ID, rect.x - textWidth - batteryPercentSpacing, rect.y, percentageText.c_str(), true);
   }
 
   const Rect iconRect{rect.x, y, rect.width, rect.height};
-  drawBatteryOutline(renderer, rect.x, y, rect.width, rect.height, foregroundBlack);
-  fillBatteryIcon(renderer, iconRect, percentage, foregroundBlack);
+  drawBatteryOutline(renderer, rect.x, y, rect.width, rect.height);
+  fillBatteryIcon(renderer, iconRect, percentage);
 }
 
 namespace {
@@ -139,7 +132,7 @@ int BaseTheme::readerBatteryWidth(const GfxRenderer& renderer, const bool showPe
 }
 
 void BaseTheme::drawReaderBattery(const GfxRenderer& renderer, const int x, const int y, const bool showPercentage,
-                                  const bool percentageFirst, const bool foregroundBlack) const {
+                                  const bool percentageFirst) const {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int bodyW = metrics.batteryWidth - 3;  // the nub is 3 px
   const int centerY = y + 11;                  // on the text's line, as the header's battery
@@ -152,15 +145,15 @@ void BaseTheme::drawReaderBattery(const GfxRenderer& renderer, const int x, cons
   const int boxX = x + (percentageFirst ? textSpace + boltSpace : boltSpace);
   if (showPercentage) {
     renderer.drawText(SMALL_FONT_ID, percentageFirst ? x : boxX + metrics.batteryWidth + batteryPercentSpacing, y,
-                      text.c_str(), foregroundBlack);
+                      text.c_str(), true);
   }
   if (charging) {
-    drawBatteryLightningBolt(renderer, percentageFirst ? x + textSpace : x, centerY - 6, foregroundBlack);
+    drawBatteryLightningBolt(renderer, percentageFirst ? x + textSpace : x, centerY - 6);
   }
-  // Light gray track on white; on the dark page a darker one, so the white fill still reads as the level.
+  // Light gray track on white.
   levelbox::battery(renderer, boxX, centerY, bodyW, metrics.batteryHeight - 1, 6,
                     powerManager.getBatteryPercentage(), nullptr, SMALL_FONT_ID,
-                    foregroundBlack ? Color::LightGray : Color::DarkGray, foregroundBlack ? Color::Black : Color::White);
+                    Color::LightGray, Color::Black);
 }
 
 
@@ -960,7 +953,6 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
   const ReaderStatusBarConfig config = overrideConfig ? *overrideConfig : SETTINGS.readerStatusBar(position);
   const ThemeMetrics& metrics = UITheme::getInstance().getMetrics();
   const bool top = position == ReaderStatusBarPosition::Top;
-  const bool foregroundBlack = !content.darkMode;
   const bool clockAvailable = halClock.isAvailable() || content.previewClock != nullptr;
   const bool hasText = config.hasTextItems(clockAvailable) || (!top && content.autoTurnLabel != nullptr);
   const int progressHeight = config.progressBar != CrossPointSettings::HIDE_PROGRESS
@@ -996,7 +988,7 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
     const int barWidth = std::max(0, screenWidth - marginLeft - marginRight - bookmarkOffset);
     const int filled = static_cast<int>(barWidth * std::clamp(percent, 0.0f, 100.0f) / 100.0f);
     const int barY = top ? edgeY : edgeY + totalHeight - progressHeight;
-    renderer.fillRect(marginLeft + bookmarkOffset, barY, filled, progressHeight, foregroundBlack);
+    renderer.fillRect(marginLeft + bookmarkOffset, barY, filled, progressHeight, true);
   }
   int bookmarkReserve = 0;
   if (!top && content.bookmarked) {
@@ -1004,10 +996,10 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
     constexpr int bookmarkHeight = ReaderStatusBarConfig::BOOKMARK_HEIGHT;
     const int bookmarkY = hasText ? textY + (metrics.batteryHeight - bookmarkHeight) / 2 + 5 : edgeY;
     const int bookmarkX = marginLeft + metrics.statusBarHorizontalMargin + 1;
-    renderer.fillRect(bookmarkX, bookmarkY, bookmarkWidth, bookmarkHeight, foregroundBlack);
+    renderer.fillRect(bookmarkX, bookmarkY, bookmarkWidth, bookmarkHeight, true);
     const int notchX[3] = {bookmarkX, bookmarkX + bookmarkWidth, bookmarkX + bookmarkWidth / 2};
     const int notchY[3] = {bookmarkY + bookmarkHeight, bookmarkY + bookmarkHeight, bookmarkY + bookmarkHeight - 5};
-    renderer.fillPolygon(notchX, notchY, 3, content.darkMode);
+    renderer.fillPolygon(notchX, notchY, 3, false);
     bookmarkReserve = bookmarkWidth + 4;
   }
   if (!hasText) return;
@@ -1059,8 +1051,7 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
       const int width = readerBatteryWidth(renderer, showPercent);
       if (allowedWidth < width) return;
       const bool onRight = top && alignRight;
-      drawReaderBattery(renderer, onRight ? x + allowedWidth - width : x, textY, showPercent, onRight,
-                        foregroundBlack);
+      drawReaderBattery(renderer, onRight ? x + allowedWidth - width : x, textY, showPercent, onRight);
       return;
     }
     char scratch[48];
@@ -1073,7 +1064,7 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
       value = clipped.c_str();
       width = renderer.getTextWidth(SMALL_FONT_ID, value);
     }
-    renderer.drawText(SMALL_FONT_ID, x + (alignRight ? allowedWidth - width : 0), textY, value, foregroundBlack);
+    renderer.drawText(SMALL_FONT_ID, x + (alignRight ? allowedWidth - width : 0), textY, value, true);
   };
 
   constexpr int itemGap = 8;
@@ -1112,7 +1103,7 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
 }
 
 void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, const char* previewTime,
-                                      const bool readerContext, const int textYOffset, const bool darkMode,
+                                      const bool readerContext, const int textYOffset,
                                       const bool forceVisible) const {
   if (!forceVisible && !SETTINGS.shouldShowClockOutsideReader()) {
     return;
@@ -1149,7 +1140,7 @@ void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, con
                                    (readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
   const int baseTopY = topY >= 0 ? topY : metrics.topPadding;
   const int textY = baseTopY + (rowHeight - lineHeight) / 2 + effectiveTextYOffset;
-  renderer.drawText(fontId, textX, textY, timeText, !darkMode);
+  renderer.drawText(fontId, textX, textY, timeText, true);
 }
 
 void BaseTheme::drawHelpText(const GfxRenderer& renderer, Rect rect, const char* label) const {

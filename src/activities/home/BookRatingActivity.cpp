@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "MappedInputManager.h"
+#include "components/UiAppHelpers.h"
 #include "components/TouchHeaderBackButton.h"
 #include "fontIds.h"
 #include "util/BookRatingText.h"
@@ -113,8 +114,7 @@ void BookRatingActivity::render(RenderLock&&) {
       hintY += renderer.getLineHeight(SMALL_FONT_ID);
     }
     if (halfStars != 0) {
-      renderer.drawRoundedRect(clearBox.x, clearBox.y, clearBox.w, clearBox.h, 2, 10, true);
-      gameui::centredText(renderer, UI_10_FONT_ID, clearBox, tr(STR_RATING_CLEAR), true, EpdFontFamily::BOLD);
+      drawButton(renderer, clearBox.x, clearBox.y, clearBox.w, clearBox.h, tr(STR_RATING_CLEAR));
     }
   }
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

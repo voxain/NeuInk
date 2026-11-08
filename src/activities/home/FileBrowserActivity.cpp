@@ -1,6 +1,7 @@
 #include "FileBrowserActivity.h"
 
 #include <Arduino.h>
+#include <AsciiText.h>
 #include <Epub.h>
 #include <FreeInkUIIcon.h>
 #include <FsHelpers.h>
@@ -60,18 +61,8 @@ bool usesTwoLineFileBrowserRows() {
   return SETTINGS.fileBrowserDisplay == CrossPointSettings::FILE_BROWSER_DISPLAY_2_LINES;
 }
 
-bool equalsIgnoreCase(std::string_view a, std::string_view b) {
-  if (a.length() != b.length()) return false;
-  for (size_t i = 0; i < a.length(); ++i) {
-    if (tolower(static_cast<unsigned char>(a[i])) != tolower(static_cast<unsigned char>(b[i]))) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool isDefaultSleepFolderPath(const std::string& path) {
-  return equalsIgnoreCase(path, "/sleep") || equalsIgnoreCase(path, "/.sleep");
+  return ascii::equalsIgnoreCase(path, "/sleep") || ascii::equalsIgnoreCase(path, "/.sleep");
 }
 
 bool isSleepImageFile(const std::string& path) {
@@ -87,9 +78,9 @@ bool isMacOSMetadataEntry(std::string_view filename) {
 }
 
 bool isWindowsMetadataEntry(std::string_view filename) {
-  return equalsIgnoreCase(filename, "System Volume Information") || equalsIgnoreCase(filename, "$RECYCLE.BIN") ||
-         equalsIgnoreCase(filename, "desktop.ini") || equalsIgnoreCase(filename, "Thumbs.db") ||
-         equalsIgnoreCase(filename, "IndexerVolumeGuid") || equalsIgnoreCase(filename, "WPSettings.dat");
+  return ascii::equalsIgnoreCase(filename, "System Volume Information") || ascii::equalsIgnoreCase(filename, "$RECYCLE.BIN") ||
+         ascii::equalsIgnoreCase(filename, "desktop.ini") || ascii::equalsIgnoreCase(filename, "Thumbs.db") ||
+         ascii::equalsIgnoreCase(filename, "IndexerVolumeGuid") || ascii::equalsIgnoreCase(filename, "WPSettings.dat");
 }
 
 size_t estimateNextVectorCapacity(size_t size, size_t capacity) {

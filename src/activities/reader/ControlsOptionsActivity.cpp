@@ -21,32 +21,8 @@
 namespace fui = freeink::ui;
 
 namespace {
-uint8_t enumDisplayIndexForRawValue(const SettingInfo& setting, uint8_t rawValue) {
-  if (setting.enumRawValues.empty()) {
-    return rawValue;
-  }
 
-  auto it = std::find(setting.enumRawValues.begin(), setting.enumRawValues.end(), rawValue);
-  if (it == setting.enumRawValues.end()) {
-    return 0;
-  }
-  return static_cast<uint8_t>(std::distance(setting.enumRawValues.begin(), it));
-}
 
-uint8_t enumRawValueForDisplayIndex(const SettingInfo& setting, uint8_t displayIndex) {
-  if (setting.enumRawValues.empty()) {
-    return displayIndex;
-  }
-  if (displayIndex >= setting.enumRawValues.size()) {
-    return setting.enumRawValues.front();
-  }
-  return setting.enumRawValues[displayIndex];
-}
-
-bool isTwoFingerSwipeSetting(const uint8_t CrossPointSettings::* const valuePtr) {
-  return valuePtr == &CrossPointSettings::twoFingerSwipeUp || valuePtr == &CrossPointSettings::twoFingerSwipeDown ||
-         valuePtr == &CrossPointSettings::twoFingerSwipeLeft || valuePtr == &CrossPointSettings::twoFingerSwipeRight;
-}
 }  // namespace
 
 void ControlsOptionsActivity::onEnter() {
