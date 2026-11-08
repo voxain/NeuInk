@@ -960,7 +960,7 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
   const ReaderStatusBarConfig config = overrideConfig ? *overrideConfig : SETTINGS.readerStatusBar(position);
   const ThemeMetrics& metrics = UITheme::getInstance().getMetrics();
   const bool top = position == ReaderStatusBarPosition::Top;
-  const bool foregroundBlack = !content.darkMode;
+  constexpr bool foregroundBlack = true;
   const bool clockAvailable = halClock.isAvailable() || content.previewClock != nullptr;
   const bool hasText = config.hasTextItems(clockAvailable) || (!top && content.autoTurnLabel != nullptr);
   const int progressHeight = config.progressBar != CrossPointSettings::HIDE_PROGRESS
@@ -1007,7 +1007,7 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
     renderer.fillRect(bookmarkX, bookmarkY, bookmarkWidth, bookmarkHeight, foregroundBlack);
     const int notchX[3] = {bookmarkX, bookmarkX + bookmarkWidth, bookmarkX + bookmarkWidth / 2};
     const int notchY[3] = {bookmarkY + bookmarkHeight, bookmarkY + bookmarkHeight, bookmarkY + bookmarkHeight - 5};
-    renderer.fillPolygon(notchX, notchY, 3, content.darkMode);
+    renderer.fillPolygon(notchX, notchY, 3, false);
     bookmarkReserve = bookmarkWidth + 4;
   }
   if (!hasText) return;
@@ -1112,7 +1112,7 @@ void BaseTheme::drawReaderStatusBar(GfxRenderer& renderer, const ReaderStatusBar
 }
 
 void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, const char* previewTime,
-                                      const bool readerContext, const int textYOffset, const bool darkMode,
+                                      const bool readerContext, const int textYOffset,
                                       const bool forceVisible) const {
   if (!forceVisible && !SETTINGS.shouldShowClockOutsideReader()) {
     return;
@@ -1149,7 +1149,7 @@ void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, con
                                    (readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
   const int baseTopY = topY >= 0 ? topY : metrics.topPadding;
   const int textY = baseTopY + (rowHeight - lineHeight) / 2 + effectiveTextYOffset;
-  renderer.drawText(fontId, textX, textY, timeText, !darkMode);
+  renderer.drawText(fontId, textX, textY, timeText, true);
 }
 
 void BaseTheme::drawHelpText(const GfxRenderer& renderer, Rect rect, const char* label) const {

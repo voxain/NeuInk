@@ -145,12 +145,10 @@ void HighlightCategoryActivity::drawPracticeButton() {
   const Rect4 r = practiceRect();
   // Gray pill; black while side-button navigation has focus on it.
   const bool focused = practiceFocused() && mappedInput.buttonsInUse();
-  renderer.fillRoundedRect(r.x, r.y, r.w, r.h, r.h / 2, focused ? Color::Black : Color::LightGray);
   const char* label = tr(STR_STUDY_FLASHCARDS);
+  drawButton(renderer, r.x, r.y, r.w, r.h, label, focused, UI_12_FONT_ID, true, nullptr, r.h / 2);
   const int labelW = renderer.getTextWidth(UI_12_FONT_ID, label, EpdFontFamily::BOLD);
   const int labelX = r.x + (r.w - labelW) / 2;
-  renderer.drawText(UI_12_FONT_ID, labelX, r.y + (r.h - renderer.getLineHeight(UI_12_FONT_ID)) / 2, label, !focused,
-                    EpdFontFamily::BOLD);
   // The known count sits at the right edge when it fits beside the label.
   const int summaryW = renderer.getTextWidth(UI_10_FONT_ID, knownSummary.c_str());
   const int summaryX = r.x + r.w - 16 - summaryW;

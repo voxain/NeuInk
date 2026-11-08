@@ -1,4 +1,5 @@
 #include "components/StatTile.h"
+#include "components/UiAppHelpers.h"
 #include "BookStatsView.h"
 
 #include <FreeInkUICore.h>
@@ -388,21 +389,27 @@ void drawDateField(const GfxRenderer& renderer, const int x, const int y, const 
     TouchRegistry::getInstance().add(Rect(x, y, w, h), touchTarget, TouchRegistry::Item);
   }
   // White on the gray card; the field being edited is black.
-  renderer.fillRoundedRect(x, y, w, h, 10, selected ? Color::Black : Color::White);
-  renderer.drawText(UI_12_FONT_ID, x + (w - renderer.getTextWidth(UI_12_FONT_ID, text)) / 2, y + 5, text, !selected);
+  freeink::ui::ButtonProps field;
+  field.label = text;
+  field.styles = whiteButtonStyles();
+  field.radius = 10;
+  drawButton(renderer, freeink::ui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(w),
+                                         static_cast<int16_t>(h)},
+             field, selected, UI_12_FONT_ID);
 }
 
 void drawDateAdjustButton(const GfxRenderer& renderer, const int x, const int y, const int size,
                           const TurnedIcon& turnedIcon, const int touchTarget) {
-  const freeink::Icon& icon = *turnedIcon.icon;
   TouchRegistry::getInstance().add(Rect(x, y, size, size), touchTarget, TouchRegistry::Item);
-  renderer.fillRoundedRect(x, y, size, size, size / 2, Color::White);
-  const freeink::ui::BitmapRef bitmap{icon.bits, icon.w, icon.h, freeink::ui::BitmapFormat::Mask1, true};
-  freeink::ui::forEachBitmapPixel(
-      freeink::ui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(size),
-                        static_cast<int16_t>(size)},
-      bitmap, freeink::ui::BitmapMode::Center,
-      [&renderer](const int16_t px, const int16_t py) { renderer.drawPixel(px, py, true); }, turnedIcon.rotation);
+  freeink::ui::ButtonProps adjust;
+  adjust.icon = freeink::ui::bitmapFromIcon(*turnedIcon.icon);
+  adjust.iconRotation = turnedIcon.rotation;
+  adjust.styles = whiteButtonStyles();
+  adjust.radius = static_cast<uint8_t>(size / 2);
+  adjust.padding = {};
+  drawButton(renderer, freeink::ui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(size),
+                                         static_cast<int16_t>(size)},
+             adjust);
 }
 }  // namespace
 

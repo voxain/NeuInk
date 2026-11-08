@@ -786,7 +786,7 @@ void TxtReaderActivity::render(RenderLock&&) {
   }
 
   if (pageOffsets.empty()) {
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
     renderer.drawCenteredText(UI_12_FONT_ID, 300, tr(STR_EMPTY_FILE), ReaderUtils::readerForegroundBlack(),
                               EpdFontFamily::BOLD);
     renderer.displayBuffer();
@@ -803,7 +803,7 @@ void TxtReaderActivity::render(RenderLock&&) {
   currentPageLines.clear();
   loadPageAtOffset(offset, currentPageLines, nextOffset);
 
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   renderPage();
 
   if (!queueProgressSave()) {
@@ -894,7 +894,6 @@ void TxtReaderActivity::renderStatusBar() const {
   content.bookTitle = title.c_str();
   // TXT has no chapter metadata; preserve its existing title fallback.
   content.chapterTitle = content.bookTitle;
-  content.darkMode = ReaderUtils::readerDarkModeEnabled();
   GUI.drawReaderStatusBar(renderer, ReaderStatusBarPosition::Top, content);
   GUI.drawReaderStatusBar(renderer, ReaderStatusBarPosition::Bottom, content);
 }
@@ -1255,7 +1254,7 @@ bool TxtReaderActivity::drawCurrentPageToBuffer(const std::string& filePath, Gfx
   if (pageLines.empty()) return false;
 
   // Render lines to frame buffer (no displayBuffer call)
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   int y = marginTop;
   for (const auto& line : pageLines) {
     if (!line.empty()) {

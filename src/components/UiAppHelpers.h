@@ -104,6 +104,49 @@ inline freeink::ui::StyleSet grayButtonStyles() {
   return styles;
 }
 
+// The same look in white, for controls sitting on a gray card.
+inline freeink::ui::StyleSet whiteButtonStyles() {
+  namespace fui = freeink::ui;
+  fui::StyleSet styles = grayButtonStyles();
+  styles.normal.background = fui::Paint::solid(fui::Color::White);
+  styles.disabled = styles.normal;
+  return styles;
+}
+
+// A kit button drawn straight onto the renderer, for screens that are not FreeInkUI frames (no hit area). Unset
+// styles mean the gray look; the label is set in fontId (kit slot FONT_BODY) and falls back to the small font when
+// it is too wide. `picked` shows the selected style.
+inline void drawButton(const GfxRenderer& renderer, const freeink::ui::Rect rect, freeink::ui::ButtonProps props,
+                       const bool picked = false, const int fontId = UI_10_FONT_ID) {
+  namespace fui = freeink::ui;
+  fui::GfxRendererTarget target(renderer);
+  target.setFont(fui::GfxRendererTarget::FONT_BODY, fontId);
+  target.setFont(fui::GfxRendererTarget::FONT_SMALL, SMALL_FONT_ID);
+  if (props.styles.unset()) props.styles = grayButtonStyles();
+  props.text.font = fui::GfxRendererTarget::FONT_BODY;
+  props.shrinkFont = fui::GfxRendererTarget::FONT_SMALL;
+  fui::paintButton(target, nullptr, rect, props, picked ? fui::StateSelected : fui::StateNormal);
+}
+
+// The usual one: a bold label, optionally with an icon above it.
+inline void drawButton(const GfxRenderer& renderer, const int x, const int y, const int w, const int h,
+                       const char* label, const bool picked = false, const int fontId = UI_10_FONT_ID,
+                       const bool bold = true, const freeink::Icon* icon = nullptr, const int radius = 14) {
+  namespace fui = freeink::ui;
+  fui::ButtonProps props;
+  props.label = label != nullptr ? label : "";
+  props.radius = static_cast<uint8_t>(radius);
+  props.text.bold = bold;
+  if (icon != nullptr) {
+    props.icon = fui::bitmapFromIcon(*icon);
+    props.iconPlacement = fui::IconPlacement::Above;
+  }
+  drawButton(renderer,
+             fui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(w),
+                       static_cast<int16_t>(h)},
+             props, picked, fontId);
+}
+
 // Legacy GfxRenderer icon arrays are pre-rotated. Render SDK Lucide assets through
 // its adapter instead so the same bitmap remains correct in every orientation.
 inline void drawLucideIcon(const GfxRenderer& renderer, const freeink::Icon& icon, const int x, const int y,

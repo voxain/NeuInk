@@ -30,10 +30,6 @@ Layout vertical(Rect container, uint8_t count, int buttonHeight = kDefaultHeight
 
 int indexAt(const Layout& layout, int x, int y);
 
-// One button in the shared look: light gray, black when picked, no outline; bold label when primary.
-void drawButton(const GfxRenderer& renderer, int x, int y, int w, int h, const char* label, bool primary = false,
-                bool selected = false, int fontId = 0);
-
 void draw(const GfxRenderer& renderer, const Layout& layout, const char* const* labels, int primaryIndex = -1,
           int selectedIndex = -1, int fontId = 0);
 

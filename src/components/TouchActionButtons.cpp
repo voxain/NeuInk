@@ -4,6 +4,7 @@
 
 #include <algorithm>
 
+#include "components/UiAppHelpers.h"
 #include "fontIds.h"
 
 namespace TouchActionButtons {
@@ -34,25 +35,13 @@ int indexAt(const Layout& layout, const int x, const int y) {
   return -1;
 }
 
-void drawButton(const GfxRenderer& renderer, const int x, const int y, const int w, const int h, const char* label,
-                const bool primary, const bool selected, int fontId) {
-  if (fontId == 0) fontId = UI_10_FONT_ID;
-  // The look of the shared UI components: light gray, black when picked, no outline.
-  renderer.fillRoundedRect(x, y, w, h, 14, selected ? Color::Black : Color::LightGray);
-  if (label == nullptr) label = "";
-  const EpdFontFamily::Style style = primary ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
-  const int textWidth = renderer.getTextWidth(fontId, label, style);
-  renderer.drawText(fontId, x + (w - textWidth) / 2, y + (h - renderer.getLineHeight(fontId)) / 2, label, !selected,
-                    style);
-}
-
 void draw(const GfxRenderer& renderer, const Layout& layout, const char* const* labels, const int primaryIndex,
           const int selectedIndex, const int fontId) {
   if (labels == nullptr) return;
   for (uint8_t i = 0; i < layout.count; ++i) {
     const Rect& b = layout.buttons[i];
-    drawButton(renderer, b.x, b.y, b.width, b.height, labels[i], static_cast<int>(i) == primaryIndex,
-               static_cast<int>(i) == selectedIndex, fontId);
+    ::drawButton(renderer, b.x, b.y, b.width, b.height, labels[i], static_cast<int>(i) == selectedIndex,
+                 fontId == 0 ? UI_10_FONT_ID : fontId, static_cast<int>(i) == primaryIndex);
   }
 }
 

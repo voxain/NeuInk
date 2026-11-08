@@ -59,12 +59,6 @@ inline void applyOrientation(GfxRenderer& renderer, const uint8_t orientation) {
 // stays centered in every orientation instead of sitting at a fixed portrait offset.
 inline int messageCenterY(const GfxRenderer& renderer) { return renderer.getScreenHeight() / 2; }
 
-// Night Mode is applied by the display after normal-polarity reader content is
-// rendered. Keep this compatibility helper for existing reader call sites.
-inline bool readerDarkModeEnabled() { return false; }
-
-inline uint8_t readerBackgroundColor() { return readerDarkModeEnabled() ? 0x00 : 0xFF; }
-
 inline bool readerForegroundBlack() { return true; }
 
 // A word that starts with an em space (U+2003, the paragraph indent) and whether anything but blanks follows it.

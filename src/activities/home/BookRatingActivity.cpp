@@ -5,7 +5,7 @@
 #include <cstdio>
 
 #include "MappedInputManager.h"
-#include "components/TouchActionButtons.h"
+#include "components/UiAppHelpers.h"
 #include "components/TouchHeaderBackButton.h"
 #include "fontIds.h"
 #include "util/BookRatingText.h"
@@ -114,8 +114,7 @@ void BookRatingActivity::render(RenderLock&&) {
       hintY += renderer.getLineHeight(SMALL_FONT_ID);
     }
     if (halfStars != 0) {
-      TouchActionButtons::drawButton(renderer, clearBox.x, clearBox.y, clearBox.w, clearBox.h, tr(STR_RATING_CLEAR),
-                                     true);
+      drawButton(renderer, clearBox.x, clearBox.y, clearBox.w, clearBox.h, tr(STR_RATING_CLEAR));
     }
   }
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

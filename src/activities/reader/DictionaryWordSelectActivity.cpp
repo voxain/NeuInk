@@ -340,7 +340,7 @@ void DictionaryWordSelectActivity::renderDefinitionBackground() {
     return;
   }
   const bool foregroundBlack = ReaderUtils::readerForegroundBlack();
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
 
   // Dictionary layout can evict the reader font's bitmap glyph cache. Rebuild
   // it before redrawing the page behind the modal; the persistent advance
@@ -1606,7 +1606,7 @@ void DictionaryWordSelectActivity::render(RenderLock&&) {
   }
 
   // Full repaint path.
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   if (controller.render()) {
     // Controller drew an overlay; framebuffer state is unknown.
     nextRenderMode_ = RenderMode::FullPage;
@@ -1618,7 +1618,7 @@ void DictionaryWordSelectActivity::render(RenderLock&&) {
     GfxRenderer::FrameBufferLoan loan(renderer);
     page->prepareImageCaches();
     loan.end();
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
   }
 
   // Font prewarm: scan pass accumulates text, then prewarm, then real render.

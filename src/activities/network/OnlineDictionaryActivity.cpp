@@ -16,7 +16,7 @@
 #include "WifiSelectionActivity.h"
 #include "PendingOverlayResume.h"
 #include "activities/apps/GameThinker.h"
-#include "components/TouchActionButtons.h"
+#include "components/UiAppHelpers.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "network/OnlineWifi.h"
@@ -354,8 +354,7 @@ void OnlineDictionaryActivity::render(RenderLock&&) {
 
   if (state == State::NotFound || state == State::NoConnection) {
     const Rect button = leaveButtonRect(renderer);
-    TouchActionButtons::drawButton(renderer, button.x, button.y, button.width, button.height,
-                                   tr(STR_ONLINE_BACK_TO_BOOK), true, true);
+    drawButton(renderer, button.x, button.y, button.width, button.height, tr(STR_ONLINE_BACK_TO_BOOK), true);
   }
 
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

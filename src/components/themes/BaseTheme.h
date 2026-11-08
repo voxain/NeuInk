@@ -46,7 +46,6 @@ struct ReaderStatusBarContent {
   bool bookmarked = false;
   bool showProgress = true;
   bool pageCountEstimated = false;
-  bool darkMode = false;
   int edgePadding = 0;
   int previewOriginY = -1;
 };
@@ -354,7 +353,7 @@ class BaseTheme {
                                    const ReaderStatusBarContent& content,
                                    const ReaderStatusBarConfig* overrideConfig = nullptr) const;
   virtual void drawTopStatusBarClock(const GfxRenderer& renderer, int topY = -1, const char* previewTime = nullptr,
-                                     bool readerContext = true, int textYOffset = 0, bool darkMode = false,
+                                     bool readerContext = true, int textYOffset = 0,
                                      bool forceVisible = false) const;
   virtual void drawHelpText(const GfxRenderer& renderer, Rect rect, const char* label) const;
   virtual void drawTextField(const GfxRenderer& renderer, Rect rect, const int textWidth, bool cursorMode = false,

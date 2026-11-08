@@ -2908,7 +2908,7 @@ void EpubReaderActivity::idlePrewarmNextPageImages() {
   }
   const ReaderViewportLayout layout = computeReaderViewportLayout(renderer, automaticPageTurnActive);
   const int renderFontId = activeSectionFontId != 0 ? activeSectionFontId : SETTINGS.getReaderFontId();
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   page->renderImages(renderer, renderFontId, layout.marginLeft, layout.marginTop);
   page.reset();
   nextSection.reset();
@@ -6295,7 +6295,7 @@ void EpubReaderActivity::render(RenderLock&& lock) {
   // "Indexing" popup on screen with no way forward. Surface an explicit error instead of hanging.
   // clearScreen first so the error popup doesn't overlay the stale "Indexing" popup.
   const auto showBuildError = [this]() {
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
     GUI.drawPopup(renderer, tr(STR_INDEX_FAILED));
     automaticPageTurnActive = false;
   };
@@ -6944,7 +6944,7 @@ void EpubReaderActivity::render(RenderLock&& lock) {
     refreshChapterGroupEstimate(viewportWidth, viewportHeight);
   }
 
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
 
   if (section->pageCount == 0) {
     LOG_DBG("ERS", "No pages to render");
@@ -6987,7 +6987,7 @@ void EpubReaderActivity::render(RenderLock&& lock) {
 
       LOG_ERR("ERS", "Failed to load page from SD after %d retries", pageLoadRetryCount);
       pageLoadRetryCount = 0;
-      renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+      renderer.clearScreen();
       renderer.drawCenteredText(UI_12_FONT_ID, ReaderUtils::messageCenterY(renderer), tr(STR_PAGE_LOAD_ERROR),
                                 ReaderUtils::readerForegroundBlack(), EpdFontFamily::BOLD);
       renderStatusBar();
@@ -7012,7 +7012,7 @@ void EpubReaderActivity::render(RenderLock&& lock) {
 #if CROSSINK_APP_CAP_TOUCH
       currentPageFootnoteTouchTargets.fill({});
 #endif
-      renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+      renderer.clearScreen();
       GUI.drawPopup(renderer, renderer.isSdCardFont(renderFontId) ? tr(STR_MEMORY_ERROR) : tr(STR_PAGE_LOAD_ERROR));
       renderer.displayBuffer();
       automaticPageTurnActive = false;
@@ -7218,7 +7218,7 @@ void EpubReaderActivity::silentIndexNextChapterIfNeeded(const uint16_t viewportW
   // FrameBufferLoan restores the storage as a blank frame. Rebuild the visible
   // page in RAM without refreshing the panel; the panel still holds the page.
   if (!restoreCurrentPageBufferAfterSilentIndex()) {
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
     renderer.drawCenteredText(UI_12_FONT_ID, renderer.getScreenHeight() / 2, tr(STR_PAGE_LOAD_ERROR),
                               ReaderUtils::readerForegroundBlack(), EpdFontFamily::BOLD);
     renderer.displayBuffer();
@@ -7279,7 +7279,7 @@ bool EpubReaderActivity::restoreCurrentPageBufferAfterSilentIndex() {
   }
 
   const ReaderViewportLayout layout = computeReaderViewportLayout(renderer, automaticPageTurnActive);
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   const int renderFontId = activeSectionFontId != 0 ? activeSectionFontId : SETTINGS.getReaderFontId();
   return renderContents(std::move(page), renderFontId, layout.marginTop, layout.marginRight, layout.marginBottom,
                         layout.marginLeft, /*updatePanel=*/false);
@@ -7682,7 +7682,7 @@ bool EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int fo
     finalizeBufferComposition();
     renderStatusBar();
     renderer.displayBuffer(HalDisplay::FAST_REFRESH);
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
   }
   if (pageHasImages && !deferImageLoading) {
     // Show the new page's placeholders before ZIP extraction or sidecar
@@ -7691,7 +7691,7 @@ bool EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int fo
     GfxRenderer::FrameBufferLoan loan(renderer);
     page->prepareImageCaches();
     loan.end();
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
   }
   composePageBuffer();
   renderStatusBar();
@@ -8163,7 +8163,6 @@ void EpubReaderActivity::renderStatusBar() const {
   content.bookmarked = bookmarked;
   content.showProgress = !activeFootnotePreview;
   content.pageCountEstimated = pageCountEstimated;
-  content.darkMode = ReaderUtils::readerDarkModeEnabled();
   content.autoTurnLabel = automaticPageTurnActive ? autoTurnLabel : nullptr;
   GUI.drawReaderStatusBar(renderer, ReaderStatusBarPosition::Top, content);
   GUI.drawReaderStatusBar(renderer, ReaderStatusBarPosition::Bottom, content);
@@ -8608,7 +8607,7 @@ bool EpubReaderActivity::drawCurrentPageToBuffer(const std::string& filePath, Gf
     page->prepareImageCaches();
     ImageBlock::setExtractor(nullptr, nullptr, nullptr);
   }
-  renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+  renderer.clearScreen();
   page->render(renderer, renderFontId, layout.marginLeft, layout.marginTop, ReaderUtils::readerForegroundBlack());
   drawPublisherPageMarkers(renderer, *page, layout.marginTop, renderer.getScreenHeight() - layout.marginBottom,
                            ReaderUtils::readerForegroundBlack());

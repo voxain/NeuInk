@@ -2356,7 +2356,7 @@ bool EpubReaderDrawerActivity::saveBookDictionary(const std::string& path) {
 void EpubReaderDrawerActivity::renderPreviewContents(const ReaderSettingsDraft& previewSettings,
                                                      const int previewFontId) {
   const fui::Rect preview = previewBounds();
-  renderer.fillRect(preview.x, preview.y, preview.width, preview.height, ReaderUtils::readerDarkModeEnabled());
+  renderer.fillRect(preview.x, preview.y, preview.width, preview.height, false);
   renderPreviewText(previewSettings, previewFontId);
   if (CROSSINK_APP_READER_SAMPLE_PREVIEW) {
     const auto& metrics = UITheme::getInstance().getMetrics();
@@ -2454,7 +2454,7 @@ void EpubReaderDrawerActivity::renderSamplePreviewText(const ReaderSettingsDraft
 
 void EpubReaderDrawerActivity::renderPreviewUnavailable() {
   const fui::Rect preview = previewBounds();
-  renderer.fillRect(preview.x, preview.y, preview.width, preview.height, ReaderUtils::readerDarkModeEnabled());
+  renderer.fillRect(preview.x, preview.y, preview.width, preview.height, false);
   renderer.drawCenteredText(UI_12_FONT_ID, preview.y + preview.height / 2, tr(STR_PREVIEW_UNAVAILABLE),
                             ReaderUtils::readerForegroundBlack());
 }
@@ -2488,7 +2488,7 @@ bool EpubReaderDrawerActivity::renderPreview(int& previewFontId,
     }
     if (!previewFontMetricsChanged) return false;
     const fui::Rect preview = previewBounds();
-    renderer.fillRect(preview.x, preview.y, preview.width, preview.height, ReaderUtils::readerDarkModeEnabled());
+    renderer.fillRect(preview.x, preview.y, preview.width, preview.height, false);
     return true;
   }
   if (CROSSINK_APP_READER_SAMPLE_PREVIEW && releasePreviewIfBelowReserve()) return false;
@@ -2762,7 +2762,7 @@ void EpubReaderDrawerActivity::render(RenderLock&&) {
     if (drawerEdge > previousDrawerEdge) {
       const int16_t exposedTop = std::min(drawerEdge, previousDrawerEdge);
       renderer.fillRect(0, exposedTop, renderer.getScreenWidth(), std::abs(drawerEdge - previousDrawerEdge),
-                        ReaderUtils::readerDarkModeEnabled());
+                        false);
       previewDirty = true;
     }
   }

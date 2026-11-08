@@ -4,26 +4,17 @@ Things deliberately left for later. Each one says when to pick it up.
 
 ## Cleanup follow-ups
 
-Left over from the cleanup sweep on `chore/cleanup-sweep` (done there: dead `ScalableGsub.h`, two dead reader helpers,
-one calendar-math header instead of six copies, shared enum/swipe/byte-order/ASCII-text/xorshift/toast helpers, one
-action-button drawer, 98 unused translation keys, eight dead functions). Pick
-these up one at a time; each is a behaviour-neutral merge that needs a build, so batch them.
+Left over from the cleanup sweep on `chore/cleanup-sweep`. Each is behaviour-neutral; batch them with a build.
 
-- Byte helpers still local: `Xtc.cpp` (pointer-style `writeLe16/32`), `Epub.cpp`, `SdCardFont.cpp`, `EpubReaderActivity.cpp`
-  and `NearbyBookPositionSyncActivity.cpp` (file/stream readers) could use `lib/Serialization/ByteOrder.h`.
-- `OtaUpdater.cpp` keeps a hex-only `asciiLower`; `WordForms.cpp` a lambda `endsWith`: both could use `lib/Utf8/AsciiText.h`.
-- Web server `isTwoFingerSwipeSetting(SettingInfo)` and `enumDisplayIndexForWeb` duplicate the settings helpers
-  (by name id instead of member pointer); derive one from the other.
-- Hand-drawn buttons still left: `GameUi.h` `button`/`iconButton`/`cornerButton`, `BookStatsView` date fields and
-  adjust buttons, `DictionaryWordSelectActivity` ask bar, `HighlightCategoryActivity` pill. Games and the stats card
-  need their own look (white on a gray card), so only the plain ones should move to `TouchActionButtons::drawButton`
-  or `fui::button` with `grayButtonStyles()`.
-- `readerDarkModeEnabled()` is a stub that returns false, behind `readerBackgroundColor()`, `ThemeContent::darkMode`,
-  `drawImageInverted` and the `darkMode` header parameters: remove the whole chain in one go (about 30 call sites).
-- Unused Lucide icons: the generated tables (`homeIcons.h`, `homeGridIcons.h`) are only reached through macros, so a
-  text search cannot say which manifest entries are unused. Compare `homeIcons.manifest` against `UIIcon` uses, drop
-  the rest and regenerate.
-- Test build: `UiSymbolFallbackTest` still includes the removed `inter_*` headers; the scalable-font tests need libasan.
+- The web server's `isTwoFingerSwipeSetting(SettingInfo)` and `enumDisplayIndexForWeb` repeat the settings helpers in
+  `SettingsActivity.h` (by name id instead of member pointer); derive one from the other.
+- `BaseTheme::drawReaderStatusBar` still carries a local `foregroundBlack = true` and passes it down to the battery
+  drawing helpers (the dark-mode option behind it is gone): drop the parameter through `drawBatteryOutline`,
+  `fillBatteryIcon` and the battery/percentage drawers.
+- `homeIcons.h` holds 51 icon sizes nothing uses (the other size of the same icon is used). The linker drops them; to
+  remove them from the source `gen_icons.py` would need a size list per manifest entry.
+- The dictionary ask bubble (`DictionaryWordSelectActivity`) is a black bubble with a pointer and white segments, so
+  it stays hand-drawn.
 
 ## Battery statistics
 
