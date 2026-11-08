@@ -26,7 +26,6 @@ class FontSelectionActivity final : public Activity {
  private:
   void handleSelection();
   void activateSelected();
-  int getFontIdForPreview(int index) const;
   void renderPreviewPane(int top, int height, int fontId, const char* fontName) const;
 
   struct FontEntry {

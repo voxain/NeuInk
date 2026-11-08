@@ -67,6 +67,20 @@ inline uint8_t readerBackgroundColor() { return readerDarkModeEnabled() ? 0x00 :
 
 inline bool readerForegroundBlack() { return true; }
 
+// A word that starts with an em space (U+2003, the paragraph indent) and whether anything but blanks follows it.
+inline bool hasEmSpacePrefix(const char* text) {
+  return text && static_cast<unsigned char>(text[0]) == 0xE2 && static_cast<unsigned char>(text[1]) == 0x80 &&
+         static_cast<unsigned char>(text[2]) == 0x83;
+}
+
+inline bool hasVisibleWordText(const char* text) {
+  if (!text) return false;
+  for (const char* cursor = text + (hasEmSpacePrefix(text) ? 3 : 0); *cursor; ++cursor) {
+    if (*cursor != ' ' && *cursor != '\t' && *cursor != '\r' && *cursor != '\n') return true;
+  }
+  return false;
+}
+
 // A boxed message in the middle of the page, shown without refreshing; drawToast also refreshes.
 inline void drawToastBuffer(const GfxRenderer& renderer, const char* msg) {
   constexpr int padX = 20;

@@ -385,21 +385,10 @@ void applySafeModeReaderSettings() {
   SETTINGS.guideReadingEnabled = 0;
 }
 
-bool hasEmSpacePrefix(const char* text) {
-  return text && static_cast<unsigned char>(text[0]) == 0xE2 && static_cast<unsigned char>(text[1]) == 0x80 &&
-         static_cast<unsigned char>(text[2]) == 0x83;
-}
+using ReaderUtils::hasEmSpacePrefix;
+using ReaderUtils::hasVisibleWordText;
 
 bool hasEmSpacePrefix(const std::string& text) { return text.size() >= 3 && hasEmSpacePrefix(text.c_str()); }
-
-bool hasVisibleWordText(const char* text) {
-  const char* cursor = text + (hasEmSpacePrefix(text) ? 3 : 0);
-  while (*cursor) {
-    if (*cursor != ' ' && *cursor != '\t' && *cursor != '\r' && *cursor != '\n') return true;
-    cursor++;
-  }
-  return false;
-}
 
 bool hasVisibleWordText(const std::string& text) { return hasVisibleWordText(text.c_str()); }
 

@@ -1,5 +1,6 @@
 #include "DictHtmlRenderer.h"
 
+#include <AsciiText.h>
 #include <HalStorage.h>
 #include <Logging.h>
 
@@ -12,12 +13,10 @@
 
 namespace {
 
-char asciiLower(char c) { return c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : c; }
-
 bool rangeTagEquals(const char* start, int len, const char* expected) {
   int i = 0;
   while (i < len && expected[i]) {
-    if (asciiLower(start[i]) != expected[i]) return false;
+    if (ascii::lower(start[i]) != expected[i]) return false;
     i++;
   }
   return i == len && expected[i] == '\0';
@@ -81,7 +80,7 @@ DictHtmlRenderer::TagAction DictHtmlRenderer::classify(const XML_Char* name) {
   char normalizedName[48];
   size_t nameLen = strlen(name);
   if (nameLen >= sizeof(normalizedName)) return TagAction::STRIP_KEEP;
-  for (size_t i = 0; i <= nameLen; i++) normalizedName[i] = asciiLower(name[i]);
+  for (size_t i = 0; i <= nameLen; i++) normalizedName[i] = ascii::lower(name[i]);
   name = normalizedName;
 
   // Block-strip: entire subtree discarded
@@ -861,7 +860,7 @@ void DictHtmlRenderer::feedPlainText(const char* buf, int len, bool isLast, char
           rangeTagEquals(buf + nameBegin, nameLen, "p") || rangeTagEquals(buf + nameBegin, nameLen, "div") ||
           rangeTagEquals(buf + nameBegin, nameLen, "ol") || rangeTagEquals(buf + nameBegin, nameLen, "ul") ||
           rangeTagEquals(buf + nameBegin, nameLen, "li") ||
-          (nameLen == 2 && asciiLower(buf[nameBegin]) == 'h' && buf[nameBegin + 1] >= '1' && buf[nameBegin + 1] <= '6');
+          (nameLen == 2 && ascii::lower(buf[nameBegin]) == 'h' && buf[nameBegin + 1] >= '1' && buf[nameBegin + 1] <= '6');
       if (isBreak) {
         flushPending();
         newlinePending = true;

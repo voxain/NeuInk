@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <AsciiText.h>
 #include <Logging.h>
 
 #include <cstdint>
@@ -119,23 +120,8 @@ inline bool hasHeapForDictionarySdFont(const HeapSnapshot heap) {
   return hasHeap(heap, DICTIONARY_SD_FONT_MIN_FREE, DICTIONARY_SD_FONT_MIN_MAX_ALLOC);
 }
 
-inline char asciiLower(const char c) { return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c; }
-
-inline bool endsWithIgnoreCase(const char* value, const char* suffix) {
-  if (!value || !suffix) return false;
-  const size_t valueLen = strlen(value);
-  const size_t suffixLen = strlen(suffix);
-  if (suffixLen > valueLen) return false;
-
-  const char* valueTail = value + valueLen - suffixLen;
-  for (size_t i = 0; i < suffixLen; ++i) {
-    if (asciiLower(valueTail[i]) != asciiLower(suffix[i])) return false;
-  }
-  return true;
-}
-
 inline bool isJpegSource(const char* source) {
-  return endsWithIgnoreCase(source, ".jpg") || endsWithIgnoreCase(source, ".jpeg");
+  return source && (ascii::endsWithIgnoreCase(source, ".jpg") || ascii::endsWithIgnoreCase(source, ".jpeg"));
 }
 
 // JPEGDEC is a single transient object. On PSRAM devices its decoder buffers

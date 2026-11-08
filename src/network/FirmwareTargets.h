@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AsciiText.h>
+
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -73,23 +75,13 @@ inline Target fromPayload(const uint32_t payload) {
 
 namespace detail {
 
-inline bool startsWith(const char* value, const char* prefix) {
-  return std::strncmp(value, prefix, std::strlen(prefix)) == 0;
-}
-
-inline bool endsWith(const char* value, const char* suffix) {
-  const size_t valueLength = std::strlen(value);
-  const size_t suffixLength = std::strlen(suffix);
-  return suffixLength <= valueLength && std::strcmp(value + valueLength - suffixLength, suffix) == 0;
-}
-
 // "firmware-<device>.bin" or "firmware-<device>-<anything>.bin". NeuInk, VARAGH
 // and CrossInk all name their assets this way (CrossInk adds "-v1.6.1").
 inline bool matchesFirmwareStem(const std::string& stem, const char* assetName) {
   const std::string exact = stem + ".bin";
   if (exact == assetName) return true;
   const std::string withDash = stem + "-";
-  return startsWith(assetName, withDash.c_str()) && endsWith(assetName, ".bin");
+  return ascii::startsWith(assetName, withDash.c_str()) && ascii::endsWith(assetName, ".bin");
 }
 
 // CrossPoint's own device names: it calls the X4 Pro "x4pro" and the X4 Classic
@@ -123,7 +115,7 @@ inline bool matchesAsset(const Target target, const char* deviceType, const char
   if (std::string("firmware-") + name + ".bin" == assetName) return true;
   // Some devices only have the versioned name: crosspoint-<version>-<device>.bin.
   const std::string tail = std::string("-") + name + ".bin";
-  return detail::startsWith(assetName, "crosspoint-") && detail::endsWith(assetName, tail.c_str());
+  return ascii::startsWith(assetName, "crosspoint-") && ascii::endsWith(assetName, tail.c_str());
 }
 
 }  // namespace firmware_targets

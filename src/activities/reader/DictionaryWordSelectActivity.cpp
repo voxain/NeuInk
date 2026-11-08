@@ -65,19 +65,7 @@ bool containsDictionaryWordPartSeparator(const char* text, const size_t length) 
   return false;
 }
 
-bool hasVisibleWordText(const char* text) {
-  if (!text) return false;
-  const char* cursor = text;
-  if (static_cast<unsigned char>(cursor[0]) == 0xE2 && cursor[1] != '\0' && cursor[2] != '\0' &&
-      static_cast<unsigned char>(cursor[1]) == 0x80 && static_cast<unsigned char>(cursor[2]) == 0x83) {
-    cursor += 3;
-  }
-  while (*cursor) {
-    if (*cursor != ' ' && *cursor != '\t' && *cursor != '\r' && *cursor != '\n') return true;
-    ++cursor;
-  }
-  return false;
-}
+using ReaderUtils::hasVisibleWordText;
 
 bool addBudgetBytes(size_t& total, const size_t bytes) {
   if (bytes > std::numeric_limits<size_t>::max() - total) return false;

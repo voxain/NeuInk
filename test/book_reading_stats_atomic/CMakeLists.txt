@@ -8,6 +8,7 @@ target_include_directories(BookReadingStatsAtomicTest PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/stubs
   ${REPO_ROOT}/src/activities/reader
   ${REPO_ROOT}/lib/hal
+  ${REPO_ROOT}/lib/Serialization
 )
 
 target_link_libraries(BookReadingStatsAtomicTest PRIVATE
