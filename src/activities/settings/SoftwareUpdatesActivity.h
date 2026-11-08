@@ -18,4 +18,5 @@ class SoftwareUpdatesActivity final : public RowListActivity {
  private:
   void openSwitchFirmwarePicker();
   bool updateWaiting() const;
+  bool waiting = false;  // updateWaiting() as of the last buildRows()
 };
