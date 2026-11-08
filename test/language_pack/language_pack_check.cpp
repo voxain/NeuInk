@@ -1,5 +1,5 @@
 // Self-check for src/util/LanguagePackFormat.h against a pack written by
-// scripts/gen_i18n.py:  g++ -std=c++20 -Isrc test/language_pack/language_pack_check.cpp
+// scripts/gen_i18n.py:  g++ -std=c++20 -Isrc -Ilib/Serialization test/language_pack/language_pack_check.cpp
 //   && ./a.out <pack.lng> <I18N_LAYOUT_ID hex> <StrId::_COUNT>
 #include <cassert>
 #include <cstdio>

@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <FS.h>  // need to be included before SdFat.h for compatibility with FS.h's File class
+#include <CalendarMath.h>
 #include <HalClock.h>
 #include <Logging.h>
 #include <SDCardManager.h>
@@ -36,49 +37,11 @@ constexpr uint8_t kFallbackHour = 0;
 constexpr uint8_t kFallbackMinute = 0;
 const uint8_t* clockUtcOffsetQ = nullptr;
 
-bool isLeapYear(const uint16_t year) { return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0; }
-
-uint8_t daysInMonth(const uint16_t year, const uint8_t month) {
-  static const uint8_t days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-  if (month < 1 || month > 12) return 0;
-  if (month == 2 && isLeapYear(year)) return 29;
-  return days[month - 1];
-}
-
 bool isValidFatDateTime(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour,
                         const uint8_t minute) {
   if (year < 1980 || year > 2107 || hour > 23 || minute > 59) return false;
-  const uint8_t monthDays = daysInMonth(year, month);
+  const uint8_t monthDays = calmath::daysInMonth(year, month);
   return monthDays > 0 && day >= 1 && day <= monthDays;
-}
-
-void adjustDateByDays(uint16_t& year, uint8_t& month, uint8_t& day, const int dayDelta) {
-  if (dayDelta > 0) {
-    const uint8_t monthDays = daysInMonth(year, month);
-    if (day < monthDays) {
-      day++;
-      return;
-    }
-    day = 1;
-    if (month < 12) {
-      month++;
-    } else {
-      month = 1;
-      year++;
-    }
-  } else if (dayDelta < 0) {
-    if (day > 1) {
-      day--;
-      return;
-    }
-    if (month > 1) {
-      month--;
-    } else {
-      month = 12;
-      year--;
-    }
-    day = daysInMonth(year, month);
-  }
 }
 
 void setPackedFatDateTime(uint16_t* date, uint16_t* time, const uint16_t year, const uint8_t month, const uint8_t day,
@@ -101,7 +64,7 @@ void storageDateTimeCallback(uint16_t* date, uint16_t* time) {
     int localMinutes = static_cast<int>(hour) * 60 + static_cast<int>(minute) + offsetQuarterHours * 15;
     const int dayDelta = localMinutes < 0 ? -1 : (localMinutes >= 1440 ? 1 : 0);
     localMinutes = ((localMinutes % 1440) + 1440) % 1440;
-    adjustDateByDays(year, month, day, dayDelta);
+    calmath::addDaysTo(year, month, day, dayDelta);
     hour = static_cast<uint8_t>(localMinutes / 60);
     minute = static_cast<uint8_t>(localMinutes % 60);
   }

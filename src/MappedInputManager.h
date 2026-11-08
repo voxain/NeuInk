@@ -247,8 +247,6 @@ class MappedInputManager {
   bool buttonsInUse() const { return !hasTouchHardware() || buttonNavSeen; }
   bool wasAnyReleased() const;
   unsigned long getHeldTime() const;
-  // True when reader-mode orientation handling swaps the logical front navigation buttons.
-  bool isFrontNavButtonSwapActive() const;
   Label withBackArrow(const char* text) const;
   Label withPreviousPageArrow(const char* text) const;
   Label withNextPageArrow(const char* text) const;

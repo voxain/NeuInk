@@ -28,3 +28,6 @@ commit in this repository.
 
 - `libs/assets/Icons/tools/gen_icons.py` writes `inline constexpr` icon arrays and `Icon` structs instead of
   `static const`, so an icon used in several files is in the firmware once (0.4.0; it was in it once per file).
+- `components/controls/button.h`: `paintButton()` draws a button on any `DrawTarget` without a hit area (`button()` now
+  calls it), `ButtonProps::iconPlacement` puts the label under the icon, and `ButtonProps::shrinkFont` sets a label too
+  wide for the button in a smaller font (0.4.1).

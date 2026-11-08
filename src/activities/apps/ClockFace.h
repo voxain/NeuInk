@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "util/CalendarMath.h"
+#include "CalendarMath.h"
 
 // What the Clock app and the Clock & Calendar sleep screen draw: the time or a
 // large date above a month. Kept apart from the app's screen so the sleep

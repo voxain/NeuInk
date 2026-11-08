@@ -58,6 +58,14 @@ constexpr int weekday(const Date& date) {
 
 constexpr Date addDays(const Date& date, const int days) { return dateFromDays(daysFromDate(date) + days); }
 
+// addDays on loose year/month/day fields (RTC and file-time code keeps them separately).
+inline void addDaysTo(uint16_t& year, uint8_t& month, uint8_t& day, const int days) {
+  const Date moved = addDays(Date{static_cast<int16_t>(year), month, day}, days);
+  year = static_cast<uint16_t>(moved.year);
+  month = moved.month;
+  day = moved.day;
+}
+
 constexpr Date addMonths(const Date& date, const int months) {
   const int index = date.year * 12 + (date.month - 1) + months;
   const int year = index / 12;

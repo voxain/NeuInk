@@ -8,6 +8,7 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() { return NO_UPDATE; }
 OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate(ProgressCallback, void*, std::atomic<bool>*) { return NO_UPDATE; }
 #else
 #include <Arduino.h>
+#include <AsciiText.h>
 #include <HalClock.h>
 #include <HalStorage.h>
 #include <Logging.h>
@@ -118,8 +119,6 @@ char lowerHex(const uint8_t value) {
   return value < 10 ? static_cast<char>('0' + value) : static_cast<char>('a' + value - 10);
 }
 
-char asciiLower(const char c) { return (c >= 'A' && c <= 'F') ? static_cast<char>(c - 'A' + 'a') : c; }
-
 bool isHexChar(const char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
 
 bool isSha256Hex(const char* value) {
@@ -136,7 +135,7 @@ bool sha256Matches(const uint8_t digest[32], const char* expectedHex) {
   for (size_t i = 0; i < 32; ++i) {
     const char high = lowerHex((digest[i] >> 4) & 0x0F);
     const char low = lowerHex(digest[i] & 0x0F);
-    if (high != asciiLower(expectedHex[i * 2]) || low != asciiLower(expectedHex[i * 2 + 1])) return false;
+    if (high != ascii::lower(expectedHex[i * 2]) || low != ascii::lower(expectedHex[i * 2 + 1])) return false;
   }
   return true;
 }

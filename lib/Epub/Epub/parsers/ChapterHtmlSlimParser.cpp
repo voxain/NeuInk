@@ -1,6 +1,7 @@
 #include "ChapterHtmlSlimParser.h"
 
 #include <Arduino.h>
+#include <AsciiText.h>
 #include <FsHelpers.h>
 #include <GfxRenderer.h>
 #include <HalStorage.h>
@@ -147,7 +148,6 @@ void ChapterHtmlSlimParser::clearReferenceExclusionIfClosed() {
 
 bool isWhitespace(const char c) { return c == ' ' || c == '\r' || c == '\n' || c == '\t'; }
 
-static char asciiLower(const char c) { return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c; }
 
 bool isSvgImagePath(const std::string_view path) {
   const size_t end = path.find_first_of("?#");
@@ -157,12 +157,12 @@ bool isSvgImagePath(const std::string_view path) {
 
   const std::string_view ext = cleanPath.substr(dot);
   if (ext.size() == 4) {
-    return asciiLower(ext[0]) == '.' && asciiLower(ext[1]) == 's' && asciiLower(ext[2]) == 'v' &&
-           asciiLower(ext[3]) == 'g';
+    return ascii::lower(ext[0]) == '.' && ascii::lower(ext[1]) == 's' && ascii::lower(ext[2]) == 'v' &&
+           ascii::lower(ext[3]) == 'g';
   }
   if (ext.size() == 5) {
-    return asciiLower(ext[0]) == '.' && asciiLower(ext[1]) == 's' && asciiLower(ext[2]) == 'v' &&
-           asciiLower(ext[3]) == 'g' && asciiLower(ext[4]) == 'z';
+    return ascii::lower(ext[0]) == '.' && ascii::lower(ext[1]) == 's' && ascii::lower(ext[2]) == 'v' &&
+           ascii::lower(ext[3]) == 'g' && ascii::lower(ext[4]) == 'z';
   }
   return false;
 }
@@ -221,7 +221,7 @@ bool feedPrewarmUtf8Byte(const uint8_t byte, uint32_t* codepoints, uint32_t& cpC
 
 static bool tokenEqualsIgnoreCase(const char* value, const char* token, const size_t tokenLen) {
   for (size_t i = 0; i < tokenLen; ++i) {
-    if (asciiLower(value[i]) != asciiLower(token[i])) return false;
+    if (ascii::lower(value[i]) != ascii::lower(token[i])) return false;
   }
   return true;
 }

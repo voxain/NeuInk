@@ -556,7 +556,7 @@ bool ClipSelectionActivity::switchToPage(const int pageIdx) {
         useFallbackFont("page prewarm");
         renderWithFallback = true;
       } else {
-        renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+        renderer.clearScreen();
         page->render(renderer, renderFontId, marginLeft, marginTop, ReaderUtils::readerForegroundBlack());
       }
     }
@@ -564,11 +564,11 @@ bool ClipSelectionActivity::switchToPage(const int pageIdx) {
       auto fallbackScope = fcm->createPrewarmScope();
       page->renderText(renderer, renderFontId, marginLeft, marginTop, ReaderUtils::readerForegroundBlack());
       fallbackScope.endScanAndPrewarm();
-      renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+      renderer.clearScreen();
       page->render(renderer, renderFontId, marginLeft, marginTop, ReaderUtils::readerForegroundBlack());
     }
   } else {
-    renderer.clearScreen(ReaderUtils::readerBackgroundColor());
+    renderer.clearScreen();
     page->render(renderer, renderFontId, marginLeft, marginTop, ReaderUtils::readerForegroundBlack());
   }
 

@@ -74,19 +74,6 @@ void ReadingStatsDate::clear() {
 
 bool ReadingStatsDateTime::isValid() const { return date.isValid(); }
 
-bool isLeapYear(const uint16_t year) { return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0; }
-
-uint8_t daysInMonth(const uint16_t year, const uint8_t month) {
-  static constexpr uint8_t DAYS[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-  if (month < 1 || month > 12) {
-    return 0;
-  }
-  if (month == 2 && isLeapYear(year)) {
-    return 29;
-  }
-  return DAYS[month - 1];
-}
-
 bool isValidReadingStatsDate(const ReadingStatsDate& date) {
   if (date.year < 2000 || date.year > 2099) {
     return false;
@@ -108,41 +95,11 @@ int compareReadingStatsDate(const ReadingStatsDate& lhs, const ReadingStatsDate&
   return 0;
 }
 
-void addDaysToReadingStatsDate(ReadingStatsDate& date, int delta) {
+void addDaysToReadingStatsDate(ReadingStatsDate& date, const int delta) {
   if (!date.isValid() || delta == 0) {
     return;
   }
-
-  while (delta > 0) {
-    const uint8_t monthDays = daysInMonth(date.year, date.month);
-    if (date.day < monthDays) {
-      date.day++;
-    } else {
-      date.day = 1;
-      if (date.month < 12) {
-        date.month++;
-      } else {
-        date.month = 1;
-        date.year++;
-      }
-    }
-    delta--;
-  }
-
-  while (delta < 0) {
-    if (date.day > 1) {
-      date.day--;
-    } else {
-      if (date.month > 1) {
-        date.month--;
-      } else {
-        date.month = 12;
-        date.year--;
-      }
-      date.day = daysInMonth(date.year, date.month);
-    }
-    delta++;
-  }
+  calmath::addDaysTo(date.year, date.month, date.day, delta);
 }
 
 void addSecondsToReadingStatsDateTime(ReadingStatsDateTime& dt, uint32_t seconds) {

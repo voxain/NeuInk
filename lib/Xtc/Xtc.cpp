@@ -8,6 +8,7 @@
 #include "Xtc.h"
 
 #include <Bitmap.h>
+#include <ByteOrder.h>
 #include <HalStorage.h>
 #include <Logging.h>
 #include <Memory.h>
@@ -22,36 +23,24 @@ constexpr size_t BMP_2BIT_HEADER_SIZE = 70;
 constexpr uint8_t XTH_TO_BMP[4] = {3, 1, 2, 0};
 constexpr uint8_t XTH_TO_GRAY[4] = {255, 85, 170, 0};
 
-void writeLe16(uint8_t* out, const uint16_t value) {
-  out[0] = static_cast<uint8_t>(value);
-  out[1] = static_cast<uint8_t>(value >> 8);
-}
-
-void writeLe32(uint8_t* out, const uint32_t value) {
-  out[0] = static_cast<uint8_t>(value);
-  out[1] = static_cast<uint8_t>(value >> 8);
-  out[2] = static_cast<uint8_t>(value >> 16);
-  out[3] = static_cast<uint8_t>(value >> 24);
-}
-
 void create2BitBmpHeader(uint8_t (&header)[BMP_2BIT_HEADER_SIZE], const uint16_t width, const uint16_t height,
                          const uint32_t rowSize) {
   memset(header, 0, sizeof(header));
   const uint32_t imageSize = rowSize * height;
   header[0] = 'B';
   header[1] = 'M';
-  writeLe32(header + 2, static_cast<uint32_t>(sizeof(header)) + imageSize);
-  writeLe32(header + 10, sizeof(header));
-  writeLe32(header + 14, 40);  // BITMAPINFOHEADER
-  writeLe32(header + 18, width);
-  writeLe32(header + 22, static_cast<uint32_t>(-static_cast<int32_t>(height)));
-  writeLe16(header + 26, 1);
-  writeLe16(header + 28, 2);
-  writeLe32(header + 34, imageSize);
-  writeLe32(header + 38, 2835);
-  writeLe32(header + 42, 2835);
-  writeLe32(header + 46, 4);
-  writeLe32(header + 50, 4);
+  byteorder::writeLe32(header, 2, static_cast<uint32_t>(sizeof(header)) + imageSize);
+  byteorder::writeLe32(header, 10, sizeof(header));
+  byteorder::writeLe32(header, 14, 40);  // BITMAPINFOHEADER
+  byteorder::writeLe32(header, 18, width);
+  byteorder::writeLe32(header, 22, static_cast<uint32_t>(-static_cast<int32_t>(height)));
+  byteorder::writeLe16(header, 26, 1);
+  byteorder::writeLe16(header, 28, 2);
+  byteorder::writeLe32(header, 34, imageSize);
+  byteorder::writeLe32(header, 38, 2835);
+  byteorder::writeLe32(header, 42, 2835);
+  byteorder::writeLe32(header, 46, 4);
+  byteorder::writeLe32(header, 50, 4);
   for (uint8_t i = 0; i < 4; ++i) {
     const uint8_t gray = static_cast<uint8_t>(i * 85);
     const size_t paletteOffset = 54 + static_cast<size_t>(i) * 4;

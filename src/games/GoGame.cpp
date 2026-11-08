@@ -1,5 +1,7 @@
 #include "GoGame.h"
 
+#include "Xorshift.h"
+
 #include <cstring>
 
 namespace go {
@@ -13,13 +15,6 @@ struct Marks {
   uint8_t generation = 0;
   uint8_t next() { return ++generation; }
 };
-
-uint32_t nextRandom(uint32_t& state) {
-  state ^= state << 13;
-  state ^= state >> 17;
-  state ^= state << 5;
-  return state;
-}
 
 }  // namespace
 
@@ -239,7 +234,7 @@ int chooseMove(const Board& board, const int level, const bool opponentPassed, u
       if (board.cell[around[i]] != Empty) value += 2;
     }
     const int noise = level == 0 ? 60 : 8;
-    value += static_cast<int>(nextRandom(seed) % static_cast<uint32_t>(noise));
+    value += static_cast<int>(xorshift32(seed) % static_cast<uint32_t>(noise));
     if (value > bestScore) {
       bestScore = value;
       best = p;

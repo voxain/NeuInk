@@ -1,6 +1,7 @@
 #include "UsbSerialFileTransfer.h"
 
 #include <Arduino.h>
+#include <ByteOrder.h>
 #include <FsHelpers.h>
 #include <HalStorage.h>
 #include <LibraryBuilder.h>
@@ -88,11 +89,6 @@ void writeLine(const char* line) { logSerial.print(line); }
 void writeRaw(const uint8_t* data, size_t length) { logSerial.write(data, length); }
 
 void writeAck() { writeRaw(&ACK, 1); }
-
-uint32_t readLe32(const uint8_t* data) {
-  return static_cast<uint32_t>(data[0]) | (static_cast<uint32_t>(data[1]) << 8) |
-         (static_cast<uint32_t>(data[2]) << 16) | (static_cast<uint32_t>(data[3]) << 24);
-}
 
 void writeLe32(uint32_t value) {
   uint8_t data[4] = {static_cast<uint8_t>(value), static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value >> 16),
@@ -426,7 +422,7 @@ void handleWrite() {
     writeLine("ERR:size\n");
     return;
   }
-  const uint32_t expectedSize = readLe32(sizeBytes);
+  const uint32_t expectedSize = byteorder::readLe32(sizeBytes);
 
 #if defined(CROSSINK_USB_RX_OVERFLOW_ENABLED)
   if (rxOverflowCount() != rxOverflowAtStart) {
@@ -560,7 +556,7 @@ void handleWrite() {
     return;
   }
 
-  const uint32_t expectedCrc = readLe32(crcBytes);
+  const uint32_t expectedCrc = byteorder::readLe32(crcBytes);
   if (crc != expectedCrc) {
     Storage.remove(TEMP_UPLOAD_PATH);
     logSerial.printf("ERR:crc:expected=%08lX,actual=%08lX,bytes=%lu\n", static_cast<unsigned long>(expectedCrc),

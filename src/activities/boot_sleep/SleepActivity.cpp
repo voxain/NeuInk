@@ -940,11 +940,7 @@ void SleepActivity::renderClockSleepScreen() const {
 
 void SleepActivity::renderLastScreenSleepScreen() const {
   const auto pageHeight = renderer.getScreenHeight();
-  if (ReaderUtils::readerDarkModeEnabled()) {
-    renderer.drawImageInverted(MoonIcon, 0, pageHeight - MOONICON_HEIGHT, MOONICON_WIDTH, MOONICON_HEIGHT);
-  } else {
-    renderer.drawImage(MoonIcon, 0, pageHeight - MOONICON_HEIGHT, MOONICON_WIDTH, MOONICON_HEIGHT);
-  }
+  renderer.drawImage(MoonIcon, 0, pageHeight - MOONICON_HEIGHT, MOONICON_WIDTH, MOONICON_HEIGHT);
   // Only the moon differs from the displayed frame, so a differential FAST
   // update avoids the flashing clean pass on an inverted night-mode page.
   if (gpio.deviceIsX3()) {

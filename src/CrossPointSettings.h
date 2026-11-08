@@ -889,7 +889,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint16_t getPowerButtonDuration() const { return getPowerButtonWakeDuration(); }
   uint16_t getPowerButtonLongPressDuration() const { return POWER_BUTTON_LONG_PRESS_MS; }
   static uint8_t getActiveReaderFontSizeCount();
-  static uint8_t getStoredReaderFontSize(FONT_SIZE size);
   static uint8_t getReaderFontPointSize(FONT_SIZE size);
   static uint8_t getSdFontRangePointSize(uint8_t range, uint8_t step);
   static bool isSdFontPointSizeAllowedForRange(uint8_t pointSize, uint8_t range);
@@ -898,9 +897,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   bool changeReaderFontSize(bool larger, FontSizeStepMode mode = FontSizeStepMode::Wrap);
   int getReaderFontId() const;
   int getBuiltInReaderFontId() const;
-
-  // If count_only is true, returns the number of settings items that would be written.
-  uint8_t writeSettings(HalFile& file, bool count_only = false) const;
 
   bool saveToFile() const;
   bool loadFromFile();

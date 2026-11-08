@@ -1,5 +1,7 @@
 #include "ChessGame.h"
 
+#include "Xorshift.h"
+
 #include <cstring>
 #include <initializer_list>
 
@@ -800,13 +802,6 @@ struct Searcher {
   }
 };
 
-uint32_t nextRandom(uint32_t& state) {
-  state ^= state << 13;
-  state ^= state >> 17;
-  state ^= state << 5;
-  return state;
-}
-
 }  // namespace
 
 SearchResult search(const Position& root, const SearchOptions& options, const uint32_t* history,
@@ -883,7 +878,7 @@ SearchResult search(const Position& root, const SearchOptions& options, const ui
       for (int i = 0; i < count; ++i) {
         if (scores[i] >= best - margin) ++candidateCount;
       }
-      int pick = static_cast<int>(nextRandom(random) % static_cast<uint32_t>(candidateCount));
+      int pick = static_cast<int>(xorshift32(random) % static_cast<uint32_t>(candidateCount));
       for (int i = 0; i < count; ++i) {
         if (scores[i] >= best - margin && pick-- == 0) chosen = i;
       }

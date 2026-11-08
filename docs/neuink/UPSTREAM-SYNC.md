@@ -75,7 +75,7 @@ drawing).
 
 Keep these in mind when merging a newer CrossInk; everything else of 1.2.0 is
 in files of its own (`src/activities/apps`, `src/games`, `src/network/Online*`,
-`src/util/CalendarMath.h`, `src/util/OnlineDictionaryText.*`).
+`lib/hal/CalendarMath.h`, `src/util/OnlineDictionaryText.*`).
 
 - `src/activities/home/HomeActivity.*`: the Apps entry, the Carousel frame
   cache and touch handling, covers prepared before the first paint, a single

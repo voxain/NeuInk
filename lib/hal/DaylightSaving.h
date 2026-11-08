@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "CalendarMath.h"
+
 // Daylight-saving rules applied on top of the user's standard UTC offset.
 // Pure date arithmetic on the UTC time the RTC keeps, so it is host-testable
 // and needs no timezone database. Rule values are persisted in settings: append
@@ -22,12 +24,7 @@ constexpr int dayOfWeek(int year, const int month, const int day) {
   return (year + year / 4 - year / 100 + year / 400 + t[month - 1] + day) % 7;
 }
 
-constexpr bool isLeapYear(const int year) { return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0; }
-
-constexpr int daysInMonth(const int year, const int month) {
-  constexpr int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-  return month == 2 && isLeapYear(year) ? 29 : days[month - 1];
-}
+using calmath::daysInMonth;
 
 // Day of month of the nth Sunday (n >= 1), or of the last Sunday when n == 0.
 constexpr int sundayOfMonth(const int year, const int month, const int n) {

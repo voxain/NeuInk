@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AsciiText.h>
+
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -14,23 +16,13 @@ struct Url {
   uint16_t port = 80;
 };
 
-inline bool equalsIgnoreCase(const std::string_view a, const std::string_view b) {
-  if (a.size() != b.size()) return false;
-  for (size_t i = 0; i < a.size(); ++i) {
-    const char left = a[i] >= 'A' && a[i] <= 'Z' ? static_cast<char>(a[i] - 'A' + 'a') : a[i];
-    const char right = b[i] >= 'A' && b[i] <= 'Z' ? static_cast<char>(b[i] - 'A' + 'a') : b[i];
-    if (left != right) return false;
-  }
-  return true;
-}
-
 inline bool parseUrl(const std::string_view url, Url& out) {
   const size_t schemeEnd = url.find("://");
   if (schemeEnd == std::string::npos) return false;
 
   const std::string_view scheme = url.substr(0, schemeEnd);
-  out.https = equalsIgnoreCase(scheme, "https");
-  if (!out.https && !equalsIgnoreCase(scheme, "http")) return false;
+  out.https = ascii::equalsIgnoreCase(scheme, "https");
+  if (!out.https && !ascii::equalsIgnoreCase(scheme, "http")) return false;
 
   const size_t hostStart = schemeEnd + 3;
   const size_t pathStart = url.find_first_of("/?#", hostStart);
@@ -65,7 +57,7 @@ inline bool parseUrl(const std::string_view url, Url& out) {
 }
 
 inline bool sameOrigin(const Url& a, const Url& b) {
-  return a.https == b.https && a.port == b.port && equalsIgnoreCase(a.host, b.host);
+  return a.https == b.https && a.port == b.port && ascii::equalsIgnoreCase(a.host, b.host);
 }
 
 inline bool shouldSendAuthorization(const Url& request, const Url& credentialOrigin, const bool hasCredentials) {

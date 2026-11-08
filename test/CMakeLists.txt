@@ -29,6 +29,8 @@ target_include_directories(crosspoint_test_common INTERFACE
   ${REPO_ROOT}
   ${REPO_ROOT}/lib
   ${REPO_ROOT}/lib/MemoryBudget
+  ${REPO_ROOT}/lib/Utf8
+  ${REPO_ROOT}/lib/Serialization
   ${REPO_ROOT}/lib/SpeedLog
 )
 target_compile_options(crosspoint_test_common INTERFACE

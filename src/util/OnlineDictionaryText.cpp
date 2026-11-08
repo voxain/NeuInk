@@ -1,5 +1,7 @@
 #include "OnlineDictionaryText.h"
 
+#include <AsciiText.h>
+
 #include <cstdlib>
 #include <cstring>
 #include <utility>
@@ -82,10 +84,6 @@ std::string trim(const std::string& text) {
   while (begin < end && static_cast<unsigned char>(text[begin]) <= ' ') ++begin;
   while (end > begin && static_cast<unsigned char>(text[end - 1]) <= ' ') --end;
   return text.substr(begin, end - begin);
-}
-
-bool startsWith(const std::string& text, const char* prefix) {
-  return text.compare(0, std::strlen(prefix), prefix) == 0;
 }
 
 // Cuts text to at most limit bytes on a character boundary and marks the cut.
@@ -340,7 +338,7 @@ std::string germanEntry(const std::string& text) {
     const size_t senseLimit = sections == 1 ? kFirstSectionSenses : kLaterSectionSenses;
     switch (field) {
       case Field::Pronunciation:
-        if (section.pronunciation.empty() && startsWith(line, "IPA:")) {
+        if (section.pronunciation.empty() && ascii::startsWith(line, "IPA:")) {
           const size_t open = line.find('[');
           const size_t close = line.find(']', open == std::string::npos ? 0 : open);
           if (open != std::string::npos && close != std::string::npos) {

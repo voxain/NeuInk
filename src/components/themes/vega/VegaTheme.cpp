@@ -119,7 +119,7 @@ void VegaTheme::drawHeaderStatus(const GfxRenderer& renderer, Rect rect, const b
     x = batteryLeft ? x + width + gap : x - width - gap;
     return left;
   };
-  if (gpio.isUsbConnected() && percentage < 100) drawBatteryLightningBolt(renderer, place(8), centerY - 6, true);
+  if (gpio.isUsbConnected() && percentage < 100) drawBatteryLightningBolt(renderer, place(8), centerY - 6);
   const freeink::Icon* wifi = OnlineWifi::connected() ? &icon_wifi_on_24 : (OnlineWifi::manualOn() ? &icon_wifi_off_24 : nullptr);
   if (wifi != nullptr) drawLucideIcon(renderer, *wifi, place(wifi->w), centerY - wifi->h / 2);
 }

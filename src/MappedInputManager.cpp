@@ -235,10 +235,6 @@ uint8_t MappedInputManager::mappedFrontButtonFor(const Button button) const {
 
 bool MappedInputManager::shouldUsePowerAsConfirmFallback() const { return !readerMode || powerAsConfirmInReaderMode; }
 
-bool MappedInputManager::isFrontNavButtonSwapActive() const {
-  return readerMode && shouldSwapReaderFrontNavButtons();
-}
-
 bool MappedInputManager::shouldMirrorPowerAsConfirmHold() const {
   return shouldUsePowerAsConfirmFallback() &&
          !isPowerButtonActionAvailableOutsideReader(static_cast<CrossPointSettings::SHORT_PWRBTN>(SETTINGS.longPwrBtn));

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ByteOrder.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -13,11 +15,6 @@ namespace LanguagePackFormat {
 constexpr size_t kHeaderSize = 16;
 constexpr uint8_t kVersion = 1;
 
-inline uint32_t readU32(const uint8_t* p) {
-  return static_cast<uint32_t>(p[0]) | (static_cast<uint32_t>(p[1]) << 8) | (static_cast<uint32_t>(p[2]) << 16) |
-         (static_cast<uint32_t>(p[3]) << 24);
-}
-
 // Checks a whole pack held in memory against this firmware's string list and
 // points data/offsets into it. A pack from another firmware, a cut-off
 // download or an offset past the end is refused, so tr() never reads outside
@@ -26,8 +23,8 @@ inline bool parse(const uint8_t* buf, const size_t len, const uint32_t layoutId,
                   const char*& data, const uint16_t*& offsets) {
   if (!buf || len < kHeaderSize || std::memcmp(buf, "VLNG", 4) != 0 || buf[4] != kVersion) return false;
   const uint16_t packCount = static_cast<uint16_t>(buf[6] | (buf[7] << 8));
-  if (packCount != count || readU32(buf + 8) != layoutId) return false;
-  const uint32_t dataSize = readU32(buf + 12);
+  if (packCount != count || byteorder::readLe32(buf + 8) != layoutId) return false;
+  const uint32_t dataSize = byteorder::readLe32(buf + 12);
   const size_t offsetsSize = static_cast<size_t>(count) * 2;
   if (dataSize == 0 || len != kHeaderSize + offsetsSize + dataSize) return false;
   const char* d = reinterpret_cast<const char*>(buf + kHeaderSize + offsetsSize);
