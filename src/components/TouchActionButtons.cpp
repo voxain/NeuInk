@@ -34,23 +34,25 @@ int indexAt(const Layout& layout, const int x, const int y) {
   return -1;
 }
 
-void draw(const GfxRenderer& renderer, const Layout& layout, const char* const* labels, const int primaryIndex,
-          const int selectedIndex, int fontId) {
-  if (labels == nullptr) return;
+void drawButton(const GfxRenderer& renderer, const int x, const int y, const int w, const int h, const char* label,
+                const bool primary, const bool selected, int fontId) {
   if (fontId == 0) fontId = UI_10_FONT_ID;
+  // The look of the shared UI components: light gray, black when picked, no outline.
+  renderer.fillRoundedRect(x, y, w, h, 14, selected ? Color::Black : Color::LightGray);
+  if (label == nullptr) label = "";
+  const EpdFontFamily::Style style = primary ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
+  const int textWidth = renderer.getTextWidth(fontId, label, style);
+  renderer.drawText(fontId, x + (w - textWidth) / 2, y + (h - renderer.getLineHeight(fontId)) / 2, label, !selected,
+                    style);
+}
 
+void draw(const GfxRenderer& renderer, const Layout& layout, const char* const* labels, const int primaryIndex,
+          const int selectedIndex, const int fontId) {
+  if (labels == nullptr) return;
   for (uint8_t i = 0; i < layout.count; ++i) {
-    const Rect& button = layout.buttons[i];
-    const bool selected = static_cast<int>(i) == selectedIndex;
-    // The look of the shared UI components: light gray, black when picked, no outline.
-    renderer.fillRoundedRect(button.x, button.y, button.width, button.height, 14,
-                             selected ? Color::Black : Color::LightGray);
-    const char* label = labels[i] != nullptr ? labels[i] : "";
-    const EpdFontFamily::Style style =
-        static_cast<int>(i) == primaryIndex ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
-    const int textWidth = renderer.getTextWidth(fontId, label, style);
-    const int textY = button.y + (button.height - renderer.getLineHeight(fontId)) / 2;
-    renderer.drawText(fontId, button.x + (button.width - textWidth) / 2, textY, label, !selected, style);
+    const Rect& b = layout.buttons[i];
+    drawButton(renderer, b.x, b.y, b.width, b.height, labels[i], static_cast<int>(i) == primaryIndex,
+               static_cast<int>(i) == selectedIndex, fontId);
   }
 }
 

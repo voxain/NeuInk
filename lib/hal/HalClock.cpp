@@ -10,6 +10,7 @@
 
 #include <cassert>
 
+#include <CalendarMath.h>
 #include "DaylightSaving.h"
 
 HalClock halClock;  // Singleton instance
@@ -22,48 +23,10 @@ esp_err_t clearDnsCache(void*) {
   return ESP_OK;
 }
 
-bool isLeapYear(const uint16_t year) { return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0; }
-
-uint8_t daysInMonth(const uint16_t year, const uint8_t month) {
-  static const uint8_t days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-  if (month < 1 || month > 12) return 0;
-  if (month == 2 && isLeapYear(year)) return 29;
-  return days[month - 1];
-}
-
 bool isValidDate(const uint16_t year, const uint8_t month, const uint8_t day) {
   if (year < kBaseYear || year > 2099) return false;
-  const uint8_t monthDays = daysInMonth(year, month);
+  const uint8_t monthDays = calmath::daysInMonth(year, month);
   return monthDays > 0 && day >= 1 && day <= monthDays;
-}
-
-void adjustDateByDays(uint16_t& year, uint8_t& month, uint8_t& day, const int dayDelta) {
-  if (dayDelta > 0) {
-    const uint8_t monthDays = daysInMonth(year, month);
-    if (day < monthDays) {
-      day++;
-    } else {
-      day = 1;
-      if (month < 12) {
-        month++;
-      } else {
-        month = 1;
-        year++;
-      }
-    }
-  } else if (dayDelta < 0) {
-    if (day > 1) {
-      day--;
-    } else {
-      if (month > 1) {
-        month--;
-      } else {
-        month = 12;
-        year--;
-      }
-      day = daysInMonth(year, month);
-    }
-  }
 }
 }  // namespace
 
@@ -197,7 +160,7 @@ bool HalClock::formatDate(char* buf, size_t bufSize, uint8_t utcOffsetQuarterHou
   const int offsetQuarterHours = static_cast<int>(utcOffsetQuarterHoursBiased) - 48;
   const int localMinutes = static_cast<int>(hour) * 60 + static_cast<int>(minute) + offsetQuarterHours * 15;
   const int dayDelta = localMinutes < 0 ? -1 : (localMinutes >= 1440 ? 1 : 0);
-  adjustDateByDays(year, month, day, dayDelta);
+  calmath::addDaysTo(year, month, day, dayDelta);
   if (!isValidDate(year, month, day)) return false;
 
   return formatDateParts(buf, bufSize, year, month, day, dateFormat, numericSeparator);

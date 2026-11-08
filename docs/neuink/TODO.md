@@ -2,6 +2,37 @@
 
 Things deliberately left for later. Each one says when to pick it up.
 
+## Cleanup follow-ups
+
+Left over from the cleanup sweep on `chore/cleanup-sweep` (done there: dead `ScalableGsub.h`, two dead reader helpers,
+one calendar-math header instead of six copies, shared enum/swipe helpers, one toast, one action-button drawer). Pick
+these up one at a time; each is a behaviour-neutral merge that needs a build, so batch them.
+
+- Little-endian byte helpers: `readLe32`/`writeLe16`/`writeLe32`/`readU16`/`readU32` exist 10+ times (`Epub.cpp`,
+  `BookReadingStats.cpp`, `GlobalReadingStats.cpp`, `UsbSerialFileTransfer.cpp`, `Xtc.cpp`, `SdCardFont.cpp`,
+  `LanguagePackFormat.h`, `EpubReaderActivity.cpp`, `NearbyBookPositionSyncActivity.cpp`). One `lib/Serialization/ByteOrder.h`;
+  the stats test needs the include path.
+- String helpers: `startsWith`/`endsWith`/`equalsIgnoreCase`/`asciiLower` are re-declared in `GermanStemmer`, `WordForms`,
+  `OnlineDictionaryText`, `FirmwareTargets.h`, `HttpRedirectPolicy.h`, `FileBrowserActivity`, `StorageScan`, `MemoryBudget.h`,
+  `DictHtmlRenderer`, `ChapterHtmlSlimParser`, `OtaUpdater`. One header in `lib/Utf8` or `src/util`.
+- `nextRandom` in `CheckersGame`, `ChessGame`, `GoGame`: one `games/Rng.h`.
+- `hasVisibleWordText` in `EpubReaderActivity` and `DictionaryWordSelectActivity`: check they agree, then share.
+- Web server `isTwoFingerSwipeSetting(SettingInfo)` and `enumDisplayIndexForWeb` duplicate the settings helpers
+  (by name id instead of member pointer); derive one from the other.
+- Hand-drawn buttons still left: `GameUi.h` `button`/`iconButton`/`cornerButton`, `BookStatsView` date fields and
+  adjust buttons, `DictionaryWordSelectActivity` ask bar, `HighlightCategoryActivity` pill. Games and the stats card
+  need their own look (white on a gray card), so only the plain ones should move to `TouchActionButtons::drawButton`
+  or `fui::button` with `grayButtonStyles()`.
+- `readerDarkModeEnabled()` is a stub that returns false (and `readerBackgroundColor()` on top of it): remove and
+  inline at the call sites.
+- Unused Lucide icons: the generated tables (`homeIcons.h`, `homeGridIcons.h`) are only reached through macros, so a
+  text search cannot say which manifest entries are unused. Compare `homeIcons.manifest` against `UIIcon` uses, drop
+  the rest and regenerate.
+- Unreferenced files to confirm before deleting: `docs/images/neuink/v0.3.0/file-manager.png` and `settings-info.png`
+  (not linked from any doc), `scripts/convert_icon.py`, `generate_test_bmps.py`, `generate_test_epub.py`,
+  `script_profile_mem.sh`, `register_unit_tests_target.py` (not named anywhere; may be run by hand).
+- Test build: `UiSymbolFallbackTest` still includes the removed `inter_*` headers; the scalable-font tests need libasan.
+
 ## Battery statistics
 
 Battery health and usage. The page exists (X4 Pro, 0.3.0); what is left is health and cycles.

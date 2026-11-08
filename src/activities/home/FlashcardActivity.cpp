@@ -11,6 +11,7 @@
 #include "MappedInputManager.h"
 #include "SdCardFontSystem.h"
 #include "components/SdFontPrewarm.h"
+#include "components/TouchActionButtons.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -43,18 +44,6 @@ int drawParagraphs(const GfxRenderer& renderer, const int fontId, const std::str
     start = nl + 1;
   }
   return y;
-}
-
-void drawButton(const GfxRenderer& renderer, const int x, const int y, const int w, const int h, const char* label,
-                const bool filled) {
-  if (filled) {
-    renderer.fillRoundedRect(x, y, w, h, 8, Color::Black);
-  } else {
-    renderer.drawRoundedRect(x, y, w, h, 2, 8, true);
-  }
-  const int tw = renderer.getTextWidth(UI_12_FONT_ID, label, EpdFontFamily::BOLD);
-  const int ty = y + (h - renderer.getLineHeight(UI_12_FONT_ID)) / 2;
-  renderer.drawText(UI_12_FONT_ID, x + (w - tw) / 2, ty, label, !filled, EpdFontFamily::BOLD);
 }
 
 }  // namespace
@@ -241,8 +230,8 @@ void FlashcardActivity::drawScreen(const int font) {
       y += renderer.getLineHeight(UI_10_FONT_ID) / 2;
     }
     drawParagraphs(renderer, UI_10_FONT_ID, learned, innerX, y, innerW, maxY, EpdFontFamily::BOLD, true);
-    if (!order.empty()) drawButton(renderer, restartRect.x, restartRect.y, restartRect.w, restartRect.h,
-                                   tr(STR_START_OVER), true);
+    if (!order.empty()) TouchActionButtons::drawButton(renderer, restartRect.x, restartRect.y, restartRect.w, restartRect.h,
+                                                          tr(STR_START_OVER), true, false, UI_12_FONT_ID);
   } else {
     renderer.drawRoundedRect(cardRect.x, cardRect.y, cardRect.w, cardRect.h, 2, kCardRadius, true);
     const int maxY = cardRect.y + cardRect.h - pad;
@@ -266,8 +255,10 @@ void FlashcardActivity::drawScreen(const int font) {
       y += 12;
       const std::string& meaning = card.meaning.empty() ? std::string(tr(STR_NO_MEANING)) : card.meaning;
       drawParagraphs(renderer, font, meaning, innerX, y, innerW, maxY, EpdFontFamily::REGULAR, false);
-      drawButton(renderer, againRect.x, againRect.y, againRect.w, againRect.h, tr(STR_AGAIN), false);
-      drawButton(renderer, knowRect.x, knowRect.y, knowRect.w, knowRect.h, tr(STR_KNOW_IT), true);
+      TouchActionButtons::drawButton(renderer, againRect.x, againRect.y, againRect.w, againRect.h, tr(STR_AGAIN), true,
+                                     false, UI_12_FONT_ID);
+      TouchActionButtons::drawButton(renderer, knowRect.x, knowRect.y, knowRect.w, knowRect.h, tr(STR_KNOW_IT), true,
+                                     true, UI_12_FONT_ID);
     }
   }
 

@@ -11,6 +11,7 @@
 #include <string_view>
 
 #include "GlobalActions.h"
+#include "fontIds.h"
 #include "MappedInputManager.h"
 #include "ReaderStatusBarTapTarget.h"
 #include "components/UITheme.h"
@@ -58,8 +59,6 @@ inline void applyOrientation(GfxRenderer& renderer, const uint8_t orientation) {
 // stays centered in every orientation instead of sitting at a fixed portrait offset.
 inline int messageCenterY(const GfxRenderer& renderer) { return renderer.getScreenHeight() / 2; }
 
-inline bool shouldShowTopStatusBar() { return UITheme::getReaderStatusBarHeight(ReaderStatusBarPosition::Top) > 0; }
-
 // Night Mode is applied by the display after normal-polarity reader content is
 // rendered. Keep this compatibility helper for existing reader call sites.
 inline bool readerDarkModeEnabled() { return false; }
@@ -67,6 +66,25 @@ inline bool readerDarkModeEnabled() { return false; }
 inline uint8_t readerBackgroundColor() { return readerDarkModeEnabled() ? 0x00 : 0xFF; }
 
 inline bool readerForegroundBlack() { return true; }
+
+// A boxed message in the middle of the page, shown without refreshing; drawToast also refreshes.
+inline void drawToastBuffer(const GfxRenderer& renderer, const char* msg) {
+  constexpr int padX = 20;
+  constexpr int padY = 12;
+  const bool black = readerForegroundBlack();
+  const int w = renderer.getTextWidth(UI_10_FONT_ID, msg) + padX * 2;
+  const int h = renderer.getLineHeight(UI_10_FONT_ID) + padY * 2;
+  const int x = (renderer.getScreenWidth() - w) / 2;
+  const int y = (renderer.getScreenHeight() - h) / 2;
+  renderer.fillRect(x, y, w, h, black);
+  renderer.drawRect(x, y, w, h, !black);
+  renderer.drawText(UI_10_FONT_ID, x + padX, y + padY, msg, !black);
+}
+
+inline void drawToast(const GfxRenderer& renderer, const char* msg) {
+  drawToastBuffer(renderer, msg);
+  renderer.displayBuffer();
+}
 
 inline int getTopStatusBarReservedHeight(const GfxRenderer& renderer) {
   const int statusBarHeight = UITheme::getReaderStatusBarHeight(ReaderStatusBarPosition::Top);
@@ -204,13 +222,6 @@ inline bool isTouchMenuGesture(const MappedInputManager& input) {
   // long-press reader-menu action must still work when screen touch is disabled.
   return input.wasReaderMenuHold() ||
          (SETTINGS.touchReaderControls && input.hasTouch() && input.wasReaderMenuGesture());
-}
-
-// X4 Pro opens the reader menu with an upward swipe. Its top-edge downward
-// swipe is the opposite gesture and dismisses the menu instead of opening the
-// frontlight panel. Other touch boards retain their existing menu behavior.
-inline bool isTouchMenuDismissGesture(const MappedInputManager& input) {
-  return SETTINGS.touchReaderControls && input.hasTouch() && input.hasHomeKey() && input.wasLightPanelGesture();
 }
 
 inline PageTurnResult detectPageTurn(const MappedInputManager& input) {

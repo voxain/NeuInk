@@ -16,6 +16,7 @@
 #include "WifiSelectionActivity.h"
 #include "PendingOverlayResume.h"
 #include "activities/apps/GameThinker.h"
+#include "components/TouchActionButtons.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "network/OnlineWifi.h"
@@ -353,12 +354,8 @@ void OnlineDictionaryActivity::render(RenderLock&&) {
 
   if (state == State::NotFound || state == State::NoConnection) {
     const Rect button = leaveButtonRect(renderer);
-    renderer.fillRoundedRect(button.x, button.y, button.width, button.height, 8, Color::Black);
-    const char* label = tr(STR_ONLINE_BACK_TO_BOOK);
-    const int labelWidth = renderer.getTextWidth(UI_10_FONT_ID, label, EpdFontFamily::BOLD);
-    renderer.drawText(UI_10_FONT_ID, button.x + (button.width - labelWidth) / 2,
-                      button.y + (button.height - renderer.getLineHeight(UI_10_FONT_ID)) / 2, label, false,
-                      EpdFontFamily::BOLD);
+    TouchActionButtons::drawButton(renderer, button.x, button.y, button.width, button.height,
+                                   tr(STR_ONLINE_BACK_TO_BOOK), true, true);
   }
 
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

@@ -874,20 +874,8 @@ ToastRect computeToastRect(const GfxRenderer& renderer, const char* msg) {
   return {toastX, toastY, toastW, toastH};
 }
 
-void drawToastBuffer(const GfxRenderer& renderer, const char* msg) {
-  constexpr int toastPadX = 20;
-  constexpr int toastPadY = 12;
-  const bool toastBackgroundBlack = ReaderUtils::readerForegroundBlack();
-  const ToastRect toast = computeToastRect(renderer, msg);
-  renderer.fillRect(toast.x, toast.y, toast.w, toast.h, toastBackgroundBlack);
-  renderer.drawRect(toast.x, toast.y, toast.w, toast.h, !toastBackgroundBlack);
-  renderer.drawText(UI_10_FONT_ID, toast.x + toastPadX, toast.y + toastPadY, msg, !toastBackgroundBlack);
-}
-
-void drawToast(const GfxRenderer& renderer, const char* msg) {
-  drawToastBuffer(renderer, msg);
-  renderer.displayBuffer();
-}
+using ReaderUtils::drawToast;
+using ReaderUtils::drawToastBuffer;
 
 void drawPublisherPageMarkers(const GfxRenderer& renderer, const Page& page, const int contentTop,
                               const int contentBottom, const bool foregroundBlack = true) {

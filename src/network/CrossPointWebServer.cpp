@@ -52,15 +52,6 @@ constexpr uint16_t LOCAL_UDP_PORT = 8134;
 // Static pointer for WebSocket callback (WebSocketsServer requires C-style callback)
 CrossPointWebServer* wsInstance = nullptr;
 
-uint8_t enumRawValueForDisplayIndex(const SettingInfo& setting, uint8_t displayIndex) {
-  if (setting.enumRawValues.empty()) {
-    return displayIndex;
-  }
-  if (displayIndex >= setting.enumRawValues.size()) {
-    return setting.enumRawValues.front();
-  }
-  return setting.enumRawValues[displayIndex];
-}
 
 bool isTwoFingerSwipeSetting(const SettingInfo& setting) {
   return setting.nameId == StrId::STR_TWO_FINGER_SWIPE_UP || setting.nameId == StrId::STR_TWO_FINGER_SWIPE_DOWN ||

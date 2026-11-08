@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <CalendarMath.h>
+
 constexpr size_t READING_TIME_BUCKET_COUNT = 4;
 constexpr size_t READING_DAY_OF_WEEK_COUNT = 7;
 constexpr size_t READING_HISTORY_DAYS = 730;
@@ -31,8 +33,8 @@ struct ReadingStatsDateTime {
   bool isValid() const;
 };
 
-bool isLeapYear(uint16_t year);
-uint8_t daysInMonth(uint16_t year, uint8_t month);
+using calmath::daysInMonth;
+using calmath::isLeapYear;
 bool isValidReadingStatsDate(const ReadingStatsDate& date);
 int compareReadingStatsDate(const ReadingStatsDate& lhs, const ReadingStatsDate& rhs);
 void addDaysToReadingStatsDate(ReadingStatsDate& date, int delta);
