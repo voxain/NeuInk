@@ -139,12 +139,13 @@ refresh after file changes or transfers.
   rather than every book on the card.
 - **Buttons:** Use **Up/Down** to select a book and **Confirm** to open it. Hold
   **Confirm** for book actions. **Left** opens Sort; **Right** opens the menu
-  containing **Search**, **Settings**, and **Refresh Library**.
+  containing **Search**, **Settings**, **Refresh Library**, and **Generate All
+  Covers** (builds every cover, with a Cancel button).
 - **Touch:** Tap a book to open it, hold it for book actions, and swipe to scroll.
   Use the search, settings, refresh, and sort controls at the top.
 - **Library Settings:** Open Library's **Settings** to choose embedded EPUB
   metadata or filenames, compact or expanded rows, and a list or cover grid
-  for **Recently Opened View**. You can also hide finished books, show series
+  for **Recently Opened View**, with a 3 x 3 or 2 x 2 **Grid Size**. You can also hide finished books, show series
   and genre, and filter which book formats appear.
 - **Book actions:** EPUB and XTC books can offer **Reading Stats** without
   opening the book, when tracking is enabled for the device and that book.
