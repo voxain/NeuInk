@@ -207,7 +207,9 @@ class GfxRenderer {
   // font id, or 0 when no such size exists; small adjustments keep the body font.
   void setFontVariantResolver(int (*const resolver)(int fontId, float scale)) { fontVariantResolver_ = resolver; }
   int resolveFontVariant(const int fontId, const float scale) const {
-    if (!fontVariantResolver_ || (scale > 0.95f && scale < 1.05f)) return fontId;
+    // Scales from 0.84 to 1.1 keep the body size: many books set their running text to 0.85em or 0.9em, and
+    // shrinking that to a smaller whole point size made the page read two sizes under the one picked.
+    if (!fontVariantResolver_ || (scale >= 0.84f && scale <= 1.1f)) return fontId;
     const int variant = fontVariantResolver_(fontId, scale);
     return variant != 0 && hasFont(variant) ? variant : fontId;
   }

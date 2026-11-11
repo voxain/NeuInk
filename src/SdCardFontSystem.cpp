@@ -40,8 +40,7 @@ int builtinReaderFontId(const unsigned family, const uint8_t points) {
 }
 
 // CSS font-size for the built-in reader fonts: every size is already registered, so pick one.
-// Shrinking takes the largest size at or below the target so small print never rounds back
-// up to body size; growing takes the nearest.
+// Both directions take the nearest size, but small print never rounds back up to body size.
 int resolveBuiltinFontVariant(const int fontId, const float scale) {
   for (unsigned family = 0; family < 2; ++family) {
     for (const uint8_t base : BUILTIN_READER_FONT_SIZES) {
@@ -49,11 +48,12 @@ int resolveBuiltinFontVariant(const int fontId, const float scale) {
       const float target = base * scale;
       uint8_t chosen = base;
       if (scale < 1.0f) {
-        uint8_t atOrBelow = 0;
+        // Nearest size below the body size (flooring lost up to a whole point on top of the scale).
+        chosen = BUILTIN_READER_FONT_SIZES[0];
         for (const uint8_t size : BUILTIN_READER_FONT_SIZES) {
-          if (size <= target && size > atOrBelow) atOrBelow = size;
+          if (size < base && std::fabs(size - target) < std::fabs(chosen - target)) chosen = size;
         }
-        chosen = atOrBelow != 0 ? atOrBelow : BUILTIN_READER_FONT_SIZES[0];
+        if (chosen > base) chosen = base;
       } else {
         for (const uint8_t size : BUILTIN_READER_FONT_SIZES) {
           if (std::fabs(size - target) < std::fabs(chosen - target)) chosen = size;
