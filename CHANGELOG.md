@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [NeuInk 0.4.2] - 2026-11-11
+
+Fixes a font size bug inherited from upstream CrossInk.
+
+- Reader font size: with embedded styles on, text a book sets to 0.85em or 0.9em was scaled down again and then
+  rounded down to a whole point, so the page read two or three sizes under the one picked (15 pt showed as 12 pt).
+  Book scales from 0.84 to 1.1 now keep the picked size, and smaller or larger text rounds to the nearest size
+  instead of down. Headings and footnotes still scale. The reader menu's preview still draws everything in one size.
+
 ## [NeuInk 0.4.1] - 2026-11-08
 
 A cleanup release: the same features, less duplicated code, a firmware about 1.5 KB smaller (6,047,872 bytes). Nothing
