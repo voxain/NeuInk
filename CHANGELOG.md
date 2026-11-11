@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [NeuInk 0.4.3] - 2026-11-11
+
+Two Home and Library fixes, plus a larger Library cover grid.
+
+- Home: on the app grid, a swipe that starts at the left edge of the screen (a page swipe) no longer opens the
+  most recent book. Only the physical Back button does.
+- Library, Recently Opened: books that were never opened now show their cover. It is built once, when its page is
+  first shown, and kept in the book's cache folder; books without a cover image are marked so they are not retried.
+- Library, Grid Size: a new Library setting switches the cover grid between 3 x 3 and 2 x 2 (larger covers).
+- Library menu, Generate All Covers: builds the covers of every book at the current grid size, in any view or sort,
+  with a progress popup and a Cancel button (Back). Covers already built are skipped.
+- Translations for the two new strings in all languages.
+
 ## [NeuInk 0.4.2] - 2026-11-11
 
 Fixes a font size bug inherited from upstream CrossInk.

@@ -1957,8 +1957,11 @@ void HomeActivity::loop() {
   // interaction path above. On other themes, Back opens the most recent book.
   // Requiring a press observed on Home ignores the stale release that can
   // arrive after Back closed the previous activity.
-  if (!carouselTouchOnly && !hasCarouselSwipe && mappedInput.wasReleased(MappedInputManager::Button::Back) &&
-      backPressSeen && !recentBooks.empty()) {
+  // A touch swipe from the left edge also reads as a Back release. On the app
+  // grid it is a page swipe, so only a physical Back press opens the book.
+  const bool gridPageSwipe = homeListsApps() && mappedInput.hasTouch() && mappedInput.wasLeftEdgeGesture();
+  if (!carouselTouchOnly && !hasCarouselSwipe && !gridPageSwipe &&
+      mappedInput.wasReleased(MappedInputManager::Button::Back) && backPressSeen && !recentBooks.empty()) {
     onContinueReading();
     return;
   }

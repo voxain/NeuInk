@@ -505,6 +505,7 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["libraryShowTxt"] = libraryShowTxt;
   doc["libraryShowMarkdown"] = libraryShowMarkdown;
   doc["libraryHideFinishedBooks"] = libraryHideFinishedBooks;
+  doc["libraryGridSize"] = libraryGridSize;
 
   doc["frontButtonBack"] = frontButtonBack;
   doc["frontButtonConfirm"] = frontButtonConfirm;
@@ -736,6 +737,8 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc, bool importingCrossPoint
   readLibraryChoice("libraryShowTxt", libraryShowTxt, 2);
   readLibraryChoice("libraryShowMarkdown", libraryShowMarkdown, 2);
   readLibraryChoice("libraryHideFinishedBooks", libraryHideFinishedBooks, 2);
+  libraryGridSize = LIBRARY_GRID_3X3;
+  readLibraryChoice("libraryGridSize", libraryGridSize, LIBRARY_GRID_SIZE_COUNT);
 
   // Only the generic-file fallback imports CrossPoint's combined touch mode.
   // Explicit CrossInk gesture keys identify a CrossInk document, even at the old path.

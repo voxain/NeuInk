@@ -10,7 +10,7 @@ namespace fui = freeink::ui;
 
 namespace {
 constexpr fui::ActionId ACTION_ROW = 1;
-constexpr int ROW_COUNT = 10;
+constexpr int ROW_COUNT = 11;
 }  // namespace
 
 LibrarySettingsActivity::LibrarySettingsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
@@ -42,24 +42,27 @@ void LibrarySettingsActivity::toggle(const int row) {
                                      : CrossPointSettings::RECENT_BOOKS_GRID;
       break;
     case 3:
-      SETTINGS.libraryHideFinishedBooks = !SETTINGS.libraryHideFinishedBooks;
+      SETTINGS.libraryGridSize = !SETTINGS.libraryGridSize;
       break;
     case 4:
-      SETTINGS.libraryShowSeries = !SETTINGS.libraryShowSeries;
+      SETTINGS.libraryHideFinishedBooks = !SETTINGS.libraryHideFinishedBooks;
       break;
     case 5:
-      SETTINGS.libraryShowGenre = !SETTINGS.libraryShowGenre;
+      SETTINGS.libraryShowSeries = !SETTINGS.libraryShowSeries;
       break;
     case 6:
-      SETTINGS.libraryShowEpub = !SETTINGS.libraryShowEpub;
+      SETTINGS.libraryShowGenre = !SETTINGS.libraryShowGenre;
       break;
     case 7:
-      SETTINGS.libraryShowXtc = !SETTINGS.libraryShowXtc;
+      SETTINGS.libraryShowEpub = !SETTINGS.libraryShowEpub;
       break;
     case 8:
-      SETTINGS.libraryShowTxt = !SETTINGS.libraryShowTxt;
+      SETTINGS.libraryShowXtc = !SETTINGS.libraryShowXtc;
       break;
     case 9:
+      SETTINGS.libraryShowTxt = !SETTINGS.libraryShowTxt;
+      break;
+    case 10:
       SETTINGS.libraryShowMarkdown = !SETTINGS.libraryShowMarkdown;
       break;
     default:
@@ -144,6 +147,7 @@ void LibrarySettingsActivity::screen(UiApp::ScreenType& screen, void* user) {
 void LibrarySettingsActivity::provideRow(void*, const uint16_t row, fui::ListItem& item) {
   static constexpr StrId labels[] = {
       StrId::STR_LIBRARY_USE_METADATA,   StrId::STR_LIBRARY_LIST_VIEW, StrId::STR_LIBRARY_RECENTLY_OPENED_VIEW,
+      StrId::STR_LIBRARY_GRID_SIZE,
       StrId::STR_LIBRARY_FINISHED_BOOKS, StrId::STR_LIBRARY_SERIES,    StrId::STR_LIBRARY_GENRE,
       StrId::STR_LIBRARY_EPUBS,          StrId::STR_LIBRARY_XTC_XTCH,  StrId::STR_LIBRARY_TXT,
       StrId::STR_LIBRARY_MARKDOWN};
@@ -158,32 +162,36 @@ void LibrarySettingsActivity::provideRow(void*, const uint16_t row, fui::ListIte
         SETTINGS.recentBooksView == CrossPointSettings::RECENT_BOOKS_GRID ? tr(STR_GRID_VIEW) : tr(STR_LIST_VIEW);
     return;
   }
+  if (row == 3) {
+    item.value = SETTINGS.libraryGridSize == CrossPointSettings::LIBRARY_GRID_2X2 ? "2 x 2" : "3 x 3";
+    return;
+  }
   item.toggle = true;
   switch (row) {
     case 0:
       item.toggleChecked = SETTINGS.libraryUseMetadata;
       break;
-    case 3:
+    case 4:
       item.sectionHeading = tr(STR_CAT_DISPLAY);
       item.toggleChecked = !SETTINGS.libraryHideFinishedBooks;
       break;
-    case 4:
+    case 5:
       item.toggleChecked = SETTINGS.libraryShowSeries;
       break;
-    case 5:
+    case 6:
       item.toggleChecked = SETTINGS.libraryShowGenre;
       break;
-    case 6:
+    case 7:
       item.sectionHeading = tr(STR_LIBRARY_SHOW_FILES);
       item.toggleChecked = SETTINGS.libraryShowEpub;
       break;
-    case 7:
+    case 8:
       item.toggleChecked = SETTINGS.libraryShowXtc;
       break;
-    case 8:
+    case 9:
       item.toggleChecked = SETTINGS.libraryShowTxt;
       break;
-    case 9:
+    case 10:
       item.toggleChecked = SETTINGS.libraryShowMarkdown;
       break;
   }
