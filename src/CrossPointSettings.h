@@ -369,6 +369,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     VEGA = 8,
     UI_THEME_COUNT = 9
   };
+  enum LIBRARY_GRID_SIZE { LIBRARY_GRID_3X3 = 0, LIBRARY_GRID_2X2 = 1, LIBRARY_GRID_SIZE_COUNT };
   enum RECENT_BOOKS_VIEW { RECENT_BOOKS_LIST = 0, RECENT_BOOKS_GRID = 1, RECENT_BOOKS_VIEW_COUNT };
 
   // Image rendering in EPUB reader
@@ -757,6 +758,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t libraryShowTxt = 1;
   uint8_t libraryShowMarkdown = 1;
   uint8_t libraryHideFinishedBooks = 0;
+  uint8_t libraryGridSize = LIBRARY_GRID_3X3;
   // Hide file extensions in the file browser right-side value column (0 = show, 1 = hide)
   uint8_t hideFileExtension = 0;
   // File browser display row style (0 = one-line theme list, 1 = two-line compact display)

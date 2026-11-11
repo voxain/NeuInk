@@ -89,6 +89,11 @@ class LibraryActivity final : public Activity {
   void buildGrid(UiApp::ScreenType& screen);
   void loadGridPageCovers();
   bool loadGridCover(int row);
+  bool generateCover(const std::string& path, int width, int height);
+  void generateAllCovers();
+  void stepCoverJob();
+  bool measuringGrid = false;  // a hidden layout pass that only fixes the grid cover size
+  int coverJob = -1;  // next book of Generate All Covers; -1 when idle
   void loadGridProgress();
   bool gridEnabled() const;
   void buildSortHeader(UiApp::ScreenType& screen);
