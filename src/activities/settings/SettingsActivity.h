@@ -340,6 +340,8 @@ class SettingsActivity final : public Activity {
   void applyLanguage(uint8_t langIndex);
   void openIdleTimeThresholdPicker();
   void toggleCurrentSetting();
+  void runSettingAction(const SettingInfo& setting);
+  void openFontSelection();
   // Faster Screen Link: turning it on applies the faster clock, then keeps it
   // only if the user confirms the screen still looks right (auto-undo).
   void toggleFastScreenLink();

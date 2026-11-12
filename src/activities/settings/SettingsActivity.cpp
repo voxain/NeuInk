@@ -1062,6 +1062,126 @@ bool SettingsActivity::handleHomeGesture() {
   return true;
 }
 
+void SettingsActivity::runSettingAction(const SettingInfo& setting) {
+  const auto launchAndSave = [this](std::unique_ptr<Activity> activity) {
+    startActivityForResult(std::move(activity), [](const ActivityResult&) { SETTINGS.saveToFile(); });
+  };
+
+  switch (setting.action) {
+    case SettingAction::RemapFrontButtons:
+      launchAndSave(std::make_unique<ButtonRemapActivity>(renderer, mappedInput, false));
+      break;
+    case SettingAction::RemapFrontButtonsReader:
+      launchAndSave(std::make_unique<ButtonRemapActivity>(renderer, mappedInput, true));
+      break;
+    case SettingAction::CustomiseStatusBar:
+      launchAndSave(std::make_unique<StatusBarSettingsActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::KOReaderSync:
+      launchAndSave(std::make_unique<KOReaderSettingsActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::OPDSBrowser:
+      launchAndSave(std::make_unique<OpdsServerListActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::BluetoothPageTurner:
+      launchAndSave(std::make_unique<BleSettingsActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::Dictionaries:
+      launchAndSave(std::make_unique<DictionariesActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::Network:
+      startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput, false),
+                             [](const ActivityResult&) {
+                               SETTINGS.saveToFile();
+                               // Settings only manages credentials; no parent needs the connection.
+                               // Cancelled selections already stop WiFi in the picker.
+                               if (WiFi.getMode() == WIFI_MODE_NULL) return;
+                               WiFi.disconnect(false);
+                               delay(30);
+                               if (!WiFi.mode(WIFI_OFF)) {
+                                 LOG_ERR("SET", "Failed to stop WiFi after network settings");
+                               }
+                             });
+      break;
+    case SettingAction::BackupStats:
+      launchAndSave(std::make_unique<BackupStatsActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::ResetGlobalStats:
+      startActivityForResult(
+          std::make_unique<ConfirmationActivity>(renderer, mappedInput, tr(STR_RESET_ALL_TIME_STATS),
+                                                 tr(STR_RESET_ALL_TIME_STATS_CONFIRM)),
+          [this](const ActivityResult& result) {
+            if (!result.isCancelled && !GlobalReadingStats::resetLocal()) {
+              LOG_ERR("SET", "Failed to reset all-time reading stats");
+            }
+            requestUpdate();
+          });
+      break;
+    case SettingAction::ClearCache:
+      launchAndSave(std::make_unique<ClearCacheActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::DownloadFonts:
+      silentRestartToManageFonts();
+      break;
+    case SettingAction::TtfRendering:
+#if CROSSINK_SCALABLE_FONTS
+      startActivityForResult(
+          std::make_unique<TtfRenderOptionsActivity>(renderer, mappedInput, SETTINGS.sdFontFamilyName, false),
+          [this](const ActivityResult& result) {
+            if (const auto* options = std::get_if<TtfRenderOptionsResult>(&result.data)) {
+              ttfRenderingChanged = ttfRenderingChanged || options->activeFamilyChanged;
+            }
+            rebuildSettingsLists();
+          });
+#endif
+      break;
+    case SettingAction::Language:
+      openLanguagePicker();
+      break;
+    case SettingAction::KeyboardLayouts:
+      launchAndSave(std::make_unique<KeyboardLayoutsActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::ClockSync:
+      launchAndSave(std::make_unique<ClockSyncActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::QuickActions:
+      launchAndSave(std::make_unique<QuickActionsActivity>(renderer, mappedInput));
+      break;
+    case SettingAction::ReaderFontOptions:
+    case SettingAction::ReaderPageLayout:
+    case SettingAction::ScreenMargin:
+    case SettingAction::ControlsPowerButton:
+    case SettingAction::ControlsHomeButton:
+    case SettingAction::ControlsFrontButtons:
+    case SettingAction::ControlsSideButtons:
+    case SettingAction::ControlsTapsGestures:
+    case SettingAction::ControlsTwoFingerSwipe:
+    case SettingAction::ControlsEdgeGestures:
+    case SettingAction::ControlsControlCenter:
+    case SettingAction::SystemGlobalStats:
+    case SettingAction::DisplaySleepScreen:
+    case SettingAction::DisplayFrontlight:
+    case SettingAction::GeneralDateTime:
+    case SettingAction::GeneralUpdates:
+    case SettingAction::ReaderContent:
+    case SettingAction::ReaderAids:
+    case SettingAction::ReaderLookup:
+    case SettingAction::DisplayStatusBar:
+    case SettingAction::DisplayScreenRefresh:
+    case SettingAction::None:
+      // Do nothing
+      break;
+  }
+}
+
+void SettingsActivity::openFontSelection() {
+  startActivityForResult(std::make_unique<FontSelectionActivity>(renderer, mappedInput, &sdFontSystem.registry()),
+                         [this](const ActivityResult&) {
+                           SETTINGS.saveToFile();
+                           rebuildSettingsLists();
+                         });
+}
+
 void SettingsActivity::toggleCurrentSetting() {
   int selectedSetting = selectedSettingIndex - 1;
   if (selectedSetting < 0 || selectedSetting >= settingsCount) {
@@ -1117,11 +1237,7 @@ void SettingsActivity::toggleCurrentSetting() {
     return;
   }
   if (setting.nameId == StrId::STR_FONT_FAMILY && setting.type == SettingType::ENUM) {
-    startActivityForResult(std::make_unique<FontSelectionActivity>(renderer, mappedInput, &sdFontSystem.registry()),
-                           [this](const ActivityResult&) {
-                             SETTINGS.saveToFile();
-                             rebuildSettingsLists();
-                           });
+    openFontSelection();
     return;
   }
 
@@ -1143,15 +1259,6 @@ void SettingsActivity::toggleCurrentSetting() {
     SETTINGS.*(setting.valuePtr) = enumRawValueForDisplayIndex(setting, nextIndex);
     QuickActions::settingChanged(SETTINGS, setting.valuePtr);
   } else if (setting.type == SettingType::ENUM && setting.valueGetter && setting.valueSetter) {
-    if (setting.nameId == StrId::STR_FONT_FAMILY) {
-      // Launch font selection submenu instead of cycling
-      startActivityForResult(std::make_unique<FontSelectionActivity>(renderer, mappedInput, &sdFontSystem.registry()),
-                             [this](const ActivityResult&) {
-                               SETTINGS.saveToFile();
-                               rebuildSettingsLists();
-                             });
-      return;
-    }
     const size_t optionCount = settingEnumOptionCount(setting);
     if (optionCount == 0) return;
     const uint8_t totalValues = static_cast<uint8_t>(optionCount);
@@ -1165,114 +1272,8 @@ void SettingsActivity::toggleCurrentSetting() {
       SETTINGS.*(setting.valuePtr) = currentValue + setting.valueRange.step;
     }
   } else if (setting.type == SettingType::ACTION) {
-    auto resultHandler = [this](const ActivityResult&) { SETTINGS.saveToFile(); };
-
-    switch (setting.action) {
-      case SettingAction::RemapFrontButtons:
-        startActivityForResult(std::make_unique<ButtonRemapActivity>(renderer, mappedInput, false), resultHandler);
-        break;
-      case SettingAction::RemapFrontButtonsReader:
-        startActivityForResult(std::make_unique<ButtonRemapActivity>(renderer, mappedInput, true), resultHandler);
-        break;
-      case SettingAction::CustomiseStatusBar:
-        startActivityForResult(std::make_unique<StatusBarSettingsActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::KOReaderSync:
-        startActivityForResult(std::make_unique<KOReaderSettingsActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::OPDSBrowser:
-        startActivityForResult(std::make_unique<OpdsServerListActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::BluetoothPageTurner:
-        startActivityForResult(std::make_unique<BleSettingsActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::Dictionaries:
-        startActivityForResult(std::make_unique<DictionariesActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::Network:
-        startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput, false),
-                               [](const ActivityResult&) {
-                                 SETTINGS.saveToFile();
-                                 // Settings only manages credentials; no parent needs the connection.
-                                 // Cancelled selections already stop WiFi in the picker.
-                                 if (WiFi.getMode() == WIFI_MODE_NULL) return;
-                                 WiFi.disconnect(false);
-                                 delay(30);
-                                 if (!WiFi.mode(WIFI_OFF)) {
-                                   LOG_ERR("SET", "Failed to stop WiFi after network settings");
-                                 }
-                               });
-        break;
-      case SettingAction::BackupStats:
-        startActivityForResult(std::make_unique<BackupStatsActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::ResetGlobalStats:
-        startActivityForResult(
-            std::make_unique<ConfirmationActivity>(renderer, mappedInput, tr(STR_RESET_ALL_TIME_STATS),
-                                                   tr(STR_RESET_ALL_TIME_STATS_CONFIRM)),
-            [this](const ActivityResult& result) {
-              if (!result.isCancelled && !GlobalReadingStats::resetLocal()) {
-                LOG_ERR("SET", "Failed to reset all-time reading stats");
-              }
-              requestUpdate();
-            });
-        break;
-      case SettingAction::ClearCache:
-        startActivityForResult(std::make_unique<ClearCacheActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::DownloadFonts:
-        silentRestartToManageFonts();
-        break;
-      case SettingAction::TtfRendering:
-#if CROSSINK_SCALABLE_FONTS
-        startActivityForResult(
-            std::make_unique<TtfRenderOptionsActivity>(renderer, mappedInput, SETTINGS.sdFontFamilyName, false),
-            [this](const ActivityResult& result) {
-              if (const auto* options = std::get_if<TtfRenderOptionsResult>(&result.data)) {
-                ttfRenderingChanged = ttfRenderingChanged || options->activeFamilyChanged;
-              }
-              rebuildSettingsLists();
-            });
-#endif
-        break;
-      case SettingAction::Language:
-        openLanguagePicker();
-        break;
-      case SettingAction::KeyboardLayouts:
-        startActivityForResult(std::make_unique<KeyboardLayoutsActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::ClockSync:
-        startActivityForResult(std::make_unique<ClockSyncActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::QuickActions:
-        startActivityForResult(std::make_unique<QuickActionsActivity>(renderer, mappedInput), resultHandler);
-        break;
-      case SettingAction::ReaderFontOptions:
-      case SettingAction::ReaderPageLayout:
-      case SettingAction::ScreenMargin:
-      case SettingAction::ControlsPowerButton:
-      case SettingAction::ControlsHomeButton:
-      case SettingAction::ControlsFrontButtons:
-      case SettingAction::ControlsSideButtons:
-      case SettingAction::ControlsTapsGestures:
-      case SettingAction::ControlsTwoFingerSwipe:
-      case SettingAction::ControlsEdgeGestures:
-      case SettingAction::ControlsControlCenter:
-      case SettingAction::SystemGlobalStats:
-      case SettingAction::DisplaySleepScreen:
-      case SettingAction::DisplayFrontlight:
-      case SettingAction::GeneralDateTime:
-      case SettingAction::GeneralUpdates:
-      case SettingAction::ReaderContent:
-      case SettingAction::ReaderAids:
-      case SettingAction::ReaderLookup:
-      case SettingAction::DisplayStatusBar:
-      case SettingAction::DisplayScreenRefresh:
-      case SettingAction::None:
-        // Do nothing
-        break;
-    }
-    return;  // Results will be handled in the result handler, so we can return early here
+    runSettingAction(setting);
+    return;
   } else if (setting.type == SettingType::SUBMENU) {
     if (setting.action == SettingAction::GeneralUpdates) {
       startActivityForResult(std::make_unique<SoftwareUpdatesActivity>(renderer, mappedInput),
