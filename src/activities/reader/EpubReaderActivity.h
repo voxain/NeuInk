@@ -1,6 +1,7 @@
 #pragma once
 #include <Epub.h>
 #include <Epub/FootnoteEntry.h>
+#include <Epub/ReaderRenderSpec.h>
 #include <Epub/Section.h>
 #include <Memory.h>
 #include <freertos/FreeRTOS.h>
@@ -17,6 +18,7 @@
 #include "BookmarkStore.h"
 #include "EndOfBookOptions.h"
 #include "EpubReaderMenuModel.h"
+#include "EpubReaderSectionLoad.h"
 #include "EpubReaderPercentSelectionActivity.h"
 #include "FootnoteLinkTargets.h"
 #include "GlobalReadingStats.h"
@@ -457,6 +459,17 @@ class EpubReaderActivity final : public Activity {
   void prepareCurrentSectionForRelayout();
   bool tickSectionBuild();
   bool loadSectionForRender(uint16_t viewportWidth, uint16_t viewportHeight);
+  bool loadCachedSection(SectionLoad& load, int fontId, EpubRenderMode renderMode);
+  bool buildSectionWithProfile(SectionLoad& load, int fontId, const SectionBuildProfile& profile);
+  bool buildUntilTargetReady(SectionLoad& load, const ReaderRenderSpec& spec, const SectionBuildOptions& buildOptions,
+                             bool& attemptLayoutAbortedForLowMemory);
+  void handleSectionBuildFailure(const SectionLoad& load);
+  void resolvePendingJumpTarget();
+  void positionSectionAtPendingTarget();
+  // A jump to a clipping, paragraph or percentage is waiting for the section to load.
+  bool hasPendingJumpTarget() const {
+    return pendingPercentJump || pendingClippingIndex != UINT16_MAX || pendingParagraphIndex != UINT16_MAX;
+  }
   void showPendingSyncSaveError();
   void showLowMemoryLayoutError();
   void showBuildError();
