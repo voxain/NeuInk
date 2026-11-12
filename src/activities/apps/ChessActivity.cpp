@@ -126,24 +126,12 @@ void ChessActivity::layout() {
   newButton = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
 
   // The New game panel lies over the middle of the board.
-  constexpr int pad = 18;
-  constexpr int titleHeight = 40;
-  constexpr int rowHeight = 56;
-  constexpr int gap = 12;
-  panelBox = {board.x + 6, board.y + 40, size - 12, pad + titleHeight + 4 * rowHeight + 3 * gap + pad};
-  const int innerX = panelBox.x + pad;
-  const int innerWidth = panelBox.w - 2 * pad;
-  const int half = (innerWidth - gap) / 2;
-  const int third = (innerWidth - 2 * gap) / 3;
-  int y = panelBox.y + pad + titleHeight;
-  for (int i = 0; i < 2; ++i) opponentBoxes[i] = {innerX + i * (half + gap), y, half, rowHeight};
-  y += rowHeight + gap;
-  for (int i = 0; i < 3; ++i) levelBoxes[i] = {innerX + i * (third + gap), y, third, rowHeight};
-  y += rowHeight + gap;
-  for (int i = 0; i < 2; ++i) colourBoxes[i] = {innerX + i * (half + gap), y, half, rowHeight};
-  y += rowHeight + gap;
-  cancelBox = {innerX, y, half, rowHeight};
-  startBox = {innerX + half + gap, y, half, rowHeight};
+  panelBox = {board.x + 6, board.y + 40, size - 12, gameui::PanelRows::panelHeight(4)};
+  gameui::PanelRows rows(panelBox);
+  rows.row(opponentBoxes);
+  rows.row(levelBoxes);
+  rows.row(colourBoxes);
+  rows.buttons(cancelBox, startBox);
 
   constexpr int choice = 84;
   const int choicesX = board.x + (size - (4 * choice + 3 * 10)) / 2;

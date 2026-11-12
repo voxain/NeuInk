@@ -42,6 +42,24 @@ constexpr char DEVICE_ID[] = "crossink-device";
 
 constexpr bool isSuccessfulHttpCode(int httpCode) { return httpCode >= 200 && httpCode < 300; }
 
+#ifndef SIMULATOR
+// Starts `http` on `url` with the server's pinned certificate. False (and logged) when there is none or the URL
+// is bad.
+bool beginPinnedRequest(freeink::SecureHttpClient& http, const std::string& url) {
+  const char* trustRoot = koreader::trustRootFor(url);
+  if (!trustRoot) {
+    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+    return false;
+  }
+  http.setCACert(trustRoot);
+  if (!http.begin(url)) {
+    LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
+    return false;
+  }
+  return true;
+}
+#endif
+
 std::string formatHttpStatusMessage(int httpCode) {
   char buffer[96];
   snprintf(buffer, sizeof(buffer), tr(STR_KOREADER_SYNC_HTTP_STATUS_FORMAT), httpCode);
@@ -139,6 +157,31 @@ void addAuthHeaders(HTTPClient& http) {
 }
 
 bool isHttpsUrl(const std::string& url) { return url.rfind("https://", 0) == 0; }
+
+// Owns the TLS or plain client an HTTPClient talks through for one request.
+class SimulatorConnection {
+ public:
+  // Starts `http` on `url`; https needs a pinned certificate for the server.
+  bool begin(HTTPClient& http, const std::string& url) {
+    if (!isHttpsUrl(url)) {
+      http.begin(plainClient, url.c_str());
+      return true;
+    }
+    const char* trustRoot = koreader::trustRootFor(url);
+    if (!trustRoot) {
+      LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
+      return false;
+    }
+    secureClient.reset(new WiFiClientSecure);
+    secureClient->setCACert(trustRoot);
+    http.begin(*secureClient, url.c_str());
+    return true;
+  }
+
+ private:
+  std::unique_ptr<WiFiClientSecure> secureClient;
+  WiFiClient plainClient;
+};
 #else
 // Apply the shared KOSync auth headers after begin(). x-auth-* is the native
 // KOSync scheme; Basic auth is added for Calibre-Web-Automated compatibility.
@@ -179,21 +222,8 @@ KOReaderSyncClient::Error KOReaderSyncClient::authenticate() {
 
 #ifdef SIMULATOR
   HTTPClient http;
-  std::unique_ptr<WiFiClientSecure> secureClient;
-  WiFiClient plainClient;
-
-  if (isHttpsUrl(url)) {
-    secureClient.reset(new WiFiClientSecure);
-    const char* trustRoot = koreader::trustRootFor(url);
-    if (!trustRoot) {
-      LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
-      return NETWORK_ERROR;
-    }
-    secureClient->setCACert(trustRoot);
-    http.begin(*secureClient, url.c_str());
-  } else {
-    http.begin(plainClient, url.c_str());
-  }
+  SimulatorConnection connection;
+  if (!connection.begin(http, url)) return NETWORK_ERROR;
   addAuthHeaders(http);
 
   const int httpCode = http.GET();
@@ -223,16 +253,7 @@ KOReaderSyncClient::Error KOReaderSyncClient::authenticate() {
   return SERVER_ERROR;
 #else
   freeink::SecureHttpClient http;
-  const char* trustRoot = koreader::trustRootFor(url);
-  if (!trustRoot) {
-    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
-    return NETWORK_ERROR;
-  }
-  http.setCACert(trustRoot);
-  if (!http.begin(url)) {
-    LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
-    return NETWORK_ERROR;
-  }
+  if (!beginPinnedRequest(http, url)) return NETWORK_ERROR;
   applyAuthHeaders(http);
   std::unique_ptr<char[]> responseBody;
   size_t responseSize = 0;
@@ -314,16 +335,7 @@ KOReaderSyncClient::Error KOReaderSyncClient::createUser() {
   serializeJson(doc, body);
 
   freeink::SecureHttpClient http;
-  const char* trustRoot = koreader::trustRootFor(url);
-  if (!trustRoot) {
-    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
-    return NETWORK_ERROR;
-  }
-  http.setCACert(trustRoot);
-  if (!http.begin(url)) {
-    LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
-    return NETWORK_ERROR;
-  }
+  if (!beginPinnedRequest(http, url)) return NETWORK_ERROR;
   http.addHeader("Accept", "application/vnd.koreader.v1+json");
   http.addHeader("Content-Type", "application/json");
   const int httpCode = http.sendRequest("POST", body);
@@ -353,21 +365,8 @@ KOReaderSyncClient::Error KOReaderSyncClient::getProgress(const std::string& doc
 
 #ifdef SIMULATOR
   HTTPClient http;
-  std::unique_ptr<WiFiClientSecure> secureClient;
-  WiFiClient plainClient;
-
-  if (isHttpsUrl(url)) {
-    secureClient.reset(new WiFiClientSecure);
-    const char* trustRoot = koreader::trustRootFor(url);
-    if (!trustRoot) {
-      LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
-      return NETWORK_ERROR;
-    }
-    secureClient->setCACert(trustRoot);
-    http.begin(*secureClient, url.c_str());
-  } else {
-    http.begin(plainClient, url.c_str());
-  }
+  SimulatorConnection connection;
+  if (!connection.begin(http, url)) return NETWORK_ERROR;
   addAuthHeaders(http);
 
   const int httpCode = http.GET();
@@ -418,16 +417,7 @@ KOReaderSyncClient::Error KOReaderSyncClient::getProgress(const std::string& doc
   return SERVER_ERROR;
 #else
   freeink::SecureHttpClient http;
-  const char* trustRoot = koreader::trustRootFor(url);
-  if (!trustRoot) {
-    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
-    return NETWORK_ERROR;
-  }
-  http.setCACert(trustRoot);
-  if (!http.begin(url)) {
-    LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
-    return NETWORK_ERROR;
-  }
+  if (!beginPinnedRequest(http, url)) return NETWORK_ERROR;
   applyAuthHeaders(http);
   const int httpCode = http.GET();
   lastHttpCode = httpCode;
@@ -547,21 +537,8 @@ KOReaderSyncClient::Error KOReaderSyncClient::updateProgress(const KOReaderProgr
 
 #ifdef SIMULATOR
   HTTPClient http;
-  std::unique_ptr<WiFiClientSecure> secureClient;
-  WiFiClient plainClient;
-
-  if (isHttpsUrl(url)) {
-    secureClient.reset(new WiFiClientSecure);
-    const char* trustRoot = koreader::trustRootFor(url);
-    if (!trustRoot) {
-      LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
-      return NETWORK_ERROR;
-    }
-    secureClient->setCACert(trustRoot);
-    http.begin(*secureClient, url.c_str());
-  } else {
-    http.begin(plainClient, url.c_str());
-  }
+  SimulatorConnection connection;
+  if (!connection.begin(http, url)) return NETWORK_ERROR;
   addAuthHeaders(http);
   http.addHeader("Content-Type", "application/json");
 
@@ -578,16 +555,7 @@ KOReaderSyncClient::Error KOReaderSyncClient::updateProgress(const KOReaderProgr
   return SERVER_ERROR;
 #else
   freeink::SecureHttpClient http;
-  const char* trustRoot = koreader::trustRootFor(url);
-  if (!trustRoot) {
-    LOG_ERR("KOSync", "Refusing sync server without a pinned certificate: %s", url.c_str());
-    return NETWORK_ERROR;
-  }
-  http.setCACert(trustRoot);
-  if (!http.begin(url)) {
-    LOG_ERR("KOSync", "Bad URL: %s", url.c_str());
-    return NETWORK_ERROR;
-  }
+  if (!beginPinnedRequest(http, url)) return NETWORK_ERROR;
   applyAuthHeaders(http);
   http.addHeader("Content-Type", "application/json");
   const int httpCode = http.sendRequest("PUT", body);

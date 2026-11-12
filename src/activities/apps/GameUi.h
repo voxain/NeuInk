@@ -49,6 +49,46 @@ struct Box {
   Box grown(const int margin) const { return Box{x - margin, y - margin, w + 2 * margin, h + 2 * margin}; }
 };
 
+// Lays out the "New game" panel the apps share: a title, then rows of equal-width choices, ending in a row
+// with the Cancel and Start buttons.
+class PanelRows {
+ public:
+  static constexpr int kPad = 18;
+  static constexpr int kTitleHeight = 40;
+  static constexpr int kRowHeight = 56;
+  static constexpr int kGap = 12;
+
+  // Height of a panel with `rows` rows, the last being the buttons.
+  static constexpr int panelHeight(const int rows) {
+    return kPad + kTitleHeight + rows * kRowHeight + (rows - 1) * kGap + kPad;
+  }
+
+  explicit PanelRows(const Box& panel)
+      : innerX(panel.x + kPad), innerWidth(panel.w - 2 * kPad), y(panel.y + kPad + kTitleHeight) {}
+
+  // Fills `boxes` with one row of choices splitting the inner width evenly, then moves down a row.
+  template <size_t N>
+  void row(Box (&boxes)[N]) {
+    const int count = static_cast<int>(N);
+    const int width = (innerWidth - (count - 1) * kGap) / count;
+    for (int i = 0; i < count; ++i) boxes[i] = {innerX + i * (width + kGap), y, width, kRowHeight};
+    y += kRowHeight + kGap;
+  }
+
+  // The last row: Cancel on the left, Start on the right.
+  void buttons(Box& cancel, Box& start) {
+    Box pair[2];
+    row(pair);
+    cancel = pair[0];
+    start = pair[1];
+  }
+
+ private:
+  int innerX;
+  int innerWidth;
+  int y;
+};
+
 // Greys out what is already drawn in the box by clearing every other pixel.
 inline void fade(const GfxRenderer& renderer, const Box& box) {
   for (int y = box.y; y < box.y + box.h; ++y) {

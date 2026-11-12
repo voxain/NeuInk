@@ -111,26 +111,13 @@ void TicTacToeActivity::layout() {
   tallyY = gameui::contentBottom(renderer) - kTallyHeight;
   newButton = gameui::headerCornerBox(renderer, mappedInput, tr(STR_GAME_NEW_SHORT));
 
-  constexpr int pad = 18;
-  constexpr int titleHeight = 40;
-  constexpr int rowHeight = 56;
-  constexpr int gap = 12;
-  panelBox = {board.x + 6, board.y + 28, size - 12, pad + titleHeight + 5 * rowHeight + 4 * gap + pad};
-  const int innerX = panelBox.x + pad;
-  const int innerWidth = panelBox.w - 2 * pad;
-  const int half = (innerWidth - gap) / 2;
-  const int third = (innerWidth - 2 * gap) / 3;
-  int y = panelBox.y + pad + titleHeight;
-  for (int i = 0; i < 2; ++i) kindBoxes[i] = {innerX + i * (half + gap), y, half, rowHeight};
-  y += rowHeight + gap;
-  for (int i = 0; i < 2; ++i) opponentBoxes[i] = {innerX + i * (half + gap), y, half, rowHeight};
-  y += rowHeight + gap;
-  for (int i = 0; i < 3; ++i) levelBoxes[i] = {innerX + i * (third + gap), y, third, rowHeight};
-  y += rowHeight + gap;
-  for (int i = 0; i < 2; ++i) sideBoxes[i] = {innerX + i * (half + gap), y, half, rowHeight};
-  y += rowHeight + gap;
-  cancelBox = {innerX, y, half, rowHeight};
-  startBox = {innerX + half + gap, y, half, rowHeight};
+  panelBox = {board.x + 6, board.y + 28, size - 12, gameui::PanelRows::panelHeight(5)};
+  gameui::PanelRows rows(panelBox);
+  rows.row(kindBoxes);
+  rows.row(opponentBoxes);
+  rows.row(levelBoxes);
+  rows.row(sideBoxes);
+  rows.buttons(cancelBox, startBox);
 }
 
 bool TicTacToeActivity::computerToMove() const {
