@@ -33,3 +33,14 @@ struct SectionLoad {
   // A readable partial cache kept alive until its full replacement has been built.
   std::unique_ptr<Section> readablePartialFallback;
 };
+
+// What the silent indexing of the next chapter needs and learns along the way.
+struct SilentPrefetch {
+  int spineIndex = 0;
+  uint16_t viewportWidth = 0;
+  uint16_t viewportHeight = 0;
+  int readerFontId = 0;
+  EpubRenderMode usedRenderMode = EpubRenderMode::CrossInkDefault;
+  bool layoutAbortedForLowMemory = false;
+  bool prefetchCancelled = false;
+};
