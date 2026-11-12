@@ -2628,46 +2628,139 @@ void EpubReaderActivity::onExit() {
   restoreGlobalReaderSettings();
 }
 
+// Collects what the reader drawer shows about the current position (page, progress, bookmark and stable page).
+EpubReaderActivity::ReaderMenuSnapshot EpubReaderActivity::captureReaderMenuSnapshot() {
+  ReaderMenuSnapshot snap;
+  // Serialize EPUB metadata/file access with the render task.
+  RenderLock lock(*this);
+  snap.previewActive = activeFootnotePreview;
+  snap.totalPages = section ? section->estimatedTotalPages() : 0;
+  snap.chapterPageCount = snap.totalPages;
+  snap.chapterPage = section ? section->currentPage + 1 : 0;
+  snap.chapterPageCountEstimated = section && (section->isBuilding() || section->isPartial());
+  if (section && !snap.previewActive) {
+    float chapterProgress = 0.0f;
+    resolveChapterGroupPageProgress(snap.chapterPage, snap.chapterPageCount, chapterProgress,
+                                    snap.chapterPageCountEstimated);
+  }
+  snap.bmSpine = static_cast<uint16_t>(currentSpineIndex);
+  snap.bmProgress =
+      (section && snap.totalPages > 0) ? static_cast<float>(section->currentPage) / snap.totalPages : 0.0f;
+  snap.bookmarkPageCount = snap.totalPages > 0 ? snap.totalPages : 1;
+  const float sectionProgress =
+      (section && snap.totalPages > 0) ? static_cast<float>(section->currentPage) / snap.totalPages : 0.0f;
+  if (!snap.previewActive && epub) {
+    snap.stablePageCount = epub->getReferencePageCount();
+    snap.stableCurrentPage = snap.stablePageCount > 0 ? 1 : 0;
+    uint32_t resolvedPageCount = 0;
+    epub->resolveReferencePage(currentSpineIndex, sectionProgress, snap.stableCurrentPage, resolvedPageCount);
+  }
+  snap.isBookCompleted = stats.isCompleted;
+  snap.bookProgress = getCurrentBookProgressPercent();
+  return snap;
+}
+
+// Drops the open section so the reader lays it out again with the changed reader settings.
+void EpubReaderActivity::relayoutForChangedSettings() {
+  ensureReaderSdFontLoaded(renderer);
+  RenderLock lock(*this);
+  prepareCurrentSectionForRelayout();
+  section.reset();
+}
+
+// Acts on what the reader drawer returned: a chapter or clipping jump, or a menu action.
+void EpubReaderActivity::handleReaderMenuResult(const ActivityResult& result) {
+#if !CROSSINK_APP_CAP_TOUCH
+  const auto heapAfterMenu = MemoryBudget::snapshot();
+  LOG_DBG("ERDM", "Button drawer returned: free=%u maxAlloc=%u", heapAfterMenu.freeHeap, heapAfterMenu.maxAllocHeap);
+#endif
+  if (const auto* chapter = std::get_if<ChapterResult>(&result.data)) {
+    touchReaderDrawerState = chapter->drawerState;
+    applyOrientation(chapter->orientation);
+    if (chapter->settingsChanged) {
+      relayoutForChangedSettings();
+    }
+    {
+      RenderLock lock(*this);
+      clearFootnotePreviewState();
+      currentSpineIndex = chapter->spineIndex;
+      pendingAnchor = chapter->anchor;
+      nextPageNumber = 0;
+      section.reset();
+    }
+    armReadingPaceWarmup("chapter_jump");
+    pauseReadingPaceTimer("chapter_jump");
+    requestUpdate();
+    return;
+  }
+  if (const auto* clipping = std::get_if<ClippingJumpResult>(&result.data)) {
+    applyOrientation(clipping->orientation);
+    if (clipping->settingsChanged) {
+      relayoutForChangedSettings();
+    }
+    handleClippingJump(*clipping);
+    requestUpdate();
+    return;
+  }
+
+  // Always apply orientation change even if the menu was cancelled
+  const auto* menu = std::get_if<MenuResult>(&result.data);
+  if (menu == nullptr) {
+    resumeReadingPaceTimer("reader_menu_return");
+    requestUpdate();
+    return;
+  }
+  touchReaderDrawerState =
+      menu->reopenDrawer ? menu->drawerState : initialReaderDrawerState(mappedInput.hasTouchHardware());
+  applyOrientation(menu->orientation);
+  if (menu->settingsChanged && hasReaderSettingsChange(menu->changeMask, ReaderSettingsChangeMask::Relayout)) {
+    relayoutForChangedSettings();
+  }
+  resumeReadingPaceTimer("reader_menu_return");
+  if (!result.isCancelled) {
+    if (menu->action == static_cast<int>(EpubReaderMenuAction::GO_TO_PERCENT) && menu->drawerValue >= 0) {
+      // The touch drawer's Percent pane reports centipercent (see EpubReaderDrawerActivity::percent).
+      jumpToPercent(static_cast<float>(menu->drawerValue) / 100.0f);
+      return;
+    }
+    if (menu->action == static_cast<int>(EpubReaderMenuAction::GO_TO_STABLE_PAGE) && menu->drawerPage > 0) {
+      jumpToStablePage(menu->drawerPage);
+      return;
+    }
+    if (menu->action == static_cast<int>(EpubReaderMenuAction::AUTO_PAGE_TURN) && menu->drawerValue >= 0) {
+      setAutoPageTurnIntervalSeconds(static_cast<uint16_t>(menu->drawerValue));
+      return;
+    }
+    const auto action = static_cast<EpubReaderMenuAction>(menu->action);
+    const bool returnToReaderMenu = menu->reopenDrawer;
+    if (action == EpubReaderMenuAction::SYNC || action == EpubReaderMenuAction::NEARBY_POSITION_SYNC ||
+        action == EpubReaderMenuAction::SEND_NEARBY_BOOK) {
+      PendingOverlayResume resume;
+      resume.origin = PendingOverlayOrigin::Reader;
+      resume.overlay = PendingOverlayType::ReaderDrawer;
+      resume.tab = static_cast<uint8_t>(menu->drawerState.tab);
+      resume.pane = static_cast<uint8_t>(menu->drawerState.pane);
+      resume.selectedIndex = menu->drawerState.selectedIndex;
+      resume.scrollPosition = menu->drawerState.pane == ReaderDrawerPane::Root
+                                  ? menu->drawerState.rootTopIndex[static_cast<size_t>(menu->drawerState.tab)]
+                                  : menu->drawerState.paneTopIndex;
+      resume.bookPath = epub->getPath();
+      onReaderMenuConfirm(action, returnToReaderMenu, &resume);
+    } else {
+      onReaderMenuConfirm(action, returnToReaderMenu);
+    }
+    if (menu->reopenDrawer &&
+        (action == EpubReaderMenuAction::BOOKMARK_TOGGLE || action == EpubReaderMenuAction::TOGGLE_COMPLETED ||
+         action == EpubReaderMenuAction::RESET_READING_PACE ||
+         action == EpubReaderMenuAction::TOGGLE_BOOK_STATS_TRACKING)) {
+      openReaderMenu();
+    }
+  }
+}
+
 void EpubReaderActivity::openReaderMenu() {
   clearPendingManualPageTurns();
-  int chapterPage = 0;
-  int chapterPageCount = 0;
-  bool chapterPageCountEstimated = false;
-  int totalPages = 0;
-  float bookProgress = 0.0f;
-  uint16_t bmSpine;
-  float bmProgress = 0.0f;
-  int bookmarkPageCount = 1;
-  uint32_t stableCurrentPage = 0;
-  uint32_t stablePageCount = 0;
-  bool isBookCompleted;
-  bool previewActive = false;
-  {
-    // Serialize EPUB metadata/file access with the render task.
-    RenderLock lock(*this);
-    previewActive = activeFootnotePreview;
-    totalPages = section ? section->estimatedTotalPages() : 0;
-    chapterPageCount = totalPages;
-    chapterPage = section ? section->currentPage + 1 : 0;
-    chapterPageCountEstimated = section && (section->isBuilding() || section->isPartial());
-    if (section && !previewActive) {
-      float chapterProgress = 0.0f;
-      resolveChapterGroupPageProgress(chapterPage, chapterPageCount, chapterProgress, chapterPageCountEstimated);
-    }
-    bmSpine = static_cast<uint16_t>(currentSpineIndex);
-    bmProgress = (section && totalPages > 0) ? static_cast<float>(section->currentPage) / totalPages : 0.0f;
-    bookmarkPageCount = totalPages > 0 ? totalPages : 1;
-    const float sectionProgress =
-        (section && totalPages > 0) ? static_cast<float>(section->currentPage) / totalPages : 0.0f;
-    if (!previewActive && epub) {
-      stablePageCount = epub->getReferencePageCount();
-      stableCurrentPage = stablePageCount > 0 ? 1 : 0;
-      uint32_t resolvedPageCount = 0;
-      epub->resolveReferencePage(currentSpineIndex, sectionProgress, stableCurrentPage, resolvedPageCount);
-    }
-    isBookCompleted = stats.isCompleted;
-    bookProgress = getCurrentBookProgressPercent();
-  }
+  const ReaderMenuSnapshot snapshot = captureReaderMenuSnapshot();
   pauseReadingPaceTimer("reader_menu");
   const BookReaderSettingsData bookSettings = loadBookReaderSettingsFile(epub->getCachePath());
   std::unique_ptr<EpubReaderPreviewModel> buttonPreviewModel;
@@ -2687,16 +2780,16 @@ void EpubReaderActivity::openReaderMenu() {
 #else
       nullptr,
 #endif
-      bookProgress, static_cast<uint32_t>(chapterPage), static_cast<uint32_t>(chapterPageCount),
-      chapterPageCountEstimated, !previewActive && !currentPageFootnotes.empty(),
-      !previewActive && Dictionary::exists(epub->getCachePath().c_str()), !BOOKMARKS.getBookmarks().empty(),
-      CLIPPINGS.hasClippings(), !previewActive && BOOKMARKS.hasBookmarkForPage(bmSpine, bmProgress, bookmarkPageCount),
-      isBookCompleted,
+      snapshot.bookProgress, static_cast<uint32_t>(snapshot.chapterPage), static_cast<uint32_t>(snapshot.chapterPageCount),
+      snapshot.chapterPageCountEstimated, !snapshot.previewActive && !currentPageFootnotes.empty(),
+      !snapshot.previewActive && Dictionary::exists(epub->getCachePath().c_str()), !BOOKMARKS.getBookmarks().empty(),
+      CLIPPINGS.hasClippings(), !snapshot.previewActive && BOOKMARKS.hasBookmarkForPage(snapshot.bmSpine, snapshot.bmProgress, snapshot.bookmarkPageCount),
+      snapshot.isBookCompleted,
       (SETTINGS.topReaderStatusBar.contains(ReaderStatusBarItem::TimeLeftBook) ||
        SETTINGS.topReaderStatusBar.contains(ReaderStatusBarItem::TimeLeftChapter) ||
        SETTINGS.bottomReaderStatusBar.contains(ReaderStatusBarItem::TimeLeftBook) ||
        SETTINGS.bottomReaderStatusBar.contains(ReaderStatusBarItem::TimeLeftChapter)),
-      SETTINGS.shouldTrackReadingStats(), bookStatsEnabled, stableCurrentPage, stablePageCount,
+      SETTINGS.shouldTrackReadingStats(), bookStatsEnabled, snapshot.stableCurrentPage, snapshot.stablePageCount,
       getAutoPageTurnIntervalSeconds(), automaticPageTurnActive, saveReaderOptionsForBook, this,
       saveGlobalSettingsForBookReader, this, beginGlobalSettingsEditForBookReader, this,
       endGlobalSettingsEditForBookReader, this, bookSettings.dictionarySdFontFamilyName,
@@ -2714,103 +2807,7 @@ void EpubReaderActivity::openReaderMenu() {
     requestUpdate();
     return;
   }
-  startActivityForResult(std::move(menuActivity), [this](const ActivityResult& result) {
-#if !CROSSINK_APP_CAP_TOUCH
-    const auto heapAfterMenu = MemoryBudget::snapshot();
-    LOG_DBG("ERDM", "Button drawer returned: free=%u maxAlloc=%u", heapAfterMenu.freeHeap, heapAfterMenu.maxAllocHeap);
-#endif
-    if (const auto* chapter = std::get_if<ChapterResult>(&result.data)) {
-      touchReaderDrawerState = chapter->drawerState;
-      applyOrientation(chapter->orientation);
-      if (chapter->settingsChanged) {
-        ensureReaderSdFontLoaded(renderer);
-        RenderLock lock(*this);
-        prepareCurrentSectionForRelayout();
-        section.reset();
-      }
-      {
-        RenderLock lock(*this);
-        clearFootnotePreviewState();
-        currentSpineIndex = chapter->spineIndex;
-        pendingAnchor = chapter->anchor;
-        nextPageNumber = 0;
-        section.reset();
-      }
-      armReadingPaceWarmup("chapter_jump");
-      pauseReadingPaceTimer("chapter_jump");
-      requestUpdate();
-      return;
-    }
-    if (const auto* clipping = std::get_if<ClippingJumpResult>(&result.data)) {
-      applyOrientation(clipping->orientation);
-      if (clipping->settingsChanged) {
-        ensureReaderSdFontLoaded(renderer);
-        RenderLock lock(*this);
-        prepareCurrentSectionForRelayout();
-        section.reset();  // Force re-layout with changed reader settings
-      }
-      handleClippingJump(*clipping);
-      requestUpdate();
-      return;
-    }
-
-    // Always apply orientation change even if the menu was cancelled
-    const auto* menu = std::get_if<MenuResult>(&result.data);
-    if (menu == nullptr) {
-      resumeReadingPaceTimer("reader_menu_return");
-      requestUpdate();
-      return;
-    }
-    touchReaderDrawerState =
-        menu->reopenDrawer ? menu->drawerState : initialReaderDrawerState(mappedInput.hasTouchHardware());
-    applyOrientation(menu->orientation);
-    if (menu->settingsChanged && hasReaderSettingsChange(menu->changeMask, ReaderSettingsChangeMask::Relayout)) {
-      ensureReaderSdFontLoaded(renderer);
-      RenderLock lock(*this);
-      prepareCurrentSectionForRelayout();
-      section.reset();  // Force re-layout with changed reader settings
-    }
-    resumeReadingPaceTimer("reader_menu_return");
-    if (!result.isCancelled) {
-      if (menu->action == static_cast<int>(EpubReaderMenuAction::GO_TO_PERCENT) && menu->drawerValue >= 0) {
-        // The touch drawer's Percent pane reports centipercent (see EpubReaderDrawerActivity::percent).
-        jumpToPercent(static_cast<float>(menu->drawerValue) / 100.0f);
-        return;
-      }
-      if (menu->action == static_cast<int>(EpubReaderMenuAction::GO_TO_STABLE_PAGE) && menu->drawerPage > 0) {
-        jumpToStablePage(menu->drawerPage);
-        return;
-      }
-      if (menu->action == static_cast<int>(EpubReaderMenuAction::AUTO_PAGE_TURN) && menu->drawerValue >= 0) {
-        setAutoPageTurnIntervalSeconds(static_cast<uint16_t>(menu->drawerValue));
-        return;
-      }
-      const auto action = static_cast<EpubReaderMenuAction>(menu->action);
-      const bool returnToReaderMenu = menu->reopenDrawer;
-      if (action == EpubReaderMenuAction::SYNC || action == EpubReaderMenuAction::NEARBY_POSITION_SYNC ||
-          action == EpubReaderMenuAction::SEND_NEARBY_BOOK) {
-        PendingOverlayResume resume;
-        resume.origin = PendingOverlayOrigin::Reader;
-        resume.overlay = PendingOverlayType::ReaderDrawer;
-        resume.tab = static_cast<uint8_t>(menu->drawerState.tab);
-        resume.pane = static_cast<uint8_t>(menu->drawerState.pane);
-        resume.selectedIndex = menu->drawerState.selectedIndex;
-        resume.scrollPosition = menu->drawerState.pane == ReaderDrawerPane::Root
-                                    ? menu->drawerState.rootTopIndex[static_cast<size_t>(menu->drawerState.tab)]
-                                    : menu->drawerState.paneTopIndex;
-        resume.bookPath = epub->getPath();
-        onReaderMenuConfirm(action, returnToReaderMenu, &resume);
-      } else {
-        onReaderMenuConfirm(action, returnToReaderMenu);
-      }
-      if (menu->reopenDrawer &&
-          (action == EpubReaderMenuAction::BOOKMARK_TOGGLE || action == EpubReaderMenuAction::TOGGLE_COMPLETED ||
-           action == EpubReaderMenuAction::RESET_READING_PACE ||
-           action == EpubReaderMenuAction::TOGGLE_BOOK_STATS_TRACKING)) {
-        openReaderMenu();
-      }
-    }
-  });
+  startActivityForResult(std::move(menuActivity), [this](const ActivityResult& result) { handleReaderMenuResult(result); });
 }
 
 void EpubReaderActivity::showBuildPopup() {

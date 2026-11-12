@@ -511,6 +511,23 @@ class EpubReaderActivity final : public Activity {
                            const PendingOverlayResume* replacementResume = nullptr);
   // Opens the reader menu for the current position (short-press Confirm)
   void openReaderMenu();
+  struct ReaderMenuSnapshot {
+    int chapterPage = 0;
+    int chapterPageCount = 0;
+    bool chapterPageCountEstimated = false;
+    int totalPages = 0;
+    float bookProgress = 0.0f;
+    uint16_t bmSpine = 0;
+    float bmProgress = 0.0f;
+    int bookmarkPageCount = 1;
+    uint32_t stableCurrentPage = 0;
+    uint32_t stablePageCount = 0;
+    bool isBookCompleted = false;
+    bool previewActive = false;
+  };
+  ReaderMenuSnapshot captureReaderMenuSnapshot();
+  void relayoutForChangedSettings();
+  void handleReaderMenuResult(const ActivityResult& result);
   void applyOrientation(uint8_t orientation);
   void requestManualPageTurn(bool isForwardTurn, const char* source);
   bool drainPendingManualPageTurn();
