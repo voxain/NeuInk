@@ -1318,7 +1318,7 @@ void XtcReaderActivity::renderPage(const uint32_t pageToRender) {
 
   // Calculate buffer size for one page
   // XTG (1-bit): Row-major, ((width+7)/8) * height bytes.
-  const size_t pageBufferSize = (static_cast<size_t>(pageWidth + 7) / 8) * pageHeight;
+  const size_t pageBufferSize = xtc::xtgBitmapSize(pageWidth, pageHeight);
 
   // Allocate page buffer
   uint8_t* pageBuffer = static_cast<uint8_t*>(malloc(pageBufferSize));
@@ -1450,8 +1450,8 @@ bool XtcReaderActivity::drawCurrentPageToBuffer(const std::string& filePath, Gfx
   const uint8_t bitDepth = xtc.getBitDepth();
 
   // Only use the 1-bit BW path; grayscale is not needed as a background under the overlay
-  const size_t pageBufferSize = (bitDepth == 2) ? ((static_cast<size_t>(pageWidth) * pageHeight + 7) / 8) * 2
-                                                : (static_cast<size_t>(pageWidth + 7) / 8) * pageHeight;
+  const size_t pageBufferSize = (bitDepth == 2) ? xtc::xthBitmapSize(pageWidth, pageHeight)
+                                                : xtc::xtgBitmapSize(pageWidth, pageHeight);
 
   uint8_t* pageBuffer = static_cast<uint8_t*>(malloc(pageBufferSize));
   if (!pageBuffer) {

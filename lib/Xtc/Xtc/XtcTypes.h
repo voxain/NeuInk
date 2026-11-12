@@ -17,6 +17,15 @@
 
 namespace xtc {
 
+// Bytes in one row of a 1-bit (XTG) bitmap: 8 pixels per byte, rounded up.
+inline size_t xtgRowBytes(const size_t width) { return (width + 7) / 8; }
+
+// Payload size of a 1-bit (XTG) page. Widened to size_t before multiplying so it cannot overflow int.
+inline size_t xtgBitmapSize(const size_t width, const size_t height) { return xtgRowBytes(width) * height; }
+
+// Payload size of a 2-bit (XTH) page: two bit planes of width * height bits, rounded up to bytes.
+inline size_t xthBitmapSize(const size_t width, const size_t height) { return ((width * height + 7) / 8) * 2; }
+
 // XTC file magic numbers (little-endian)
 // "XTC\0" = 0x58, 0x54, 0x43, 0x00
 constexpr uint32_t XTC_MAGIC = 0x00435458;  // "XTC\0" in little-endian (1-bit fast mode)
