@@ -455,6 +455,12 @@ class EpubReaderActivity final : public Activity {
   void jumpToStablePage(uint32_t page);
   void reindexCurrentSection();
   void prepareCurrentSectionForRelayout();
+  bool tickSectionBuild();
+  bool handlePendingPromptsAndFeedback();
+  bool syncEndOfBookState();
+  void runSideButtonShortcut(const SideButtonShortcuts::Result& side);
+  bool handleFrontButtonLongPress();
+  void handlePageTurnInput(const ReaderUtils::TouchPageTurn& touch, bool chordPageTurn);
   bool executeMappedQuickAction(CrossPointSettings::SHORT_PWRBTN action, bool suppressPowerRelease = false);
   void executeReaderQuickAction(CrossPointSettings::LONG_PRESS_MENU_ACTION action,
                                 bool dictionaryLookupFramebufferContainsPage = true,

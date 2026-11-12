@@ -3084,173 +3084,11 @@ void EpubReaderActivity::loop() {
   }
 #endif
 
-  // Lazily resume a partial's extension build once the reader nears its watermark. Far from it the
-  // rebuild is all cost (whole-chapter re-layout from page 0) and no benefit this session.
-  {
-    RenderLock lock(*this, RenderLock::Mode::Try);
-    if (lock.ownsLock() && !backgroundBuildYieldForInput.load(std::memory_order_relaxed) && section &&
-        !section->isBuilding() && section->isPartial() && buildViewportWidth > 0 && !partialRebuildStartFailed &&
-        !partialRebuildAbortedForLowMemory &&
-        section->currentPage + PARTIAL_REBUILD_START_MARGIN >= static_cast<int>(section->pageCount)) {
-      releaseGrayscaleStripScratch();
-      if (backgroundSectionBuildHasHeap()) {
-        const int renderFontId = activeSectionFontId != 0 ? activeSectionFontId : SETTINGS.getReaderFontId();
-        const SectionBuildProfile profile = buildProfileForRenderMode(normalizeRenderMode(SETTINGS.epubRenderMode));
-        if (!section->startBuild(
-                readerRenderSpecForProfile(renderFontId, buildViewportWidth, buildViewportHeight, profile))) {
-          partialRebuildStartFailed = true;
-          LOG_ERR("ERS", "Failed to start deferred partial extension build");
-        } else {
-          LOG_DBG("ERS", "Reader near partial watermark (%d/%d), resuming extension build", section->currentPage,
-                  section->pageCount);
-        }
-      }
-    }
-  }
+  if (tickSectionBuild()) return;
 
-  // Drive any in-progress incremental section build forward, off the page-turn critical path,
-  // but only within a small window ahead of the reader: an unbounded build monopolized the
-  // RenderLock and locked out page turns. The build follows the reader instead, and instant
-  // reopen comes from suspendBuild() persisting the laid-out pages as a partial on exit.
-  // Try the render mutex before inspecting section state; skip optional work
-  // while rendering so input can be polled again without waiting for the lock.
-  // While extending a partial, pageCount is pinned at the partial watermark until the rebuild
-  // catches up, so keep ticking it even before activeBuildHasCaughtReadablePages() turns true;
-  // the window check below would compare against the pinned watermark and stall the catch-up.
-  // Once the extension has caught up, the window applies again: without that, a resumed partial
-  // rebuilt its whole chapter in one hot-loop burst instead of following the reader.
-  // sectionBuildWantsTick() holds the catch-up/window logic and is shared with
-  // skipLoopDelay(), so the loop only runs hot while a tick can actually happen.
-  {
-    RenderLock lock(*this, RenderLock::Mode::Try);
-    if (lock.ownsLock() && !backgroundBuildYieldForInput.load(std::memory_order_relaxed) && sectionBuildWantsTick() &&
-        (section->isPartial() || section->activeBuildHasCaughtReadablePages())) {
-      releaseGrayscaleStripScratch();
-      // The look-ahead never builds next to the Bluetooth radio.
-      if (backgroundSectionBuildHasHeap() && !blepager::holdsHeap()) {
-        if (!section->buildSomeMore(BACKGROUND_BUILD_PAGES_PER_TICK)) {
-          LOG_ERR("ERS", "Background section build failed");
-          if (section->lastBuildLayoutAbortedForLowMemory() && section->pageCount > 0) {
-            partialRebuildAbortedForLowMemory = true;
-            LOG_ERR("ERS", "Background section build suspended for low heap; not retrying for this section");
-            return;
-          }
-          section.reset();
-          requestUpdate();
-          return;
-        }
-        if (section->isBuildComplete()) {
-          const bool repositioned = applyDeferredReposition();
-          if (repositioned || progressSaveRequiredAfterRelayout) {
-            requestUpdate();
-          }
-        }
-      }
-    }
-  }
+  if (handlePendingPromptsAndFeedback()) return;
 
-  if (completionPromptQueued) {
-    completionPromptQueued = false;
-    completionPromptShown = true;
-    pauseReadingPaceTimer("completion_prompt");
-    startActivityForResult(
-        std::make_unique<ConfirmationActivity>(renderer, mappedInput, tr(STR_MARK_FINISHED_PROMPT_TITLE),
-                                               tr(STR_MARK_FINISHED_PROMPT_BODY)),
-        [this](const ActivityResult& result) {
-          resumeReadingPaceTimer("completion_prompt_return");
-          if (!result.isCancelled) {
-            setBookCompleted(true);
-            showCompletedFeedback(true);
-          }
-          requestUpdate();
-        });
-    return;
-  }
-
-  if (pendingBookmarkFeedback && transientFeedbackDismissed(bookmarkFeedbackShowTime)) {
-    pendingBookmarkFeedback = false;
-    requestUpdate();
-    return;
-  }
-
-  if (pendingCompletedFeedback && transientFeedbackDismissed(completedFeedbackShowTime)) {
-    pendingCompletedFeedback = false;
-    requestUpdate();
-    return;
-  }
-  if (pendingTiltPageTurnFeedback && transientFeedbackDismissed(tiltPageTurnFeedbackShowTime)) {
-    pendingTiltPageTurnFeedback = false;
-    homeButtonInReaderFeedback = false;
-    requestUpdate();
-    return;
-  }
-  if ((pendingRenderModeToast || pendingSafeModeToast) &&
-      (millis() - renderModeToastShowTime) >= RENDER_MODE_TOAST_MS) {
-    bool toastRegionRestored = false;
-    if (renderModeToastRegionSaved) {
-      if (RenderLock::peek()) {
-        return;
-      }
-      RenderLock lock(*this);
-      toastRegionRestored = restoreRenderModeToastRegion();
-    }
-    pendingRenderModeToast = false;
-    pendingSafeModeToast = false;
-    if (!toastRegionRestored) {
-      requestUpdate();
-    }
-    return;
-  }
-
-  // End-of-Book screen reached (currentSpineIndex == spine count) means the book is
-  // finished. Two independent finished-book features key off this same condition.
-  const bool atEndOfBook = currentSpineIndex > 0 && currentSpineIndex >= epub->getSpineItemsCount();
-  if (atEndOfBook) {
-    clearPendingManualPageTurns();
-  }
-
-  // Paged back into the book: release the end screen app and its theme tokens.
-  if (!atEndOfBook && endOfBookOptions) {
-    RenderLock lock(*this);
-    endOfBookOptions.reset();
-  }
-
-  // The render task is asynchronous. Prepare suggestions before an input can
-  // leave the reader and move this EPUB into /Read/, while still allocating
-  // this UI state only when the end screen is reached.
-  if (atEndOfBook) {
-    RenderLock lock(*this);
-    if (!endOfBookOptions) {
-      endOfBookOptions = makeUniqueNoThrow<EndOfBookOptions>(renderer);
-      if (!endOfBookOptions) {
-        LOG_ERR("ERS", "OOM: EndOfBookOptions (%u bytes)", static_cast<unsigned>(sizeof(EndOfBookOptions)));
-      }
-    }
-    if (endOfBookOptions) {
-      endOfBookOptions->loadOnce(epub->getPath(), epub->getTitle(), epub->getAuthor());
-    }
-  }
-
-  // Drop this book from the Recent Books list; if the reader then pages back into the book,
-  // re-add it. So removal only sticks if the reader leaves while still on the End-of-Book
-  // screen. Acts only on the transition (guarded by recentsEntryRemoved), no per-frame writes.
-  if (SETTINGS.removeReadBooksFromRecents) {
-    if (atEndOfBook && !recentsEntryRemoved) {
-      recentsEntryRemoved = RECENT_BOOKS.removeByPath(epub->getPath());
-    } else if (!atEndOfBook && recentsEntryRemoved) {
-      RECENT_BOOKS.addOrUpdateBook(epub->getPath(), epub->getTitle(), epub->getAuthor(), epub->getThumbBmpPath());
-      recentsEntryRemoved = false;
-    }
-  }
-
-  // Arm the move here so any exit path relocates the book into /Read/.
-  // setBookCompleted() also arms this when the user marks a book finished before
-  // the End-of-Book screen.
-  if (atEndOfBook) {
-    pendingReadFolderMove = SETTINGS.moveFinishedToReadFolder && !isInReadFolder(epub->getPath());
-  } else if (!stats.isCompleted) {
-    pendingReadFolderMove = false;
-  }
+  const bool atEndOfBook = syncEndOfBookState();
 
   // The suggestion menu owns Confirm/Back/navigation before automatic page
   // turning and reader shortcuts. This keeps a hold from placing a bookmark
@@ -3401,57 +3239,7 @@ void EpubReaderActivity::loop() {
   const bool chordPageTurn = mappedInput.hasInjectedRelease(MappedInputManager::Button::Right);
   const auto side = sideButtonShortcuts.update(mappedInput, millis());
   if (SideButtonShortcuts::shouldConsume(side, mappedInput)) {
-    if (side.triggered) {
-      if (side.longPress)
-        mappedInput.suppressNextSideRelease(side.up ? MappedInputManager::Button::Up
-                                                    : MappedInputManager::Button::Down);
-      switch (side.action) {
-        case CrossPointSettings::SIDE_PREVIOUS_CHAPTER:
-        case CrossPointSettings::SIDE_NEXT_CHAPTER: {
-          const bool next = side.action == CrossPointSettings::SIDE_NEXT_CHAPTER;
-          clearPendingManualPageTurns();
-          if (!next && section && section->currentPage > 0) {
-            section->currentPage = 0;
-          } else {
-            RenderLock lock(*this);
-            nextPageNumber = 0;
-            if (next)
-              currentSpineIndex++;
-            else if (currentSpineIndex > 0)
-              currentSpineIndex--;
-            section.reset();
-          }
-          requestUpdate();
-          break;
-        }
-        case CrossPointSettings::SIDE_INCREASE_FONT:
-        case CrossPointSettings::SIDE_DECREASE_FONT:
-          if (ReaderUtils::changeReaderFontSizeWithFeedback(renderer,
-                                                            side.action == CrossPointSettings::SIDE_INCREASE_FONT))
-            reindexCurrentSection();
-          break;
-        case CrossPointSettings::SIDE_ROTATE_COUNTERCLOCKWISE:
-        case CrossPointSettings::SIDE_ROTATE_CLOCKWISE:
-          applyOrientation(ReaderUtils::rotatedOrientation(SETTINGS.orientation,
-                                                           side.action == CrossPointSettings::SIDE_ROTATE_CLOCKWISE));
-          requestUpdate();
-          break;
-        case CrossPointSettings::SIDE_ROTATE_FLIP:
-          applyOrientation(ReaderUtils::flippedOrientation(SETTINGS.orientation));
-          requestUpdate();
-          break;
-        case CrossPointSettings::IGNORE:
-          break;
-        default: {
-          const auto action = static_cast<CrossPointSettings::SHORT_PWRBTN>(side.action);
-          if (action == CrossPointSettings::QUICK_LOCK)
-            handleGlobalPowerButtonAction(action, SideButtonShortcuts::quickLockTrigger(side));
-          else if (!handleShortcutAction(action))
-            handleGlobalPowerButtonAction(action);
-          break;
-        }
-      }
-    }
+    if (side.triggered) runSideButtonShortcut(side);
     if (!side.triggered) drainPendingManualPageTurn();
     return;
   }
@@ -3469,6 +3257,251 @@ void EpubReaderActivity::loop() {
     return;
   }
 
+  if (handleFrontButtonLongPress()) return;
+
+  handlePageTurnInput(touch, chordPageTurn);
+
+}
+
+// Advances the optional background work on the open chapter: resumes a partial's extension build near its
+// watermark and ticks an in-progress build. True when the loop must stop for this pass.
+bool EpubReaderActivity::tickSectionBuild() {
+  // Lazily resume a partial's extension build once the reader nears its watermark. Far from it the
+  // rebuild is all cost (whole-chapter re-layout from page 0) and no benefit this session.
+  {
+    RenderLock lock(*this, RenderLock::Mode::Try);
+    if (lock.ownsLock() && !backgroundBuildYieldForInput.load(std::memory_order_relaxed) && section &&
+        !section->isBuilding() && section->isPartial() && buildViewportWidth > 0 && !partialRebuildStartFailed &&
+        !partialRebuildAbortedForLowMemory &&
+        section->currentPage + PARTIAL_REBUILD_START_MARGIN >= static_cast<int>(section->pageCount)) {
+      releaseGrayscaleStripScratch();
+      if (backgroundSectionBuildHasHeap()) {
+        const int renderFontId = activeSectionFontId != 0 ? activeSectionFontId : SETTINGS.getReaderFontId();
+        const SectionBuildProfile profile = buildProfileForRenderMode(normalizeRenderMode(SETTINGS.epubRenderMode));
+        if (!section->startBuild(
+                readerRenderSpecForProfile(renderFontId, buildViewportWidth, buildViewportHeight, profile))) {
+          partialRebuildStartFailed = true;
+          LOG_ERR("ERS", "Failed to start deferred partial extension build");
+        } else {
+          LOG_DBG("ERS", "Reader near partial watermark (%d/%d), resuming extension build", section->currentPage,
+                  section->pageCount);
+        }
+      }
+    }
+  }
+
+  // Drive any in-progress incremental section build forward, off the page-turn critical path,
+  // but only within a small window ahead of the reader: an unbounded build monopolized the
+  // RenderLock and locked out page turns. The build follows the reader instead, and instant
+  // reopen comes from suspendBuild() persisting the laid-out pages as a partial on exit.
+  // Try the render mutex before inspecting section state; skip optional work
+  // while rendering so input can be polled again without waiting for the lock.
+  // While extending a partial, pageCount is pinned at the partial watermark until the rebuild
+  // catches up, so keep ticking it even before activeBuildHasCaughtReadablePages() turns true;
+  // the window check below would compare against the pinned watermark and stall the catch-up.
+  // Once the extension has caught up, the window applies again: without that, a resumed partial
+  // rebuilt its whole chapter in one hot-loop burst instead of following the reader.
+  // sectionBuildWantsTick() holds the catch-up/window logic and is shared with
+  // skipLoopDelay(), so the loop only runs hot while a tick can actually happen.
+  {
+    RenderLock lock(*this, RenderLock::Mode::Try);
+    if (lock.ownsLock() && !backgroundBuildYieldForInput.load(std::memory_order_relaxed) && sectionBuildWantsTick() &&
+        (section->isPartial() || section->activeBuildHasCaughtReadablePages())) {
+      releaseGrayscaleStripScratch();
+      // The look-ahead never builds next to the Bluetooth radio.
+      if (backgroundSectionBuildHasHeap() && !blepager::holdsHeap()) {
+        if (!section->buildSomeMore(BACKGROUND_BUILD_PAGES_PER_TICK)) {
+          LOG_ERR("ERS", "Background section build failed");
+          if (section->lastBuildLayoutAbortedForLowMemory() && section->pageCount > 0) {
+            partialRebuildAbortedForLowMemory = true;
+            LOG_ERR("ERS", "Background section build suspended for low heap; not retrying for this section");
+            return true;
+          }
+          section.reset();
+          requestUpdate();
+          return true;
+        }
+        if (section->isBuildComplete()) {
+          const bool repositioned = applyDeferredReposition();
+          if (repositioned || progressSaveRequiredAfterRelayout) {
+            requestUpdate();
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// Shows the finished-book prompt and clears transient toasts and feedback once they have been up long enough.
+// True when something was handled and the loop must stop for this pass.
+bool EpubReaderActivity::handlePendingPromptsAndFeedback() {
+  if (completionPromptQueued) {
+    completionPromptQueued = false;
+    completionPromptShown = true;
+    pauseReadingPaceTimer("completion_prompt");
+    startActivityForResult(
+        std::make_unique<ConfirmationActivity>(renderer, mappedInput, tr(STR_MARK_FINISHED_PROMPT_TITLE),
+                                               tr(STR_MARK_FINISHED_PROMPT_BODY)),
+        [this](const ActivityResult& result) {
+          resumeReadingPaceTimer("completion_prompt_return");
+          if (!result.isCancelled) {
+            setBookCompleted(true);
+            showCompletedFeedback(true);
+          }
+          requestUpdate();
+        });
+    return true;
+  }
+
+  if (pendingBookmarkFeedback && transientFeedbackDismissed(bookmarkFeedbackShowTime)) {
+    pendingBookmarkFeedback = false;
+    requestUpdate();
+    return true;
+  }
+
+  if (pendingCompletedFeedback && transientFeedbackDismissed(completedFeedbackShowTime)) {
+    pendingCompletedFeedback = false;
+    requestUpdate();
+    return true;
+  }
+  if (pendingTiltPageTurnFeedback && transientFeedbackDismissed(tiltPageTurnFeedbackShowTime)) {
+    pendingTiltPageTurnFeedback = false;
+    homeButtonInReaderFeedback = false;
+    requestUpdate();
+    return true;
+  }
+  if ((pendingRenderModeToast || pendingSafeModeToast) &&
+      (millis() - renderModeToastShowTime) >= RENDER_MODE_TOAST_MS) {
+    bool toastRegionRestored = false;
+    if (renderModeToastRegionSaved) {
+      if (RenderLock::peek()) {
+        return true;
+      }
+      RenderLock lock(*this);
+      toastRegionRestored = restoreRenderModeToastRegion();
+    }
+    pendingRenderModeToast = false;
+    pendingSafeModeToast = false;
+    if (!toastRegionRestored) {
+      requestUpdate();
+    }
+    return true;
+  }
+  return false;
+}
+
+// Keeps the End-of-Book state in step with the page: the suggestions, the Recent Books entry and the move into
+// /Read/. Returns whether the reader is on the End-of-Book screen.
+bool EpubReaderActivity::syncEndOfBookState() {
+  // End-of-Book screen reached (currentSpineIndex == spine count) means the book is
+  // finished. Two independent finished-book features key off this same condition.
+  const bool atEndOfBook = currentSpineIndex > 0 && currentSpineIndex >= epub->getSpineItemsCount();
+  if (atEndOfBook) {
+    clearPendingManualPageTurns();
+  }
+
+  // Paged back into the book: release the end screen app and its theme tokens.
+  if (!atEndOfBook && endOfBookOptions) {
+    RenderLock lock(*this);
+    endOfBookOptions.reset();
+  }
+
+  // The render task is asynchronous. Prepare suggestions before an input can
+  // leave the reader and move this EPUB into /Read/, while still allocating
+  // this UI state only when the end screen is reached.
+  if (atEndOfBook) {
+    RenderLock lock(*this);
+    if (!endOfBookOptions) {
+      endOfBookOptions = makeUniqueNoThrow<EndOfBookOptions>(renderer);
+      if (!endOfBookOptions) {
+        LOG_ERR("ERS", "OOM: EndOfBookOptions (%u bytes)", static_cast<unsigned>(sizeof(EndOfBookOptions)));
+      }
+    }
+    if (endOfBookOptions) {
+      endOfBookOptions->loadOnce(epub->getPath(), epub->getTitle(), epub->getAuthor());
+    }
+  }
+
+  // Drop this book from the Recent Books list; if the reader then pages back into the book,
+  // re-add it. So removal only sticks if the reader leaves while still on the End-of-Book
+  // screen. Acts only on the transition (guarded by recentsEntryRemoved), no per-frame writes.
+  if (SETTINGS.removeReadBooksFromRecents) {
+    if (atEndOfBook && !recentsEntryRemoved) {
+      recentsEntryRemoved = RECENT_BOOKS.removeByPath(epub->getPath());
+    } else if (!atEndOfBook && recentsEntryRemoved) {
+      RECENT_BOOKS.addOrUpdateBook(epub->getPath(), epub->getTitle(), epub->getAuthor(), epub->getThumbBmpPath());
+      recentsEntryRemoved = false;
+    }
+  }
+
+  // Arm the move here so any exit path relocates the book into /Read/.
+  // setBookCompleted() also arms this when the user marks a book finished before
+  // the End-of-Book screen.
+  if (atEndOfBook) {
+    pendingReadFolderMove = SETTINGS.moveFinishedToReadFolder && !isInReadFolder(epub->getPath());
+  } else if (!stats.isCompleted) {
+    pendingReadFolderMove = false;
+  }
+  return atEndOfBook;
+}
+
+// Runs the action assigned to a side button press.
+void EpubReaderActivity::runSideButtonShortcut(const SideButtonShortcuts::Result& side) {
+    if (side.longPress)
+      mappedInput.suppressNextSideRelease(side.up ? MappedInputManager::Button::Up
+                                                  : MappedInputManager::Button::Down);
+    switch (side.action) {
+      case CrossPointSettings::SIDE_PREVIOUS_CHAPTER:
+      case CrossPointSettings::SIDE_NEXT_CHAPTER: {
+        const bool next = side.action == CrossPointSettings::SIDE_NEXT_CHAPTER;
+        clearPendingManualPageTurns();
+        if (!next && section && section->currentPage > 0) {
+          section->currentPage = 0;
+        } else {
+          RenderLock lock(*this);
+          nextPageNumber = 0;
+          if (next)
+            currentSpineIndex++;
+          else if (currentSpineIndex > 0)
+            currentSpineIndex--;
+          section.reset();
+        }
+        requestUpdate();
+        break;
+      }
+      case CrossPointSettings::SIDE_INCREASE_FONT:
+      case CrossPointSettings::SIDE_DECREASE_FONT:
+        if (ReaderUtils::changeReaderFontSizeWithFeedback(renderer,
+                                                          side.action == CrossPointSettings::SIDE_INCREASE_FONT))
+          reindexCurrentSection();
+        break;
+      case CrossPointSettings::SIDE_ROTATE_COUNTERCLOCKWISE:
+      case CrossPointSettings::SIDE_ROTATE_CLOCKWISE:
+        applyOrientation(ReaderUtils::rotatedOrientation(SETTINGS.orientation,
+                                                         side.action == CrossPointSettings::SIDE_ROTATE_CLOCKWISE));
+        requestUpdate();
+        break;
+      case CrossPointSettings::SIDE_ROTATE_FLIP:
+        applyOrientation(ReaderUtils::flippedOrientation(SETTINGS.orientation));
+        requestUpdate();
+        break;
+      case CrossPointSettings::IGNORE:
+        break;
+      default: {
+        const auto action = static_cast<CrossPointSettings::SHORT_PWRBTN>(side.action);
+        if (action == CrossPointSettings::QUICK_LOCK)
+          handleGlobalPowerButtonAction(action, SideButtonShortcuts::quickLockTrigger(side));
+        else if (!handleShortcutAction(action))
+          handleGlobalPowerButtonAction(action);
+        break;
+      }
+    }
+}
+
+// Handles a held Left or Right front button: skips a chapter, changes the font size or turns the screen,
+// as the long-press setting says. True when the loop must stop for this pass.
+bool EpubReaderActivity::handleFrontButtonLongPress() {
   const bool frontLongPressChangesFont = SETTINGS.longPressButtonBehavior == CrossPointSettings::FONT_SIZE_CHANGE;
   const bool frontLongPressAction = SETTINGS.longPressButtonBehavior == CrossPointSettings::CHAPTER_SKIP ||
                                     SETTINGS.longPressButtonBehavior == CrossPointSettings::ORIENTATION_CHANGE ||
@@ -3478,7 +3511,7 @@ void EpubReaderActivity::loop() {
     const bool rightReleased = mappedInput.wasReleased(MappedInputManager::Button::Right);
     if (frontButtonLongPressHandled && (leftReleased || rightReleased)) {
       frontButtonLongPressHandled = false;
-      return;
+      return true;
     }
 
     const bool longPressReady = mappedInput.getHeldTime() > ReaderUtils::SKIP_HOLD_MS;
@@ -3497,7 +3530,7 @@ void EpubReaderActivity::loop() {
             pendingPageJump = std::numeric_limits<uint16_t>::max();
             requestUpdate();
           }
-          return;
+          return true;
         }
 
         {
@@ -3507,14 +3540,14 @@ void EpubReaderActivity::loop() {
           section.reset();
         }
         requestUpdate();
-        return;
+        return true;
       }
 
       if (frontLongPressChangesFont) {
         if (ReaderUtils::changeReaderFontSizeWithFeedback(renderer, /*larger=*/nextLongPressed)) {
           reindexCurrentSection();
         }
-        return;
+        return true;
       }
 
       const uint8_t newOrientation = nextLongPressed
@@ -3522,10 +3555,15 @@ void EpubReaderActivity::loop() {
                                          : ReaderUtils::rotatedOrientation(SETTINGS.orientation, /*clockwise=*/true);
       applyOrientation(newOrientation);
       requestUpdate();
-      return;
+      return true;
     }
   }
+  return false;
+}
 
+// Turns the page, skips a chapter or rotates for the page-turn input of this pass (buttons, tilt, touch,
+// power button), or runs the idle upkeep when there is none.
+void EpubReaderActivity::handlePageTurnInput(const ReaderUtils::TouchPageTurn& touch, const bool chordPageTurn) {
   auto [prevTriggered, nextTriggered, fromSideBtn, fromTilt] = ReaderUtils::detectPageTurn(mappedInput);
   prevTriggered = prevTriggered || touch.prev;
   nextTriggered = nextTriggered || touch.next;
