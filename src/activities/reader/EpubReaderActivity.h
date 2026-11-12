@@ -456,6 +456,13 @@ class EpubReaderActivity final : public Activity {
   void reindexCurrentSection();
   void prepareCurrentSectionForRelayout();
   bool tickSectionBuild();
+  bool loadSectionForRender(uint16_t viewportWidth, uint16_t viewportHeight);
+  void showPendingSyncSaveError();
+  void showLowMemoryLayoutError();
+  void showBuildError();
+  void showIndexingPopup();
+  bool cancelBuildForBack();
+  bool restartForLowMemoryLayout(int targetPage, int savedPage, int pageCount, const char* stage);
   bool handlePendingPromptsAndFeedback();
   bool syncEndOfBookState();
   void runSideButtonShortcut(const SideButtonShortcuts::Result& side);

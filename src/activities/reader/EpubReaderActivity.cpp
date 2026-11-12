@@ -6128,6 +6128,538 @@ void EpubReaderActivity::pageTurn(bool isForwardTurn, const char* source) {
   requestUpdate();
 }
 
+namespace {
+void queueLowMemoryLayoutAlert(const bool goHomeOnBack) {
+  snprintf(APP_STATE.pendingAlertTitle, sizeof(APP_STATE.pendingAlertTitle), "%s", tr(STR_EPUB_LAYOUT_MEMORY_TITLE));
+  snprintf(APP_STATE.pendingAlertBody, sizeof(APP_STATE.pendingAlertBody), "%s", tr(STR_EPUB_LAYOUT_MEMORY_BODY));
+  APP_STATE.pendingAlertGoHomeOnBack.store(goHomeOnBack, std::memory_order_relaxed);
+  APP_STATE.hasPendingAlert.store(true, std::memory_order_release);
+}
+}  // namespace
+
+void EpubReaderActivity::showPendingSyncSaveError() {
+  if (!pendingSyncSaveError) return;
+  pendingSyncSaveError = false;
+  GUI.drawPopup(renderer, tr(STR_SAVE_PROGRESS_FAILED));
+}
+
+void EpubReaderActivity::showLowMemoryLayoutError() {
+  queueLowMemoryLayoutAlert(true);
+  GUI.drawPopup(renderer, tr(STR_EPUB_LAYOUT_MEMORY_TITLE));
+}
+
+// A section build failure (e.g. an invalid/corrupt EPUB that fails XML parsing) leaves the
+// "Indexing" popup on screen with no way forward. Surface an explicit error instead of hanging.
+// clearScreen first so the error popup doesn't overlay the stale "Indexing" popup.
+void EpubReaderActivity::showBuildError() {
+  renderer.clearScreen();
+  GUI.drawPopup(renderer, tr(STR_INDEX_FAILED));
+  automaticPageTurnActive = false;
+}
+
+void EpubReaderActivity::showIndexingPopup() {
+  GUI.drawPopup(renderer, tr(STR_INDEXING));
+  renderer.displayBuffer(HalDisplay::FAST_REFRESH);
+  pagesUntilFullRefresh = 1;
+}
+
+// True when Back asked to cancel the running build; the build is suspended and automatic page turning stops.
+bool EpubReaderActivity::cancelBuildForBack() {
+  if (!sectionBuildCancelRequested.load(std::memory_order_relaxed)) {
+    return false;
+  }
+  if (section && section->isBuilding()) {
+    section->suspendBuild();
+  }
+  automaticPageTurnActive = false;
+  LOG_DBG("ERS", "EPUB section build cancelled by Back");
+  return true;
+}
+
+// A freshly restarted reader has a less fragmented heap than one that has just
+// built and displayed several pages. Try that once before changing layout modes;
+// the RTC token marks the resumed attempt so it proceeds through the fallbacks.
+bool EpubReaderActivity::restartForLowMemoryLayout(const int targetPage, const int savedPage, const int pageCount,
+                                                   const char* stage) {
+  if (lowMemoryPartialRestartAttempted || targetPage < 0 || targetPage >= std::numeric_limits<uint16_t>::max() ||
+      currentSpineIndex < 0 || currentSpineIndex > std::numeric_limits<uint16_t>::max()) {
+    return false;
+  }
+  LOG_ERR("ERS", "Low heap during %s; silent restarting to retry page %d (spine=%d)", stage, targetPage,
+          currentSpineIndex);
+  if (!saveProgress(currentSpineIndex, std::max(0, savedPage), std::max(0, pageCount))) {
+    LOG_ERR("ERS", "Skipping silent restart because progress save failed");
+    return false;
+  }
+  armSilentRestartReaderPageBuild(epub->getPath(), static_cast<uint16_t>(currentSpineIndex),
+                                  static_cast<uint16_t>(targetPage), automaticPageTurnActive);
+  lowMemoryPartialRestartAttempted = true;
+  silentRestartToReader();
+  return true;
+}
+
+// Loads the chapter's section from its cache, or builds it (with the render-mode and low-memory fallbacks)
+// when there is none. False when the render must stop: the build was cancelled, the reader restarts, or an
+// error screen is up.
+bool EpubReaderActivity::loadSectionForRender(const uint16_t viewportWidth, const uint16_t viewportHeight) {
+  bool buildCancelledForBack = false;
+  preparedNextSpineIndex = -1;
+  // Section loading/indexing can need a large contiguous block. Return the
+  // render-only strip before starting that work.
+  releaseGrayscaleStripScratch();
+  const auto filepath = epub->getSpineItem(currentSpineIndex).href;
+  LOG_DBG("ERS", "Loading file: %s, index: %d (free=%u, maxAlloc=%u)", filepath.c_str(), currentSpineIndex,
+          ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+  const int readerFontId = SETTINGS.getReaderFontId();
+  const EpubRenderMode selectedRenderMode = normalizeRenderMode(SETTINGS.epubRenderMode);
+  const bool fullSectionIndexing = indexesWholeSection(currentSpineIndex);
+  EpubRenderMode usedRenderMode = selectedRenderMode;
+  const bool buildingFootnotePreview = !pendingFootnotePreviewAnchor.empty();
+  bool loadedSection = false;
+  bool safeModeBuildSucceeded = false;
+  partialRebuildStartFailed = false;
+  partialRebuildAbortedForLowMemory = false;
+  auto loadSectionWithFont = [&](const int fontId, const EpubRenderMode renderMode) {
+    const std::string cacheSuffix = buildingFootnotePreview
+                                        ? footnotePreviewCacheSuffix(renderMode, pendingFootnotePreviewAnchor)
+                                        : std::string(sectionCacheSuffixForRenderMode(renderMode));
+    section = makeUniqueNoThrow<Section>(epub, currentSpineIndex, renderer, cacheSuffix.c_str());
+    if (!section) {
+      LOG_ERR("ERS", "Failed to allocate section for spine %d (font=%d, free=%u, maxAlloc=%u)", currentSpineIndex,
+              fontId, ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+      return false;
+    }
+    const ReaderRenderSpec spec =
+        readerRenderSpecForProfile(fontId, viewportWidth, viewportHeight, buildProfileForRenderMode(renderMode));
+    if (!section->loadSectionFile(spec)) {
+      section.reset();
+      return false;
+    }
+    activeSectionFontId = fontId;
+    activeSectionLayoutSignature = readerRenderSpecSignature(spec);
+    usedRenderMode = renderMode;
+    return true;
+  };
+
+  loadedSection = loadSectionWithFont(readerFontId, selectedRenderMode);
+  if (loadedSection && pendingReferenceUnitOffset) {
+    // A finalized cache knows where rendered pages start, but it does not retain
+    // the source-unit mapping needed to resolve an exact stable-page target.
+    // Rebuild this section with the reference target attached instead of treating
+    // the source fraction as a rendered-page fraction.
+    LOG_DBG("ERS", "Rebuilding cached section %d to resolve stable-page target", currentSpineIndex);
+    section.reset();
+    loadedSection = false;
+  }
+  if (loadedSection && !pendingRelayoutReposition) {
+    cachedChapterTotalPageCount = 0;
+  }
+  const bool partialCacheLoaded = loadedSection && section && section->isPartial();
+
+  if (!loadedSection || partialCacheLoaded) {
+    if (!loadedSection) {
+      // Font selection previews can leave glyph and advance-table caches resident.
+      // Drop them before allocating a replacement layout after a render-spec mismatch.
+      releaseReaderSdFontCachesForLowMemory(renderer, "ERS", "uncached section build");
+    }
+    if (partialCacheLoaded) {
+      LOG_DBG("ERS", "Partial cache found (%u pages), resuming build... (free=%u, maxAlloc=%u)", section->pageCount,
+              ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+    } else {
+      LOG_DBG("ERS", "Cache not found, building... (free=%u, maxAlloc=%u)", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+    }
+
+    bool layoutAbortedForLowMemory = false;
+    bool fallbackBuildSucceeded = false;
+    bool usedReadablePartialFallback = false;
+    EpubRenderMode lastAttemptedRenderMode = selectedRenderMode;
+    bool lastAttemptUsedSafeMode = false;
+    std::unique_ptr<Section> readablePartialFallback;
+    if (fullSectionIndexing && partialCacheLoaded) {
+      // Keep the known-readable partial alive until its full replacement has
+      // been built and atomically promoted. A failed full build must not turn
+      // a mode change or reopen into an invalid-book dead end.
+      readablePartialFallback = std::move(section);
+    }
+    auto buildSectionWithProfile = [&](const int fontId, const SectionBuildProfile& profile) {
+      lastAttemptedRenderMode = profile.renderMode;
+      lastAttemptUsedSafeMode = profile.safeMode;
+      const std::string cacheSuffix =
+          buildingFootnotePreview ? footnotePreviewCacheSuffix(profile.renderMode, pendingFootnotePreviewAnchor)
+                                  : std::string(sectionCacheSuffixForRenderMode(profile.renderMode));
+      const bool reuseLoadedPartial = !fullSectionIndexing && section && section->isPartial() &&
+                                      fontId == activeSectionFontId && profile.renderMode == usedRenderMode;
+      if (!reuseLoadedPartial) {
+        section.reset();
+        section = makeUniqueNoThrow<Section>(epub, currentSpineIndex, renderer, cacheSuffix.c_str());
+        if (!section) {
+          LOG_ERR("ERS", "Failed to allocate %s section builder for spine %d (free=%u, maxAlloc=%u)", profile.label,
+                  currentSpineIndex, ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+          layoutAbortedForLowMemory = true;
+          return false;
+        }
+      }
+
+      bool attemptLayoutAbortedForLowMemory = false;
+      uint16_t resolvedReferencePage = 0;
+      SectionBuildOptions buildOptions{
+          buildingFootnotePreview ? pendingFootnotePreviewAnchor.c_str() : nullptr,
+          static_cast<uint16_t>(buildingFootnotePreview ? FOOTNOTE_PREVIEW_MAX_PAGES : 0)};
+      if (pendingReferenceUnitOffset) {
+        buildOptions.referenceUnitOffset = *pendingReferenceUnitOffset;
+        buildOptions.referenceUnitCount = pendingReferenceUnitCount;
+        buildOptions.referenceUnitsAreCharacters = pendingReferenceUnitsAreCharacters;
+        buildOptions.resolvedReferencePage = &resolvedReferencePage;
+      }
+      const ReaderRenderSpec spec = readerRenderSpecForProfile(fontId, viewportWidth, viewportHeight, profile);
+      const bool needsFullBuild = fullSectionIndexing || buildingFootnotePreview || pendingPercentJump ||
+                                  pendingClippingIndex != UINT16_MAX || pendingParagraphIndex != UINT16_MAX;
+      bool buildSucceeded = false;
+      if (needsFullBuild) {
+        // A normal-size chapter builds in about a second: the popup would
+        // cost a refresh of its own and a cleaning refresh on the next page.
+        if (spineItemBytes(currentSpineIndex) > QUICK_FULL_BUILD_MAX_BYTES) {
+          showIndexingPopup();
+        }
+        {
+          GfxRenderer::FrameBufferLoan loan(renderer);
+          buildSucceeded =
+              section->createSectionFile(spec, nullptr, nullptr, &attemptLayoutAbortedForLowMemory, buildOptions);
+          if (buildSucceeded && pendingReferenceUnitOffset) {
+            pendingResolvedReferencePage = resolvedReferencePage;
+          }
+        }
+      } else {
+        const int target = pendingPageJump.has_value() ? *pendingPageJump : (nextPageNumber < 0 ? 0 : nextPageNumber);
+        const size_t spineBytes = spineItemBytes(currentSpineIndex);
+        const bool willInflate = !section->hasHtmlCache();
+        const bool anchorJump = !pendingAnchor.empty();
+        const auto anchorPageReady = [&]() {
+          const auto page = section->findAnchor(pendingAnchor);
+          return page.has_value() &&
+                 (static_cast<int>(*page) < static_cast<int>(section->pageCount) || section->isBuildComplete());
+        };
+        const bool deferPartialBuild =
+            section->isPartial() &&
+            (anchorJump ? anchorPageReady()
+                        : target + PARTIAL_REBUILD_START_MARGIN < static_cast<int>(section->pageCount));
+        if (deferPartialBuild) {
+          LOG_DBG("ERS", "Partial covers target %d of %d; deferring extension build", target, section->pageCount);
+          buildSucceeded = true;
+        } else {
+          bool showPopup = false;
+          if (anchorJump) {
+            showPopup = !anchorPageReady() && spineBytes > BUILD_POPUP_BYTE_THRESHOLD;
+          } else {
+            const bool targetAvailable = target < static_cast<int>(section->pageCount);
+            showPopup = !targetAvailable && ((spineBytes > BUILD_POPUP_BYTE_THRESHOLD && willInflate) ||
+                                             target > BUILD_POPUP_PAGE_THRESHOLD);
+          }
+          if (showPopup) {
+            showIndexingPopup();
+          }
+          buildPopupPending = !showPopup;
+          const unsigned long buildStartMs = millis();
+          bool started;
+          {
+            GfxRenderer::FrameBufferLoan loan(renderer);
+            started = section->startBuild(spec, buildOptions, [this] { showBuildPopup(); });
+          }
+          if (started) {
+            bool buildFailed = false;
+            while (!section->isBuildComplete() &&
+                   (anchorJump                  ? !anchorPageReady()
+                    : pendingRelayoutReposition ? !isRelayoutCatchUpComplete()
+                                                : static_cast<int>(section->pageCount) <= target)) {
+              if (cancelBuildForBack()) {
+                buildCancelledForBack = true;
+                break;
+              }
+              if (buildPopupPending && millis() - buildStartMs >= BUILD_POPUP_DEADLINE_MS) {
+                showBuildPopup();
+              }
+              if (!section->buildSomeMore(INTERACTIVE_BUILD_PAGES_PER_CHUNK)) {
+                LOG_ERR("ERS", "Failed during incremental section build");
+                buildFailed = true;
+                break;
+              }
+            }
+            if (!buildFailed && pendingRelayoutReposition && section->isBuilding() && isRelayoutCatchUpComplete()) {
+              LOG_DBG("ERS", "Incremental relayout reached reading position: pages=%u target=%d", section->pageCount,
+                      cachedChapterPageNumber);
+            }
+            attemptLayoutAbortedForLowMemory =
+                attemptLayoutAbortedForLowMemory || section->lastBuildLayoutAbortedForLowMemory();
+            const bool requestedPageAvailable = anchorJump ? anchorPageReady()
+                                                : pendingRelayoutReposition
+                                                    ? isRelayoutCatchUpComplete()
+                                                    : target >= 0 && target < static_cast<int>(section->pageCount);
+            if (buildCancelledForBack) {
+              buildFailed = false;
+            }
+            if (buildFailed && attemptLayoutAbortedForLowMemory && requestedPageAvailable) {
+              LOG_ERR("ERS", "Incremental section build paused for low heap after reaching requested page");
+              attemptLayoutAbortedForLowMemory = false;
+              buildFailed = false;
+            }
+            buildSucceeded =
+                buildCancelledForBack || (!buildFailed && (section->pageCount > 0 || section->isBuildComplete()));
+          } else {
+            attemptLayoutAbortedForLowMemory =
+                attemptLayoutAbortedForLowMemory || section->lastBuildLayoutAbortedForLowMemory();
+          }
+          buildPopupPending = false;
+        }
+      }
+      layoutAbortedForLowMemory = attemptLayoutAbortedForLowMemory;
+      if (buildSucceeded) {
+        activeSectionFontId = fontId;
+        activeSectionLayoutSignature = readerRenderSpecSignature(spec);
+        usedRenderMode = profile.renderMode;
+        safeModeBuildSucceeded = profile.safeMode;
+        LOG_DBG("ERS",
+                "%s section cache built: spine=%d font=%d mode=%u embedded=%u focus=%u guide=%u pages=%u free=%u "
+                "maxAlloc=%u building=%u",
+                profile.label, currentSpineIndex, fontId, static_cast<unsigned>(profile.renderMode),
+                static_cast<unsigned>(profile.embeddedStyle), static_cast<unsigned>(profile.focusReadingEnabled),
+                static_cast<unsigned>(profile.guideReadingEnabled), section->pageCount, ESP.getFreeHeap(),
+                ESP.getMaxAllocHeap(), section->isBuilding() ? 1U : 0U);
+      }
+      return buildSucceeded;
+    };
+
+    auto buildWithFallback = [&](const SectionBuildProfile& profile) {
+      layoutAbortedForLowMemory = false;
+      const bool succeeded = buildSectionWithProfile(readerFontId, profile);
+      return SectionBuildAttempt{succeeded, layoutAbortedForLowMemory};
+    };
+    auto beforeFallbackRetry = [&](const SectionBuildProfile& profile) {
+      if (profile.safeMode) {
+        LOG_ERR("ERS", "EPUB section layout aborted for low heap; retrying Safe Mode");
+        releaseReaderSdFontCachesForLowMemory(renderer, "ERS", "safe mode section rebuild");
+        return;
+      }
+      LOG_ERR("ERS", "EPUB section layout aborted for low heap; retrying mode %u",
+              static_cast<unsigned>(profile.renderMode));
+      releaseReaderSdFontCachesForLowMemory(renderer, "ERS", "fallback section rebuild");
+    };
+    const SectionBuildAttempt initialAttempt = buildWithFallback(buildProfileForRenderMode(selectedRenderMode));
+    const bool canRestartInitialLayout = !buildingFootnotePreview && !pendingPercentJump && pendingAnchor.empty() &&
+                                         pendingClippingIndex == UINT16_MAX && pendingParagraphIndex == UINT16_MAX;
+    if (!initialAttempt.succeeded && initialAttempt.lowMemory && canRestartInitialLayout) {
+      const int target = pendingPageJump.has_value() ? *pendingPageJump : std::max(0, nextPageNumber);
+      const int savedPage =
+          section && section->pageCount > 0 ? std::min(target, static_cast<int>(section->pageCount) - 1) : target;
+      const int estimatedPages = section ? section->estimatedTotalPages() : 0;
+      if (restartForLowMemoryLayout(target, savedPage, estimatedPages, "initial EPUB layout")) {
+        return false;
+      }
+    }
+    const SectionFallbackResult fallbackResult = runSectionBuildFallbacks(
+        selectedRenderMode, shouldAttemptSafeModeFallback(), buildWithFallback, beforeFallbackRetry, &initialAttempt);
+    fallbackBuildSucceeded = fallbackResult.succeeded;
+    layoutAbortedForLowMemory = fallbackResult.lastAttemptLowMemory;
+
+    if (buildCancelledForBack) {
+      return false;
+    }
+
+    if (!fallbackBuildSucceeded && readablePartialFallback && !buildingFootnotePreview && !pendingPercentJump &&
+        pendingClippingIndex == UINT16_MAX && pendingParagraphIndex == UINT16_MAX && !pendingRelayoutReposition) {
+      const int target = pendingPageJump.has_value() ? *pendingPageJump : std::max(0, nextPageNumber);
+      bool targetAvailable = target < static_cast<int>(readablePartialFallback->pageCount);
+      if (!pendingAnchor.empty()) {
+        const auto anchorPage = readablePartialFallback->findAnchor(pendingAnchor);
+        targetAvailable = anchorPage.has_value() && *anchorPage < readablePartialFallback->pageCount;
+      }
+      if (targetAvailable) {
+        LOG_ERR("ERS", "Full-section build failed; retaining readable partial cache (%u pages)",
+                readablePartialFallback->pageCount);
+        section.reset();
+        section = std::move(readablePartialFallback);
+        fallbackBuildSucceeded = true;
+        usedReadablePartialFallback = true;
+        layoutAbortedForLowMemory = false;
+      }
+    }
+
+    if (!fallbackBuildSucceeded && layoutAbortedForLowMemory && section && section->isPartial() &&
+        section->pageCount > 0 && !buildingFootnotePreview && !pendingPercentJump && pendingAnchor.empty() &&
+        pendingClippingIndex == UINT16_MAX && pendingParagraphIndex == UINT16_MAX && !pendingRelayoutReposition) {
+      LOG_ERR("ERS", "Incremental build stopped for low heap; retaining readable partial cache (%u pages)",
+              section->pageCount);
+      fallbackBuildSucceeded = true;
+      usedReadablePartialFallback = true;
+      partialRebuildAbortedForLowMemory = true;
+      activeSectionFontId = readerFontId;
+      usedRenderMode = lastAttemptedRenderMode;
+      safeModeBuildSucceeded = lastAttemptUsedSafeMode;
+      queueLowMemoryLayoutAlert(false);
+    }
+
+    if (!fallbackBuildSucceeded) {
+      if (layoutAbortedForLowMemory) {
+        LOG_ERR("ERS", "EPUB section layout aborted for low heap; chapter exceeds safe layout memory");
+      }
+      if (!layoutAbortedForLowMemory) {
+        LOG_ERR("ERS", "Failed to persist page data to SD");
+      }
+      const bool shouldRestoreFootnoteOrigin = buildingFootnotePreview && footnoteDepth > 0;
+      section.reset();
+      if (buildingFootnotePreview) {
+        pendingFootnotePreviewAnchor.clear();
+        activeFootnotePreview = false;
+      }
+      if (shouldRestoreFootnoteOrigin) {
+        footnoteDepth--;
+        const SavedPosition& origin = savedPositions[footnoteDepth];
+        LOG_ERR("ERS", "Footnote preview build failed; restoring origin spine %d page %d", origin.spineIndex,
+                origin.pageNumber);
+        pendingAnchor.clear();
+        pendingPageJump.reset();
+        currentSpineIndex = origin.spineIndex;
+        nextPageNumber = origin.pageNumber;
+        armReadingPaceWarmup("footnote_preview_failed_restore");
+        requestUpdate();
+        return false;
+      }
+      if (layoutAbortedForLowMemory) {
+        showLowMemoryLayoutError();
+      } else {
+        showBuildError();
+      }
+      return false;
+    }
+    if (!section->isBuilding()) {
+      releaseReaderSdFontCachesForLowMemory(renderer, "ERS", "section cache build");
+    }
+    if (usedReadablePartialFallback) {
+      LOG_DBG("ERS", "Continuing from readable partial cache after failed build: pages=%u free=%u maxAlloc=%u",
+              section->pageCount, ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+    } else {
+      LOG_DBG("ERS", "Cache build complete: pages=%u font=%d mode=%u free=%u maxAlloc=%u", section->pageCount,
+              activeSectionFontId, static_cast<unsigned>(usedRenderMode), ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+    }
+
+    if (!buildingFootnotePreview && safeModeBuildSucceeded) {
+      applySafeModeReaderSettings();
+      initialBookReaderSettings.hasSafeModeOverride = true;
+      bookHasRenderModeOverride = true;
+      if (!saveSafeModeReaderSettingsForCache(epub->getCachePath())) {
+        LOG_ERR("ERS", "Failed to save Safe Mode reader settings");
+      }
+      captureReaderSettings(initialBookReaderSettings.readerSettings);
+    }
+
+  } else {
+    LOG_DBG("ERS", "Cache found, skipping build... (pages=%u, font=%d mode=%u free=%u, maxAlloc=%u)",
+            section->pageCount, activeSectionFontId, static_cast<unsigned>(usedRenderMode), ESP.getFreeHeap(),
+            ESP.getMaxAllocHeap());
+  }
+
+  activeFootnotePreview = buildingFootnotePreview;
+
+  if (!buildingFootnotePreview && usedRenderMode != selectedRenderMode && !safeModeBuildSucceeded) {
+    SETTINGS.epubRenderMode = static_cast<uint8_t>(usedRenderMode);
+    bookHasRenderModeOverride = true;
+    saveBookRenderModeForCache(epub->getCachePath(), SETTINGS.epubRenderMode);
+  }
+  const bool renderModeChangedDuringLoad = usedRenderMode != selectedRenderMode;
+  if (!buildingFootnotePreview && safeModeBuildSucceeded && !safeModeToastShown) {
+    showSafeModeToast();
+  } else if (!buildingFootnotePreview && renderModeChangedDuringLoad &&
+             usedRenderMode != EpubRenderMode::CrossInkDefault && !renderModeToastShown) {
+    showRenderModeToast(static_cast<uint8_t>(usedRenderMode));
+  }
+
+  if (!section) {
+    LOG_ERR("ERS", "Section load/build did not produce a section");
+    showPendingSyncSaveError();
+    return false;
+  }
+
+  if (pendingPageJump.has_value()) {
+    section->currentPage = *pendingPageJump;
+    if (pendingClippingIndex != UINT16_MAX && pendingClippingIndex < CLIPPINGS.clippingCount()) {
+      const Clipping* clipping = CLIPPINGS.clippingAt(pendingClippingIndex);
+      const uint16_t fallbackPage = static_cast<uint16_t>(std::max(0, section->currentPage));
+      std::string clippingText;
+      clippingText.reserve(CLIPPING_TEXT_MAX);
+      if (clipping) CLIPPINGS.readClippingText(*clipping, clippingText);
+      section->currentPage =
+          clipping ? resolveClippingJumpPage(*section, *clipping, clippingText, fallbackPage) : fallbackPage;
+      LOG_DBG("ERS", "Resolved clipping %u to page %d", pendingClippingIndex, section->currentPage);
+    } else if (pendingParagraphIndex != UINT16_MAX) {
+      const uint16_t fallbackPage = static_cast<uint16_t>(std::max(0, section->currentPage));
+      section->currentPage = resolveParagraphJumpPage(*section, pendingParagraphIndex, fallbackPage);
+      LOG_DBG("ERS", "Resolved paragraph %u to page %d", pendingParagraphIndex, section->currentPage);
+    }
+    pendingClippingIndex = UINT16_MAX;
+    pendingParagraphIndex = UINT16_MAX;
+    pendingPageJump.reset();
+  } else {
+    section->currentPage = nextPageNumber;
+    if (section->currentPage < 0) {
+      section->currentPage = 0;
+    }
+  }
+
+  if (!pendingAnchor.empty()) {
+    // Resolve from the pages laid out so far and/or the on-disk map (finalized or partial).
+    const auto page = section->findAnchor(pendingAnchor);
+    if (page && static_cast<int>(*page) < static_cast<int>(section->pageCount)) {
+      section->currentPage = *page;
+      LOG_DBG("ERS", "Resolved anchor '%s' to page %d", pendingAnchor.c_str(), *page);
+    } else if (page) {
+      LOG_DBG("ERS", "Anchor '%s' resolved to unavailable page %d in section %d (pages=%u)", pendingAnchor.c_str(),
+              *page, currentSpineIndex, section->pageCount);
+    } else {
+      LOG_DBG("ERS", "Anchor '%s' not found in section %d", pendingAnchor.c_str(), currentSpineIndex);
+    }
+    pendingAnchor.clear();
+    pendingFootnotePreviewAnchor.clear();
+  }
+
+  if (pendingPercentJump && section->pageCount > 0) {
+    // Apply the pending percent jump now that we know the new section's page count.
+    int newPage = pendingResolvedReferencePage
+                      ? static_cast<int>(*pendingResolvedReferencePage)
+                      : static_cast<int>(pendingSpineProgress * static_cast<float>(section->pageCount));
+    if (newPage >= section->pageCount) {
+      newPage = section->pageCount - 1;
+    }
+    section->currentPage = newPage;
+    if (pendingClippingIndex != UINT16_MAX && pendingClippingIndex < CLIPPINGS.clippingCount()) {
+      const Clipping* clipping = CLIPPINGS.clippingAt(pendingClippingIndex);
+      const uint16_t fallbackPage = static_cast<uint16_t>(std::max(0, section->currentPage));
+      std::string clippingText;
+      clippingText.reserve(CLIPPING_TEXT_MAX);
+      if (clipping) CLIPPINGS.readClippingText(*clipping, clippingText);
+      section->currentPage =
+          clipping ? resolveClippingJumpPage(*section, *clipping, clippingText, fallbackPage) : fallbackPage;
+      LOG_DBG("ERS", "Resolved clipping %u to page %d", pendingClippingIndex, section->currentPage);
+    } else if (pendingParagraphIndex != UINT16_MAX) {
+      const uint16_t fallbackPage = static_cast<uint16_t>(std::max(0, section->currentPage));
+      section->currentPage = resolveParagraphJumpPage(*section, pendingParagraphIndex, fallbackPage);
+      LOG_DBG("ERS", "Resolved paragraph %u to page %d", pendingParagraphIndex, section->currentPage);
+    }
+    pendingClippingIndex = UINT16_MAX;
+    pendingParagraphIndex = UINT16_MAX;
+    pendingPercentJump = false;
+    pendingReferenceUnitOffset.reset();
+    pendingReferenceUnitCount = 0;
+    pendingReferenceUnitsAreCharacters = false;
+    pendingResolvedReferencePage.reset();
+  }
+
+  // Keep negative page numbers in bounds now. Upper-bound clamping waits until after
+  // lazy build catch-up because pageCount may still be only a partial-build watermark.
+  if (section->currentPage < 0) {
+    section->currentPage = 0;
+  }
+  return true;
+}
+
 // TODO: Failure handling
 void EpubReaderActivity::render(RenderLock&& lock) {
   // A Bluetooth radio start in flight takes ~50 KB while the stack comes up: the page waits for it
@@ -6157,75 +6689,6 @@ void EpubReaderActivity::render(RenderLock&& lock) {
   // Only a redraw of the same page counts as a clock tick; a page turn in between wins.
   clockOnlyRender = liveClockPending.exchange(false, std::memory_order_acq_rel) && section &&
                     liveClockSpine == currentSpineIndex && liveClockPage == section->currentPage;
-
-  const auto showPendingSyncSaveError = [this]() {
-    if (!pendingSyncSaveError) return;
-    pendingSyncSaveError = false;
-    GUI.drawPopup(renderer, tr(STR_SAVE_PROGRESS_FAILED));
-  };
-
-  const auto queueLowMemoryLayoutAlert = [this](const bool goHomeOnBack) {
-    snprintf(APP_STATE.pendingAlertTitle, sizeof(APP_STATE.pendingAlertTitle), "%s", tr(STR_EPUB_LAYOUT_MEMORY_TITLE));
-    snprintf(APP_STATE.pendingAlertBody, sizeof(APP_STATE.pendingAlertBody), "%s", tr(STR_EPUB_LAYOUT_MEMORY_BODY));
-    APP_STATE.pendingAlertGoHomeOnBack.store(goHomeOnBack, std::memory_order_relaxed);
-    APP_STATE.hasPendingAlert.store(true, std::memory_order_release);
-  };
-
-  const auto showLowMemoryLayoutError = [this, &queueLowMemoryLayoutAlert]() {
-    queueLowMemoryLayoutAlert(true);
-    GUI.drawPopup(renderer, tr(STR_EPUB_LAYOUT_MEMORY_TITLE));
-  };
-
-  // A section build failure (e.g. an invalid/corrupt EPUB that fails XML parsing) leaves the
-  // "Indexing" popup on screen with no way forward. Surface an explicit error instead of hanging.
-  // clearScreen first so the error popup doesn't overlay the stale "Indexing" popup.
-  const auto showBuildError = [this]() {
-    renderer.clearScreen();
-    GUI.drawPopup(renderer, tr(STR_INDEX_FAILED));
-    automaticPageTurnActive = false;
-  };
-
-  const auto showIndexingPopup = [this]() {
-    GUI.drawPopup(renderer, tr(STR_INDEXING));
-    renderer.displayBuffer(HalDisplay::FAST_REFRESH);
-    pagesUntilFullRefresh = 1;
-  };
-
-  bool buildCancelledForBack = false;
-  const auto cancelBuildForBack = [this, &buildCancelledForBack]() {
-    if (!sectionBuildCancelRequested.load(std::memory_order_relaxed)) {
-      return false;
-    }
-    if (section && section->isBuilding()) {
-      section->suspendBuild();
-    }
-    buildCancelledForBack = true;
-    automaticPageTurnActive = false;
-    LOG_DBG("ERS", "EPUB section build cancelled by Back");
-    return true;
-  };
-
-  // A freshly restarted reader has a less fragmented heap than one that has just
-  // built and displayed several pages. Try that once before changing layout modes;
-  // the RTC token marks the resumed attempt so it proceeds through the fallbacks.
-  const auto restartForLowMemoryLayout = [this](const int targetPage, const int savedPage, const int pageCount,
-                                                const char* stage) {
-    if (lowMemoryPartialRestartAttempted || targetPage < 0 || targetPage >= std::numeric_limits<uint16_t>::max() ||
-        currentSpineIndex < 0 || currentSpineIndex > std::numeric_limits<uint16_t>::max()) {
-      return false;
-    }
-    LOG_ERR("ERS", "Low heap during %s; silent restarting to retry page %d (spine=%d)", stage, targetPage,
-            currentSpineIndex);
-    if (!saveProgress(currentSpineIndex, std::max(0, savedPage), std::max(0, pageCount))) {
-      LOG_ERR("ERS", "Skipping silent restart because progress save failed");
-      return false;
-    }
-    armSilentRestartReaderPageBuild(epub->getPath(), static_cast<uint16_t>(currentSpineIndex),
-                                    static_cast<uint16_t>(targetPage), automaticPageTurnActive);
-    lowMemoryPartialRestartAttempted = true;
-    silentRestartToReader();
-    return true;
-  };
 
   // edge case handling for sub-zero spine index
   if (currentSpineIndex < 0) {
@@ -6262,461 +6725,7 @@ void EpubReaderActivity::render(RenderLock&& lock) {
   buildViewportWidth = viewportWidth;
   buildViewportHeight = viewportHeight;
 
-  if (!section) {
-    preparedNextSpineIndex = -1;
-    // Section loading/indexing can need a large contiguous block. Return the
-    // render-only strip before starting that work.
-    releaseGrayscaleStripScratch();
-    const auto filepath = epub->getSpineItem(currentSpineIndex).href;
-    LOG_DBG("ERS", "Loading file: %s, index: %d (free=%u, maxAlloc=%u)", filepath.c_str(), currentSpineIndex,
-            ESP.getFreeHeap(), ESP.getMaxAllocHeap());
-    const int readerFontId = SETTINGS.getReaderFontId();
-    const EpubRenderMode selectedRenderMode = normalizeRenderMode(SETTINGS.epubRenderMode);
-    const bool fullSectionIndexing = indexesWholeSection(currentSpineIndex);
-    EpubRenderMode usedRenderMode = selectedRenderMode;
-    const bool buildingFootnotePreview = !pendingFootnotePreviewAnchor.empty();
-    bool loadedSection = false;
-    bool safeModeBuildSucceeded = false;
-    partialRebuildStartFailed = false;
-    partialRebuildAbortedForLowMemory = false;
-    auto loadSectionWithFont = [&](const int fontId, const EpubRenderMode renderMode) {
-      const std::string cacheSuffix = buildingFootnotePreview
-                                          ? footnotePreviewCacheSuffix(renderMode, pendingFootnotePreviewAnchor)
-                                          : std::string(sectionCacheSuffixForRenderMode(renderMode));
-      section = makeUniqueNoThrow<Section>(epub, currentSpineIndex, renderer, cacheSuffix.c_str());
-      if (!section) {
-        LOG_ERR("ERS", "Failed to allocate section for spine %d (font=%d, free=%u, maxAlloc=%u)", currentSpineIndex,
-                fontId, ESP.getFreeHeap(), ESP.getMaxAllocHeap());
-        return false;
-      }
-      const ReaderRenderSpec spec =
-          readerRenderSpecForProfile(fontId, viewportWidth, viewportHeight, buildProfileForRenderMode(renderMode));
-      if (!section->loadSectionFile(spec)) {
-        section.reset();
-        return false;
-      }
-      activeSectionFontId = fontId;
-      activeSectionLayoutSignature = readerRenderSpecSignature(spec);
-      usedRenderMode = renderMode;
-      return true;
-    };
-
-    loadedSection = loadSectionWithFont(readerFontId, selectedRenderMode);
-    if (loadedSection && pendingReferenceUnitOffset) {
-      // A finalized cache knows where rendered pages start, but it does not retain
-      // the source-unit mapping needed to resolve an exact stable-page target.
-      // Rebuild this section with the reference target attached instead of treating
-      // the source fraction as a rendered-page fraction.
-      LOG_DBG("ERS", "Rebuilding cached section %d to resolve stable-page target", currentSpineIndex);
-      section.reset();
-      loadedSection = false;
-    }
-    if (loadedSection && !pendingRelayoutReposition) {
-      cachedChapterTotalPageCount = 0;
-    }
-    const bool partialCacheLoaded = loadedSection && section && section->isPartial();
-
-    if (!loadedSection || partialCacheLoaded) {
-      if (!loadedSection) {
-        // Font selection previews can leave glyph and advance-table caches resident.
-        // Drop them before allocating a replacement layout after a render-spec mismatch.
-        releaseReaderSdFontCachesForLowMemory(renderer, "ERS", "uncached section build");
-      }
-      if (partialCacheLoaded) {
-        LOG_DBG("ERS", "Partial cache found (%u pages), resuming build... (free=%u, maxAlloc=%u)", section->pageCount,
-                ESP.getFreeHeap(), ESP.getMaxAllocHeap());
-      } else {
-        LOG_DBG("ERS", "Cache not found, building... (free=%u, maxAlloc=%u)", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
-      }
-
-      bool layoutAbortedForLowMemory = false;
-      bool fallbackBuildSucceeded = false;
-      bool usedReadablePartialFallback = false;
-      EpubRenderMode lastAttemptedRenderMode = selectedRenderMode;
-      bool lastAttemptUsedSafeMode = false;
-      std::unique_ptr<Section> readablePartialFallback;
-      if (fullSectionIndexing && partialCacheLoaded) {
-        // Keep the known-readable partial alive until its full replacement has
-        // been built and atomically promoted. A failed full build must not turn
-        // a mode change or reopen into an invalid-book dead end.
-        readablePartialFallback = std::move(section);
-      }
-      auto buildSectionWithProfile = [&](const int fontId, const SectionBuildProfile& profile) {
-        lastAttemptedRenderMode = profile.renderMode;
-        lastAttemptUsedSafeMode = profile.safeMode;
-        const std::string cacheSuffix =
-            buildingFootnotePreview ? footnotePreviewCacheSuffix(profile.renderMode, pendingFootnotePreviewAnchor)
-                                    : std::string(sectionCacheSuffixForRenderMode(profile.renderMode));
-        const bool reuseLoadedPartial = !fullSectionIndexing && section && section->isPartial() &&
-                                        fontId == activeSectionFontId && profile.renderMode == usedRenderMode;
-        if (!reuseLoadedPartial) {
-          section.reset();
-          section = makeUniqueNoThrow<Section>(epub, currentSpineIndex, renderer, cacheSuffix.c_str());
-          if (!section) {
-            LOG_ERR("ERS", "Failed to allocate %s section builder for spine %d (free=%u, maxAlloc=%u)", profile.label,
-                    currentSpineIndex, ESP.getFreeHeap(), ESP.getMaxAllocHeap());
-            layoutAbortedForLowMemory = true;
-            return false;
-          }
-        }
-
-        bool attemptLayoutAbortedForLowMemory = false;
-        uint16_t resolvedReferencePage = 0;
-        SectionBuildOptions buildOptions{
-            buildingFootnotePreview ? pendingFootnotePreviewAnchor.c_str() : nullptr,
-            static_cast<uint16_t>(buildingFootnotePreview ? FOOTNOTE_PREVIEW_MAX_PAGES : 0)};
-        if (pendingReferenceUnitOffset) {
-          buildOptions.referenceUnitOffset = *pendingReferenceUnitOffset;
-          buildOptions.referenceUnitCount = pendingReferenceUnitCount;
-          buildOptions.referenceUnitsAreCharacters = pendingReferenceUnitsAreCharacters;
-          buildOptions.resolvedReferencePage = &resolvedReferencePage;
-        }
-        const ReaderRenderSpec spec = readerRenderSpecForProfile(fontId, viewportWidth, viewportHeight, profile);
-        const bool needsFullBuild = fullSectionIndexing || buildingFootnotePreview || pendingPercentJump ||
-                                    pendingClippingIndex != UINT16_MAX || pendingParagraphIndex != UINT16_MAX;
-        bool buildSucceeded = false;
-        if (needsFullBuild) {
-          // A normal-size chapter builds in about a second: the popup would
-          // cost a refresh of its own and a cleaning refresh on the next page.
-          if (spineItemBytes(currentSpineIndex) > QUICK_FULL_BUILD_MAX_BYTES) {
-            showIndexingPopup();
-          }
-          {
-            GfxRenderer::FrameBufferLoan loan(renderer);
-            buildSucceeded =
-                section->createSectionFile(spec, nullptr, nullptr, &attemptLayoutAbortedForLowMemory, buildOptions);
-            if (buildSucceeded && pendingReferenceUnitOffset) {
-              pendingResolvedReferencePage = resolvedReferencePage;
-            }
-          }
-        } else {
-          const int target = pendingPageJump.has_value() ? *pendingPageJump : (nextPageNumber < 0 ? 0 : nextPageNumber);
-          const size_t spineBytes = spineItemBytes(currentSpineIndex);
-          const bool willInflate = !section->hasHtmlCache();
-          const bool anchorJump = !pendingAnchor.empty();
-          const auto anchorPageReady = [&]() {
-            const auto page = section->findAnchor(pendingAnchor);
-            return page.has_value() &&
-                   (static_cast<int>(*page) < static_cast<int>(section->pageCount) || section->isBuildComplete());
-          };
-          const bool deferPartialBuild =
-              section->isPartial() &&
-              (anchorJump ? anchorPageReady()
-                          : target + PARTIAL_REBUILD_START_MARGIN < static_cast<int>(section->pageCount));
-          if (deferPartialBuild) {
-            LOG_DBG("ERS", "Partial covers target %d of %d; deferring extension build", target, section->pageCount);
-            buildSucceeded = true;
-          } else {
-            bool showPopup = false;
-            if (anchorJump) {
-              showPopup = !anchorPageReady() && spineBytes > BUILD_POPUP_BYTE_THRESHOLD;
-            } else {
-              const bool targetAvailable = target < static_cast<int>(section->pageCount);
-              showPopup = !targetAvailable && ((spineBytes > BUILD_POPUP_BYTE_THRESHOLD && willInflate) ||
-                                               target > BUILD_POPUP_PAGE_THRESHOLD);
-            }
-            if (showPopup) {
-              showIndexingPopup();
-            }
-            buildPopupPending = !showPopup;
-            const unsigned long buildStartMs = millis();
-            bool started;
-            {
-              GfxRenderer::FrameBufferLoan loan(renderer);
-              started = section->startBuild(spec, buildOptions, [this] { showBuildPopup(); });
-            }
-            if (started) {
-              bool buildFailed = false;
-              while (!section->isBuildComplete() &&
-                     (anchorJump                  ? !anchorPageReady()
-                      : pendingRelayoutReposition ? !isRelayoutCatchUpComplete()
-                                                  : static_cast<int>(section->pageCount) <= target)) {
-                if (cancelBuildForBack()) {
-                  break;
-                }
-                if (buildPopupPending && millis() - buildStartMs >= BUILD_POPUP_DEADLINE_MS) {
-                  showBuildPopup();
-                }
-                if (!section->buildSomeMore(INTERACTIVE_BUILD_PAGES_PER_CHUNK)) {
-                  LOG_ERR("ERS", "Failed during incremental section build");
-                  buildFailed = true;
-                  break;
-                }
-              }
-              if (!buildFailed && pendingRelayoutReposition && section->isBuilding() && isRelayoutCatchUpComplete()) {
-                LOG_DBG("ERS", "Incremental relayout reached reading position: pages=%u target=%d", section->pageCount,
-                        cachedChapterPageNumber);
-              }
-              attemptLayoutAbortedForLowMemory =
-                  attemptLayoutAbortedForLowMemory || section->lastBuildLayoutAbortedForLowMemory();
-              const bool requestedPageAvailable = anchorJump ? anchorPageReady()
-                                                  : pendingRelayoutReposition
-                                                      ? isRelayoutCatchUpComplete()
-                                                      : target >= 0 && target < static_cast<int>(section->pageCount);
-              if (buildCancelledForBack) {
-                buildFailed = false;
-              }
-              if (buildFailed && attemptLayoutAbortedForLowMemory && requestedPageAvailable) {
-                LOG_ERR("ERS", "Incremental section build paused for low heap after reaching requested page");
-                attemptLayoutAbortedForLowMemory = false;
-                buildFailed = false;
-              }
-              buildSucceeded =
-                  buildCancelledForBack || (!buildFailed && (section->pageCount > 0 || section->isBuildComplete()));
-            } else {
-              attemptLayoutAbortedForLowMemory =
-                  attemptLayoutAbortedForLowMemory || section->lastBuildLayoutAbortedForLowMemory();
-            }
-            buildPopupPending = false;
-          }
-        }
-        layoutAbortedForLowMemory = attemptLayoutAbortedForLowMemory;
-        if (buildSucceeded) {
-          activeSectionFontId = fontId;
-          activeSectionLayoutSignature = readerRenderSpecSignature(spec);
-          usedRenderMode = profile.renderMode;
-          safeModeBuildSucceeded = profile.safeMode;
-          LOG_DBG("ERS",
-                  "%s section cache built: spine=%d font=%d mode=%u embedded=%u focus=%u guide=%u pages=%u free=%u "
-                  "maxAlloc=%u building=%u",
-                  profile.label, currentSpineIndex, fontId, static_cast<unsigned>(profile.renderMode),
-                  static_cast<unsigned>(profile.embeddedStyle), static_cast<unsigned>(profile.focusReadingEnabled),
-                  static_cast<unsigned>(profile.guideReadingEnabled), section->pageCount, ESP.getFreeHeap(),
-                  ESP.getMaxAllocHeap(), section->isBuilding() ? 1U : 0U);
-        }
-        return buildSucceeded;
-      };
-
-      auto buildWithFallback = [&](const SectionBuildProfile& profile) {
-        layoutAbortedForLowMemory = false;
-        const bool succeeded = buildSectionWithProfile(readerFontId, profile);
-        return SectionBuildAttempt{succeeded, layoutAbortedForLowMemory};
-      };
-      auto beforeFallbackRetry = [&](const SectionBuildProfile& profile) {
-        if (profile.safeMode) {
-          LOG_ERR("ERS", "EPUB section layout aborted for low heap; retrying Safe Mode");
-          releaseReaderSdFontCachesForLowMemory(renderer, "ERS", "safe mode section rebuild");
-          return;
-        }
-        LOG_ERR("ERS", "EPUB section layout aborted for low heap; retrying mode %u",
-                static_cast<unsigned>(profile.renderMode));
-        releaseReaderSdFontCachesForLowMemory(renderer, "ERS", "fallback section rebuild");
-      };
-      const SectionBuildAttempt initialAttempt = buildWithFallback(buildProfileForRenderMode(selectedRenderMode));
-      const bool canRestartInitialLayout = !buildingFootnotePreview && !pendingPercentJump && pendingAnchor.empty() &&
-                                           pendingClippingIndex == UINT16_MAX && pendingParagraphIndex == UINT16_MAX;
-      if (!initialAttempt.succeeded && initialAttempt.lowMemory && canRestartInitialLayout) {
-        const int target = pendingPageJump.has_value() ? *pendingPageJump : std::max(0, nextPageNumber);
-        const int savedPage =
-            section && section->pageCount > 0 ? std::min(target, static_cast<int>(section->pageCount) - 1) : target;
-        const int estimatedPages = section ? section->estimatedTotalPages() : 0;
-        if (restartForLowMemoryLayout(target, savedPage, estimatedPages, "initial EPUB layout")) {
-          return;
-        }
-      }
-      const SectionFallbackResult fallbackResult = runSectionBuildFallbacks(
-          selectedRenderMode, shouldAttemptSafeModeFallback(), buildWithFallback, beforeFallbackRetry, &initialAttempt);
-      fallbackBuildSucceeded = fallbackResult.succeeded;
-      layoutAbortedForLowMemory = fallbackResult.lastAttemptLowMemory;
-
-      if (buildCancelledForBack) {
-        return;
-      }
-
-      if (!fallbackBuildSucceeded && readablePartialFallback && !buildingFootnotePreview && !pendingPercentJump &&
-          pendingClippingIndex == UINT16_MAX && pendingParagraphIndex == UINT16_MAX && !pendingRelayoutReposition) {
-        const int target = pendingPageJump.has_value() ? *pendingPageJump : std::max(0, nextPageNumber);
-        bool targetAvailable = target < static_cast<int>(readablePartialFallback->pageCount);
-        if (!pendingAnchor.empty()) {
-          const auto anchorPage = readablePartialFallback->findAnchor(pendingAnchor);
-          targetAvailable = anchorPage.has_value() && *anchorPage < readablePartialFallback->pageCount;
-        }
-        if (targetAvailable) {
-          LOG_ERR("ERS", "Full-section build failed; retaining readable partial cache (%u pages)",
-                  readablePartialFallback->pageCount);
-          section.reset();
-          section = std::move(readablePartialFallback);
-          fallbackBuildSucceeded = true;
-          usedReadablePartialFallback = true;
-          layoutAbortedForLowMemory = false;
-        }
-      }
-
-      if (!fallbackBuildSucceeded && layoutAbortedForLowMemory && section && section->isPartial() &&
-          section->pageCount > 0 && !buildingFootnotePreview && !pendingPercentJump && pendingAnchor.empty() &&
-          pendingClippingIndex == UINT16_MAX && pendingParagraphIndex == UINT16_MAX && !pendingRelayoutReposition) {
-        LOG_ERR("ERS", "Incremental build stopped for low heap; retaining readable partial cache (%u pages)",
-                section->pageCount);
-        fallbackBuildSucceeded = true;
-        usedReadablePartialFallback = true;
-        partialRebuildAbortedForLowMemory = true;
-        activeSectionFontId = readerFontId;
-        usedRenderMode = lastAttemptedRenderMode;
-        safeModeBuildSucceeded = lastAttemptUsedSafeMode;
-        queueLowMemoryLayoutAlert(false);
-      }
-
-      if (!fallbackBuildSucceeded) {
-        if (layoutAbortedForLowMemory) {
-          LOG_ERR("ERS", "EPUB section layout aborted for low heap; chapter exceeds safe layout memory");
-        }
-        if (!layoutAbortedForLowMemory) {
-          LOG_ERR("ERS", "Failed to persist page data to SD");
-        }
-        const bool shouldRestoreFootnoteOrigin = buildingFootnotePreview && footnoteDepth > 0;
-        section.reset();
-        if (buildingFootnotePreview) {
-          pendingFootnotePreviewAnchor.clear();
-          activeFootnotePreview = false;
-        }
-        if (shouldRestoreFootnoteOrigin) {
-          footnoteDepth--;
-          const SavedPosition& origin = savedPositions[footnoteDepth];
-          LOG_ERR("ERS", "Footnote preview build failed; restoring origin spine %d page %d", origin.spineIndex,
-                  origin.pageNumber);
-          pendingAnchor.clear();
-          pendingPageJump.reset();
-          currentSpineIndex = origin.spineIndex;
-          nextPageNumber = origin.pageNumber;
-          armReadingPaceWarmup("footnote_preview_failed_restore");
-          requestUpdate();
-          return;
-        }
-        if (layoutAbortedForLowMemory) {
-          showLowMemoryLayoutError();
-        } else {
-          showBuildError();
-        }
-        return;
-      }
-      if (!section->isBuilding()) {
-        releaseReaderSdFontCachesForLowMemory(renderer, "ERS", "section cache build");
-      }
-      if (usedReadablePartialFallback) {
-        LOG_DBG("ERS", "Continuing from readable partial cache after failed build: pages=%u free=%u maxAlloc=%u",
-                section->pageCount, ESP.getFreeHeap(), ESP.getMaxAllocHeap());
-      } else {
-        LOG_DBG("ERS", "Cache build complete: pages=%u font=%d mode=%u free=%u maxAlloc=%u", section->pageCount,
-                activeSectionFontId, static_cast<unsigned>(usedRenderMode), ESP.getFreeHeap(), ESP.getMaxAllocHeap());
-      }
-
-      if (!buildingFootnotePreview && safeModeBuildSucceeded) {
-        applySafeModeReaderSettings();
-        initialBookReaderSettings.hasSafeModeOverride = true;
-        bookHasRenderModeOverride = true;
-        if (!saveSafeModeReaderSettingsForCache(epub->getCachePath())) {
-          LOG_ERR("ERS", "Failed to save Safe Mode reader settings");
-        }
-        captureReaderSettings(initialBookReaderSettings.readerSettings);
-      }
-
-    } else {
-      LOG_DBG("ERS", "Cache found, skipping build... (pages=%u, font=%d mode=%u free=%u, maxAlloc=%u)",
-              section->pageCount, activeSectionFontId, static_cast<unsigned>(usedRenderMode), ESP.getFreeHeap(),
-              ESP.getMaxAllocHeap());
-    }
-
-    activeFootnotePreview = buildingFootnotePreview;
-
-    if (!buildingFootnotePreview && usedRenderMode != selectedRenderMode && !safeModeBuildSucceeded) {
-      SETTINGS.epubRenderMode = static_cast<uint8_t>(usedRenderMode);
-      bookHasRenderModeOverride = true;
-      saveBookRenderModeForCache(epub->getCachePath(), SETTINGS.epubRenderMode);
-    }
-    const bool renderModeChangedDuringLoad = usedRenderMode != selectedRenderMode;
-    if (!buildingFootnotePreview && safeModeBuildSucceeded && !safeModeToastShown) {
-      showSafeModeToast();
-    } else if (!buildingFootnotePreview && renderModeChangedDuringLoad &&
-               usedRenderMode != EpubRenderMode::CrossInkDefault && !renderModeToastShown) {
-      showRenderModeToast(static_cast<uint8_t>(usedRenderMode));
-    }
-
-    if (!section) {
-      LOG_ERR("ERS", "Section load/build did not produce a section");
-      showPendingSyncSaveError();
-      return;
-    }
-
-    if (pendingPageJump.has_value()) {
-      section->currentPage = *pendingPageJump;
-      if (pendingClippingIndex != UINT16_MAX && pendingClippingIndex < CLIPPINGS.clippingCount()) {
-        const Clipping* clipping = CLIPPINGS.clippingAt(pendingClippingIndex);
-        const uint16_t fallbackPage = static_cast<uint16_t>(std::max(0, section->currentPage));
-        std::string clippingText;
-        clippingText.reserve(CLIPPING_TEXT_MAX);
-        if (clipping) CLIPPINGS.readClippingText(*clipping, clippingText);
-        section->currentPage =
-            clipping ? resolveClippingJumpPage(*section, *clipping, clippingText, fallbackPage) : fallbackPage;
-        LOG_DBG("ERS", "Resolved clipping %u to page %d", pendingClippingIndex, section->currentPage);
-      } else if (pendingParagraphIndex != UINT16_MAX) {
-        const uint16_t fallbackPage = static_cast<uint16_t>(std::max(0, section->currentPage));
-        section->currentPage = resolveParagraphJumpPage(*section, pendingParagraphIndex, fallbackPage);
-        LOG_DBG("ERS", "Resolved paragraph %u to page %d", pendingParagraphIndex, section->currentPage);
-      }
-      pendingClippingIndex = UINT16_MAX;
-      pendingParagraphIndex = UINT16_MAX;
-      pendingPageJump.reset();
-    } else {
-      section->currentPage = nextPageNumber;
-      if (section->currentPage < 0) {
-        section->currentPage = 0;
-      }
-    }
-
-    if (!pendingAnchor.empty()) {
-      // Resolve from the pages laid out so far and/or the on-disk map (finalized or partial).
-      const auto page = section->findAnchor(pendingAnchor);
-      if (page && static_cast<int>(*page) < static_cast<int>(section->pageCount)) {
-        section->currentPage = *page;
-        LOG_DBG("ERS", "Resolved anchor '%s' to page %d", pendingAnchor.c_str(), *page);
-      } else if (page) {
-        LOG_DBG("ERS", "Anchor '%s' resolved to unavailable page %d in section %d (pages=%u)", pendingAnchor.c_str(),
-                *page, currentSpineIndex, section->pageCount);
-      } else {
-        LOG_DBG("ERS", "Anchor '%s' not found in section %d", pendingAnchor.c_str(), currentSpineIndex);
-      }
-      pendingAnchor.clear();
-      pendingFootnotePreviewAnchor.clear();
-    }
-
-    if (pendingPercentJump && section->pageCount > 0) {
-      // Apply the pending percent jump now that we know the new section's page count.
-      int newPage = pendingResolvedReferencePage
-                        ? static_cast<int>(*pendingResolvedReferencePage)
-                        : static_cast<int>(pendingSpineProgress * static_cast<float>(section->pageCount));
-      if (newPage >= section->pageCount) {
-        newPage = section->pageCount - 1;
-      }
-      section->currentPage = newPage;
-      if (pendingClippingIndex != UINT16_MAX && pendingClippingIndex < CLIPPINGS.clippingCount()) {
-        const Clipping* clipping = CLIPPINGS.clippingAt(pendingClippingIndex);
-        const uint16_t fallbackPage = static_cast<uint16_t>(std::max(0, section->currentPage));
-        std::string clippingText;
-        clippingText.reserve(CLIPPING_TEXT_MAX);
-        if (clipping) CLIPPINGS.readClippingText(*clipping, clippingText);
-        section->currentPage =
-            clipping ? resolveClippingJumpPage(*section, *clipping, clippingText, fallbackPage) : fallbackPage;
-        LOG_DBG("ERS", "Resolved clipping %u to page %d", pendingClippingIndex, section->currentPage);
-      } else if (pendingParagraphIndex != UINT16_MAX) {
-        const uint16_t fallbackPage = static_cast<uint16_t>(std::max(0, section->currentPage));
-        section->currentPage = resolveParagraphJumpPage(*section, pendingParagraphIndex, fallbackPage);
-        LOG_DBG("ERS", "Resolved paragraph %u to page %d", pendingParagraphIndex, section->currentPage);
-      }
-      pendingClippingIndex = UINT16_MAX;
-      pendingParagraphIndex = UINT16_MAX;
-      pendingPercentJump = false;
-      pendingReferenceUnitOffset.reset();
-      pendingReferenceUnitCount = 0;
-      pendingReferenceUnitsAreCharacters = false;
-      pendingResolvedReferencePage.reset();
-    }
-
-    // Keep negative page numbers in bounds now. Upper-bound clamping waits until after
-    // lazy build catch-up because pageCount may still be only a partial-build watermark.
-    if (section->currentPage < 0) {
-      section->currentPage = 0;
-    }
-  }
+  if (!section && !loadSectionForRender(viewportWidth, viewportHeight)) return;
 
   // Extend the build to the requested page if needed. This covers a partial cache that is
   // already loaded but not actively building; pages already available do no work here.
