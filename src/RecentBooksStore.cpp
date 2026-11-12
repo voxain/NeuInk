@@ -12,6 +12,14 @@
 #include <utility>
 
 namespace {
+// Iterator to the entry stored under `path`, or end().
+template <typename Books>
+auto findByPath(Books& books, const std::string& path) {
+  return std::find_if(books.begin(), books.end(), [&path](const RecentBook& book) { return book.path == path; });
+}
+}  // namespace
+
+namespace {
 constexpr uint8_t RECENT_BOOKS_FILE_VERSION = 3;
 constexpr char RECENT_BOOKS_FILE_BIN[] = "/.crosspoint/recent.bin";
 constexpr char RECENT_BOOKS_FILE_BAK[] = "/.crosspoint/recent.bin.bak";
@@ -69,8 +77,7 @@ void RecentBooksStore::addOrUpdateBook(const std::string& path, const std::strin
   bool changed = pruneMissing();
 
   // Remove existing entry if present
-  auto it =
-      std::find_if(recentBooks.begin(), recentBooks.end(), [&](const RecentBook& book) { return book.path == path; });
+  auto it = findByPath(recentBooks, path);
   if (it != recentBooks.end()) {
     changed = changed || it->title != title || it->author != author || it->coverBmpPath != coverBmpPath ||
               it->coverState != coverState;
@@ -98,8 +105,7 @@ bool RecentBooksStore::updateBook(const std::string& path, const std::string& ti
                                   const std::string& coverBmpPath, const RecentBook::CoverState coverState) {
   ensureLoaded();
 
-  auto it =
-      std::find_if(recentBooks.begin(), recentBooks.end(), [&](const RecentBook& book) { return book.path == path; });
+  auto it = findByPath(recentBooks, path);
   if (it == recentBooks.end()) {
     return false;
   }
@@ -119,8 +125,7 @@ bool RecentBooksStore::updateBook(const std::string& path, const std::string& ti
 bool RecentBooksStore::removeByPath(const std::string& path) {
   ensureLoaded();
 
-  auto it =
-      std::find_if(recentBooks.begin(), recentBooks.end(), [&](const RecentBook& book) { return book.path == path; });
+  auto it = findByPath(recentBooks, path);
   if (it == recentBooks.end()) {
     return false;
   }
@@ -135,8 +140,7 @@ bool RecentBooksStore::updatePath(const std::string& oldPath, const std::string&
                                   const std::string& oldCachePath, const std::string& newCachePath) {
   ensureLoaded();
 
-  auto it = std::find_if(recentBooks.begin(), recentBooks.end(),
-                         [&](const RecentBook& book) { return book.path == oldPath; });
+  auto it = findByPath(recentBooks, oldPath);
   if (it == recentBooks.end()) {
     return true;
   }

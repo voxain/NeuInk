@@ -10,6 +10,7 @@
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
 #include "QuickActions.h"
+#include "activities/settings/EnumOptionPicker.h"
 #include "SettingsList.h"
 #include "activities/settings/ButtonRemapActivity.h"
 #include "activities/settings/QuickActionsActivity.h"
@@ -165,39 +166,7 @@ bool ControlsOptionsActivity::currentSettingUsesOptionMenu(const SettingInfo& se
 }
 
 void ControlsOptionsActivity::openEnumOptionPicker(const SettingInfo& setting) {
-  const size_t optionCount = settingEnumOptionCount(setting);
-  if (optionCount == 0) return;
-
-  std::vector<std::string> options;
-  options.reserve(optionCount);
-  for (size_t i = 0; i < optionCount; i++) {
-    options.push_back(sideButtonOptionLabel(setting, static_cast<uint8_t>(i)));
-  }
-
-  uint8_t currentIndex = 0;
-  if (setting.valuePtr != nullptr) {
-    currentIndex = enumDisplayIndexForRawValue(setting, SETTINGS.*(setting.valuePtr));
-  }
-  if (currentIndex >= optionCount) currentIndex = 0;
-
-  const SettingInfo selectedSetting = setting;
-  const auto note = setting.valuePtr == &CrossPointSettings::sideButtonChordAction && mappedInput.hasTouchHardware()
-                        ? OptionPopup::Note{tr(STR_NOTE), tr(STR_TOUCHSCREEN_ESCAPE_HATCH_NOTE)}
-                        : OptionPopup::Note{};
-  optionPopup.show(
-      setting.nameId, options, currentIndex,
-      [selectedSetting](int selectedIndex) {
-        if (selectedSetting.valuePtr != nullptr) {
-          SETTINGS.*(selectedSetting.valuePtr) =
-              enumRawValueForDisplayIndex(selectedSetting, static_cast<uint8_t>(selectedIndex));
-          if (isTwoFingerSwipeSetting(selectedSetting.valuePtr)) {
-            CrossPointSettings::normalizeTwoFingerSwipeActions(SETTINGS, selectedSetting.valuePtr);
-          }
-          QuickActions::settingChanged(SETTINGS, selectedSetting.valuePtr);
-          SETTINGS.saveToFile();
-        }
-      },
-      note);
+  showEnumOptionPicker(optionPopup, mappedInput.hasTouchHardware(), setting, [] { SETTINGS.saveToFile(); });
   requestUpdate();
 }
 

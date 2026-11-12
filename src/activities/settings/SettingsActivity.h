@@ -333,7 +333,6 @@ class SettingsActivity final : public Activity {
   StrId activeSubmenuTitleId() const;
   void openSubmenu(SettingAction action);
   void closeSubmenu();
-  bool currentSettingUsesOptionMenu(const SettingInfo& setting) const;
   void openEnumOptionPicker(const SettingInfo& setting);
   void openScreenMarginPicker(const SettingInfo& setting);
   void openWordSpacingPicker();

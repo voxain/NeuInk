@@ -10,6 +10,15 @@
 #include <utility>
 
 namespace {
+// Iterator to the credential saved for `ssid`, or end().
+template <typename Credentials>
+auto findBySsid(Credentials& credentials, const std::string& ssid) {
+  return std::find_if(credentials.begin(), credentials.end(),
+                      [&ssid](const WifiCredential& cred) { return cred.ssid == ssid; });
+}
+}  // namespace
+
+namespace {
 constexpr uint8_t WIFI_FILE_VERSION = 2;
 constexpr char WIFI_FILE_BIN[] = "/.crosspoint/wifi.bin";
 constexpr char WIFI_FILE_BAK[] = "/.crosspoint/wifi.bin.bak";
@@ -176,8 +185,7 @@ bool WifiCredentialStore::addCredential(const std::string& ssid, const std::stri
 
   {
     std::lock_guard<std::mutex> lock(credentialMutex);
-    const auto cred = find_if(credentials.begin(), credentials.end(),
-                              [&ssid](const WifiCredential& cred) { return cred.ssid == ssid; });
+    const auto cred = findBySsid(credentials, ssid);
     if (cred != credentials.end()) {
       cred->password = password;
     } else {
@@ -197,8 +205,7 @@ bool WifiCredentialStore::removeCredential(const std::string& ssid) {
 
   {
     std::lock_guard<std::mutex> lock(credentialMutex);
-    const auto cred = find_if(credentials.begin(), credentials.end(),
-                              [&ssid](const WifiCredential& cred) { return cred.ssid == ssid; });
+    const auto cred = findBySsid(credentials, ssid);
     if (cred == credentials.end()) return false;
     credentials.erase(cred);
     if (ssid == lastConnectedSsid) lastConnectedSsid.clear();
@@ -210,8 +217,7 @@ std::optional<WifiCredential> WifiCredentialStore::findCredential(const std::str
   ensureLoaded();
   std::lock_guard<std::mutex> lock(credentialMutex);
 
-  const auto cred = find_if(credentials.begin(), credentials.end(),
-                            [&ssid](const WifiCredential& cred) { return cred.ssid == ssid; });
+  const auto cred = findBySsid(credentials, ssid);
   return cred != credentials.end() ? std::optional<WifiCredential>(*cred) : std::nullopt;
 }
 
@@ -247,8 +253,7 @@ std::vector<WifiCredentialSummary> WifiCredentialStore::getCredentialSummaries()
 bool WifiCredentialStore::hasSavedCredential(const std::string& ssid) const {
   ensureLoaded();
   std::lock_guard<std::mutex> lock(credentialMutex);
-  return find_if(credentials.begin(), credentials.end(),
-                 [&ssid](const WifiCredential& cred) { return cred.ssid == ssid; }) != credentials.end();
+  return findBySsid(credentials, ssid) != credentials.end();
 }
 
 void WifiCredentialStore::setLastConnectedSsid(const std::string& ssid) {

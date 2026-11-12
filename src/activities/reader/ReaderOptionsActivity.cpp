@@ -10,6 +10,7 @@
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
 #include "SdCardFontSystem.h"
+#include "activities/settings/EnumOptionPicker.h"
 #include "SettingsList.h"
 #include "SilentRestart.h"
 #include "activities/settings/FontSelectionActivity.h"
@@ -267,48 +268,11 @@ void ReaderOptionsActivity::moveSelection(bool forward) {
   }
 }
 
-bool ReaderOptionsActivity::currentSettingUsesOptionMenu(const SettingInfo& setting) const {
-  return setting.nameId != StrId::STR_FONT_FAMILY && setting.type == SettingType::ENUM &&
-         settingEnumOptionCount(setting) > 2 &&
-         (setting.valuePtr != nullptr || (setting.valueGetter && setting.valueSetter));
-}
-
 void ReaderOptionsActivity::openEnumOptionPicker(const SettingInfo& setting) {
-  const size_t optionCount = settingEnumOptionCount(setting);
-  if (optionCount == 0) return;
-
-  std::vector<std::string> options;
-  options.reserve(optionCount);
-  for (size_t i = 0; i < optionCount; i++) {
-    options.push_back(settingEnumOptionLabel(setting, static_cast<uint8_t>(i)));
-  }
-
-  uint8_t currentIndex = 0;
-  if (setting.valuePtr != nullptr) {
-    currentIndex = enumDisplayIndexForRawValue(setting, SETTINGS.*(setting.valuePtr));
-  } else if (setting.valueGetter) {
-    currentIndex = setting.valueGetter();
-  }
-  if (currentIndex >= optionCount) currentIndex = 0;
-
-  const SettingInfo selectedSetting = setting;
-  const auto note = setting.valuePtr == &CrossPointSettings::sideButtonChordAction && mappedInput.hasTouchHardware()
-                        ? OptionPopup::Note{tr(STR_NOTE), tr(STR_TOUCHSCREEN_ESCAPE_HATCH_NOTE)}
-                        : OptionPopup::Note{};
-  optionPopup.show(
-      setting.nameId, options, currentIndex,
-      [this, selectedSetting](int selectedIndex) {
-        if (selectedSetting.valuePtr != nullptr) {
-          SETTINGS.*(selectedSetting.valuePtr) =
-              enumRawValueForDisplayIndex(selectedSetting, static_cast<uint8_t>(selectedIndex));
-        } else if (selectedSetting.valueSetter) {
-          selectedSetting.valueSetter(static_cast<uint8_t>(selectedIndex));
-        }
-
-        persistReaderSettings();
-        requestUpdate();
-      },
-      note);
+  showEnumOptionPicker(optionPopup, mappedInput.hasTouchHardware(), setting, [this] {
+    persistReaderSettings();
+    requestUpdate();
+  });
   requestUpdate();
 }
 
@@ -475,7 +439,7 @@ void ReaderOptionsActivity::toggleCurrentSetting() {
     SETTINGS.*(setting.valuePtr) = !cur;
     settingsDirty = true;
   } else if (setting.type == SettingType::ENUM && setting.valuePtr != nullptr) {
-    if (currentSettingUsesOptionMenu(setting)) {
+    if (enumSettingUsesOptionMenu(setting)) {
       openEnumOptionPicker(setting);
       return;
     }
@@ -487,7 +451,7 @@ void ReaderOptionsActivity::toggleCurrentSetting() {
     SETTINGS.*(setting.valuePtr) = enumRawValueForDisplayIndex(setting, nextIndex);
     settingsDirty = true;
   } else if (setting.type == SettingType::ENUM && setting.valueGetter && setting.valueSetter) {
-    if (currentSettingUsesOptionMenu(setting)) {
+    if (enumSettingUsesOptionMenu(setting)) {
       openEnumOptionPicker(setting);
       return;
     }
@@ -816,7 +780,7 @@ void ReaderOptionsActivity::render(RenderLock&&) {
                                 (*currentSettings)[selectedIndex].nameId == StrId::STR_FONT_FAMILY ||
                                 (*currentSettings)[selectedIndex].nameId == StrId::STR_DICTIONARY_FONT ||
                                 (*currentSettings)[selectedIndex].nameId == StrId::STR_DICTIONARY_FONT_SIZE ||
-                                currentSettingUsesOptionMenu((*currentSettings)[selectedIndex]));
+                                enumSettingUsesOptionMenu((*currentSettings)[selectedIndex]));
   const bool selectedLineHeight = selectedIndex >= 0 && selectedIndex < settingsCount &&
                                   (*currentSettings)[selectedIndex].valuePtr == &CrossPointSettings::lineHeightPercent;
   const bool selectedScreenMargin =

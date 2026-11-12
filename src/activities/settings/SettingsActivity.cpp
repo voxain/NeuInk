@@ -16,6 +16,7 @@
 #include <cstring>
 #include <iterator>
 
+#include "activities/settings/EnumOptionPicker.h"
 #include "AppCapabilities.h"
 #include "BackupStatsActivity.h"
 #include "BleSettingsActivity.h"
@@ -556,56 +557,16 @@ void SettingsActivity::closeSubmenu() {
   showSettingSelection = true;
 }
 
-bool SettingsActivity::currentSettingUsesOptionMenu(const SettingInfo& setting) const {
-  return setting.nameId != StrId::STR_FONT_FAMILY && setting.type == SettingType::ENUM &&
-         settingEnumOptionCount(setting) > 2 &&
-         (setting.valuePtr != nullptr || (setting.valueGetter && setting.valueSetter));
-}
-
 void SettingsActivity::openEnumOptionPicker(const SettingInfo& setting) {
-  const size_t optionCount = settingEnumOptionCount(setting);
-  if (optionCount == 0) return;
-
-  std::vector<std::string> options;
-  options.reserve(optionCount);
-  for (size_t i = 0; i < optionCount; i++) {
-    options.push_back(sideButtonOptionLabel(setting, static_cast<uint8_t>(i)));
-  }
-
-  uint8_t currentIndex = 0;
-  if (setting.valuePtr != nullptr) {
-    currentIndex = enumDisplayIndexForRawValue(setting, SETTINGS.*(setting.valuePtr));
-  } else if (setting.valueGetter) {
-    currentIndex = setting.valueGetter();
-  }
-  if (currentIndex >= optionCount) currentIndex = 0;
-
-  const SettingInfo selectedSetting = setting;
-  const auto note = setting.valuePtr == &CrossPointSettings::sideButtonChordAction && mappedInput.hasTouchHardware()
-                        ? OptionPopup::Note{tr(STR_NOTE), tr(STR_TOUCHSCREEN_ESCAPE_HATCH_NOTE)}
-                        : OptionPopup::Note{};
-  optionPopup.show(
-      setting.nameId, options, currentIndex,
-      [this, selectedSetting](int selectedIndex) {
-        if (selectedSetting.valuePtr != nullptr) {
-          SETTINGS.*(selectedSetting.valuePtr) =
-              enumRawValueForDisplayIndex(selectedSetting, static_cast<uint8_t>(selectedIndex));
-          if (isTwoFingerSwipeSetting(selectedSetting.valuePtr)) {
-            CrossPointSettings::normalizeTwoFingerSwipeActions(SETTINGS, selectedSetting.valuePtr);
-          }
-          QuickActions::settingChanged(SETTINGS, selectedSetting.valuePtr);
-        } else if (selectedSetting.valueSetter) {
-          selectedSetting.valueSetter(static_cast<uint8_t>(selectedIndex));
-        }
-
-        const bool sleepScreenChanged = selectedSetting.valuePtr == &CrossPointSettings::sleepScreen;
-        const bool quickResumeTimeoutChanged = selectedSetting.valuePtr == &CrossPointSettings::quickResumeSleepScreen;
-        syncQuickResumeTimeoutForSleepScreen(sleepScreenChanged, quickResumeTimeoutChanged);
-        SETTINGS.saveToFile();
-        rebuildSettingsLists();
-        requestUpdate();
-      },
-      note);
+  const auto valuePtr = setting.valuePtr;
+  showEnumOptionPicker(optionPopup, mappedInput.hasTouchHardware(), setting, [this, valuePtr] {
+    const bool sleepScreenChanged = valuePtr == &CrossPointSettings::sleepScreen;
+    const bool quickResumeTimeoutChanged = valuePtr == &CrossPointSettings::quickResumeSleepScreen;
+    syncQuickResumeTimeoutForSleepScreen(sleepScreenChanged, quickResumeTimeoutChanged);
+    SETTINGS.saveToFile();
+    rebuildSettingsLists();
+    requestUpdate();
+  });
   requestUpdate();
 }
 
@@ -1164,7 +1125,7 @@ void SettingsActivity::toggleCurrentSetting() {
     return;
   }
 
-  if (currentSettingUsesOptionMenu(setting)) {
+  if (enumSettingUsesOptionMenu(setting)) {
     openEnumOptionPicker(setting);
     return;
   }
@@ -1636,7 +1597,7 @@ void SettingsActivity::render(RenderLock&&) {
       inGroupList()
           ? tr(STR_SELECT)
           : (selectedSettingIndex > 0 &&
-                     (currentSettingUsesOptionMenu((*currentSettings)[selectedSettingIndex - 1]) ||
+                     (enumSettingUsesOptionMenu((*currentSettings)[selectedSettingIndex - 1]) ||
                       (*currentSettings)[selectedSettingIndex - 1].type == SettingType::SUBMENU ||
                       (*currentSettings)[selectedSettingIndex - 1].type == SettingType::ACTION ||
                       (*currentSettings)[selectedSettingIndex - 1].nameId == StrId::STR_FONT_FAMILY ||
