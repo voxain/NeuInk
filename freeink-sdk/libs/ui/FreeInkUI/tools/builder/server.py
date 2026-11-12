@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import mimetypes
+import os
 import re
 import subprocess
 import tempfile
@@ -162,12 +163,16 @@ def render_schema(schema: dict, width: int, height: int) -> str:
 
 
 def safe_join(base: Path, rel: str) -> Path | None:
-    target = (base / rel.lstrip("/")).resolve()
-    try:
-        target.relative_to(base.resolve())
-    except ValueError:
+    root = os.path.realpath(base)
+    target = os.path.realpath(os.path.join(root, rel.lstrip("/")))
+    if target != root and not target.startswith(root + os.sep):
         return None
-    return target
+    return Path(target)
+
+
+def safe_content_type(path: Path) -> str:
+    content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    return "".join(ch for ch in content_type if ch not in "\r\n")
 
 
 class BuilderHandler(BaseHTTPRequestHandler):
@@ -196,7 +201,7 @@ class BuilderHandler(BaseHTTPRequestHandler):
         if not path.is_file():
             self.send_error(404)
             return
-        content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        content_type = safe_content_type(path)
         body = path.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", content_type)
@@ -208,7 +213,7 @@ class BuilderHandler(BaseHTTPRequestHandler):
         if not path.is_file():
             self.send_error(404)
             return
-        content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        content_type = safe_content_type(path)
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(path.stat().st_size))

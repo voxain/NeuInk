@@ -1677,6 +1677,7 @@ function log(message, type = "", tag = "") {
   // Message
   const msg = document.createElement("span");
   msg.className = "log-message";
+  // Callers pass pre-built markup with all dynamic values run through escapeHtml().
   msg.innerHTML = message;
   entry.appendChild(msg);
 
@@ -1716,7 +1717,7 @@ function logImage(
     // Build parts detail string
     let partsDetail = "";
     if (partsInfo && partsInfo.length > 0) {
-      const baseName = name.replace(/\.[^.]+$/, "");
+      const baseName = escapeHtml(name.replace(/\.[^.]+$/, ""));
       partsDetail = partsInfo
         .map((p) => `${baseName}${p.suffix}.jpg (${p.width}×${p.height}, ${formatBytes(p.size)})`)
         .join(", ");
@@ -1747,7 +1748,7 @@ function logImage(
 // Log fix applied
 function logFix(type, detail) {
   conversionStats.fixes++;
-  log(`${type}: <span class="log-detail">${detail}</span>`, "success", "FIX");
+  log(`${escapeHtml(String(type))}: <span class="log-detail">${escapeHtml(String(detail))}</span>`, "success", "FIX");
 }
 
 // Log skipped item
@@ -1759,7 +1760,7 @@ function logSkip(name, reason) {
 // Log error
 function logError(message) {
   conversionStats.errors++;
-  log(message, "error", "ERROR");
+  log(escapeHtml(String(message)), "error", "ERROR");
 }
 
 // Log summary table
@@ -2105,7 +2106,7 @@ function scrubBlankCodepoints(text) {
 function scrubEpubTextResource(path, text) {
   const scrubbed = scrubBlankCodepoints(text);
   if (scrubbed.count > 0) {
-    logFix("Blank codepoints", `${escapeHtml(path.split("/").pop())} (${scrubbed.count} removed)`);
+    logFix("Blank codepoints", `${path.split("/").pop()} (${scrubbed.count} removed)`);
   }
   return scrubbed.text;
 }
@@ -2607,9 +2608,9 @@ function extractLocationText(xhtmlContent) {
     return (doc.body || doc.documentElement).textContent || "";
   } catch (e) {
     return xhtmlContent
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+      .replace(/<script\b[\s\S]*?<\/script\s*[^>]*>/gi, " ")
+      .replace(/<style\b[\s\S]*?<\/style\s*[^>]*>/gi, " ")
+      .replace(/<svg\b[\s\S]*?<\/svg\s*[^>]*>/gi, " ")
       .replace(/<[^>]+>/g, " ");
   }
 }
@@ -4445,7 +4446,7 @@ async function convertEpubFile(file, progressCallback) {
   // Initialize logging
   clearLog();
   showLog();
-  log(`<strong>${file.name}</strong> <span class="log-detail">(${formatBytes(originalSize)})</span>`, "", "INFO");
+  log(`<strong>${escapeHtml(file.name)}</strong> <span class="log-detail">(${formatBytes(originalSize)})</span>`, "", "INFO");
   log(
     `Quality: ${JPEG_QUALITY}% | Overlap: ${OVERLAP_PERCENT}% | Rotation: ${HANDEDNESS === "right" ? "CW" : "CCW"} | Grayscale: ${ENABLE_GRAYSCALE ? "ON" : "OFF"}`,
     "",

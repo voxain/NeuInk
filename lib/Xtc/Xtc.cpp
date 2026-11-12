@@ -442,7 +442,7 @@ bool Xtc::generateCoverBmp() const {
   // XTG (1-bit): Row-major, ((width+7)/8) * height bytes
   // XTH (2-bit): Two bit planes, column-major, ((width * height + 7) / 8) * 2 bytes
   size_t bitmapSize;
-  bitmapSize = ((pageInfo.width + 7) / 8) * pageInfo.height;
+  bitmapSize = (static_cast<size_t>(pageInfo.width + 7) / 8) * pageInfo.height;
   auto pageBuffer = makeUniqueNoThrow<uint8_t[]>(bitmapSize);
   if (!pageBuffer) {
     LOG_ERR("XTC", "Failed to allocate page buffer (%lu bytes)", bitmapSize);
@@ -670,7 +670,7 @@ bool Xtc::generateThumbBmp(uint16_t width, uint16_t height) const {
   }
 
   size_t bitmapSize;
-  bitmapSize = ((pageInfo.width + 7) / 8) * pageInfo.height;
+  bitmapSize = (static_cast<size_t>(pageInfo.width + 7) / 8) * pageInfo.height;
   const uint32_t rowSize = (thumbWidth + 31) / 32 * 4;
   auto thumbScratch = makeUniqueNoThrow<uint8_t[]>(bitmapSize + rowSize);
   if (!thumbScratch) {

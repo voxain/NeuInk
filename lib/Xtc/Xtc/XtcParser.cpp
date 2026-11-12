@@ -546,7 +546,7 @@ size_t XtcParser::loadPage(uint32_t pageIndex, uint8_t* buffer, size_t bufferSiz
     // XTH: two bit planes, each containing (width * height) bits rounded up to bytes
     bitmapSize = ((static_cast<size_t>(pageHeader.width) * pageHeader.height + 7) / 8) * 2;
   } else {
-    bitmapSize = ((pageHeader.width + 7) / 8) * pageHeader.height;
+    bitmapSize = (static_cast<size_t>(pageHeader.width + 7) / 8) * pageHeader.height;
   }
 
   // Check buffer size
@@ -608,7 +608,7 @@ XtcError XtcParser::loadPageStreaming(uint32_t pageIndex,
   if (m_bitDepth == 2) {
     bitmapSize = ((static_cast<size_t>(pageHeader.width) * pageHeader.height + 7) / 8) * 2;
   } else {
-    bitmapSize = ((pageHeader.width + 7) / 8) * pageHeader.height;
+    bitmapSize = (static_cast<size_t>(pageHeader.width + 7) / 8) * pageHeader.height;
   }
 
   // The chunk size is caller-controlled and too large for the task stack. Keep

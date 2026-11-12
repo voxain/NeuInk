@@ -1012,7 +1012,7 @@ TEST_F(LibraryBuilderTest, LibrariesPastOldGateAndAtFormatCeilingKeepAllOrders) 
     });
     LibraryIndexFile index;
     ASSERT_TRUE(index.open(INDEX));
-    for (uint16_t row = 0; row < count; row++) {
+    for (unsigned int row = 0; row < count; row++) {
       EXPECT_EQ(pathAt(index, SortOrder::RecentAsc, row), "/book" + numbered("", row) + ".epub") << count << ':' << row;
       EXPECT_EQ(pathAt(index, SortOrder::TitleAsc, row), "/book" + numbered("", count - 1 - row) + ".epub")
           << count << ':' << row;

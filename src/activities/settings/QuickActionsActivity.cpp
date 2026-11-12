@@ -116,9 +116,9 @@ void QuickActionsActivity::editShortcut() {
   std::vector<std::string> labels;
   labels.reserve(triggers.size());
   uint8_t current = 0;
-  for (uint8_t i = 0; i < triggers.size(); ++i) {
+  for (size_t i = 0; i < triggers.size(); ++i) {
     labels.emplace_back(triggerLabel(triggers[i]));
-    if (triggers[i] == draftTrigger) current = i;
+    if (triggers[i] == draftTrigger) current = static_cast<uint8_t>(i);
   }
   popup.show(StrId::STR_SHORTCUT, labels, current, [this, triggers](int selected) {
     if (selected < 0 || static_cast<size_t>(selected) >= triggers.size()) return;

@@ -7,8 +7,8 @@
 namespace {
 std::vector<uint16_t> shelf(const uint16_t total, const std::vector<uint16_t>& recents, const bool descending) {
   std::vector<uint16_t> out;
-  for (uint16_t row = 0; row < recents.size(); ++row) {
-    out.push_back(library::recentHistoryRow(row, total, recents.data(), recents.size(), descending));
+  for (size_t row = 0; row < recents.size(); ++row) {
+    out.push_back(library::recentHistoryRow(static_cast<uint16_t>(row), total, recents.data(), recents.size(), descending));
   }
   return out;
 }

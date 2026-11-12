@@ -412,13 +412,13 @@ bool TextBlock::serialize(HalFile& file) const {
   }
 
   uint16_t rubyCount = 0;
-  for (uint16_t i = 0; i < numWords && i < rubyTexts.size(); ++i) {
+  for (size_t i = 0; i < numWords && i < rubyTexts.size(); ++i) {
     if (!rubyTexts[i].empty()) ++rubyCount;
   }
   if (!serialization::tryWritePod(file, rubyCount)) return false;
-  for (uint16_t i = 0; i < numWords && i < rubyTexts.size(); ++i) {
+  for (size_t i = 0; i < numWords && i < rubyTexts.size(); ++i) {
     if (rubyTexts[i].empty()) continue;
-    if (!serialization::tryWritePod(file, i) || !serialization::tryWriteString(file, rubyTexts[i])) return false;
+    if (!serialization::tryWritePod(file, static_cast<uint16_t>(i)) || !serialization::tryWriteString(file, rubyTexts[i])) return false;
   }
 
   return serialization::tryWritePod(file, blockStyle.alignment) &&

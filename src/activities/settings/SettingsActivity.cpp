@@ -568,8 +568,8 @@ void SettingsActivity::openEnumOptionPicker(const SettingInfo& setting) {
 
   std::vector<std::string> options;
   options.reserve(optionCount);
-  for (uint8_t i = 0; i < optionCount; i++) {
-    options.push_back(sideButtonOptionLabel(setting, i));
+  for (size_t i = 0; i < optionCount; i++) {
+    options.push_back(sideButtonOptionLabel(setting, static_cast<uint8_t>(i)));
   }
 
   uint8_t currentIndex = 0;
