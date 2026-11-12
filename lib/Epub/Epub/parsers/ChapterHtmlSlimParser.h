@@ -352,7 +352,14 @@ class ChapterHtmlSlimParser {
   bool appendMalformedMarkupWarningPage();
   void prewarmSectionAdvanceTable(FsFile& file) const;
   // XML callbacks
+  enum class InlineStyleKind { Underline, Strikethrough, Bold, Italic };
+  static void pushInlineStyleTag(ChapterHtmlSlimParser* self, const CssStyle& cssStyle, InlineStyleKind kind);
   static void XMLCALL startElement(void* userData, const XML_Char* name, const XML_Char** atts);
+  static bool handleTableElementStart(ChapterHtmlSlimParser* self, void* userData, const XML_Char* name,
+                                      const XML_Char** atts, std::string_view classAttr, const CssStyle& cssStyle);
+  static bool handleImageStart(ChapterHtmlSlimParser* self, void* userData, const XML_Char* name,
+                               const XML_Char** atts, std::string_view classAttr, std::string_view styleAttr,
+                               const CssStyle& cssStyle, const BlockStyle& centeredBlockStyle);
   static void XMLCALL characterData(void* userData, const XML_Char* s, int len);
   static void XMLCALL defaultHandlerExpand(void* userData, const XML_Char* s, int len);
   static void XMLCALL endElement(void* userData, const XML_Char* name);
