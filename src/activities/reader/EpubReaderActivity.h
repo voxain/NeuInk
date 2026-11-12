@@ -461,6 +461,9 @@ class EpubReaderActivity final : public Activity {
   bool buildNextChapterSilently(SilentPrefetch& prefetch, const SectionBuildProfile& profile);
   void adoptSafeModeReaderSettings(const char* saveFailedMessage);
   bool adoptRenderMode(EpubRenderMode renderMode);
+  std::string currentChapterTitle() const;
+  void restoreReadingPosition();
+  void startReadingSession();
   bool tickSectionBuild();
   bool loadSectionForRender(uint16_t viewportWidth, uint16_t viewportHeight);
   bool loadCachedSection(SectionLoad& load, int fontId, EpubRenderMode renderMode);

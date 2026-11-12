@@ -2369,53 +2369,9 @@ void EpubReaderActivity::endGlobalSettingsEditForBookReader(void* ctx) {
   static_cast<EpubReaderActivity*>(ctx)->endGlobalSettingsEdit();
 }
 
-void EpubReaderActivity::onEnter() {
-  Activity::onEnter();
-  openStartedMs = millis();
-  pageLoadRetryCount = 0;
-  touchReaderDrawerState = initialReaderDrawerState(mappedInput.hasTouchHardware());
-
-  MemoryBudget::logEpubHeapPools("reader enter");
-  // NeuInk: with "keep Wi-Fi on", start joining now so a lookup finds it ready.
-  OnlineWifi::readerOpened();
-
-  // epub is a required collaborator: ReaderActivity dereferences it before handing it
-  // over, and onExit() unconditionally tears down the setup below. Returning early here
-  // instead would leave reader mode and the bookmark/clipping stores unbalanced.
-  captureGlobalReaderSettings();
-  epub->setupCacheDir();
-  {
-    GfxRenderer::FrameBufferLoan loan(renderer);
-    epub->ensureOptimizerImageIndex();
-  }
-  loadBookReaderSettings();
-  const unsigned long fontsStartedMs = millis();
-  ensureScriptCapableFont();
-  sdFontSystem.setSettingsPersistenceCallback(persistReaderSdFontSettingsForBook, this);
-  ensureReaderSdFontLoaded(renderer);
-  SpeedLog::recordNamed("open.fonts", millis() - fontsStartedMs);
-  ImageBlock::clearSessionRenderFailures();
-  ImageBlock::setExtractor(
-      epub.get(),
-      [](void* context, const char* source, const char* destination) {
-        return static_cast<Epub*>(context)->extractItemToFile(source, destination);
-      },
-      [](void* context, const char* source, const int width, const int height, const char* destination) {
-        return static_cast<Epub*>(context)->seedOptimizerImageCache(source, width, height, destination);
-      });
-
-  // Configure screen orientation based on settings
-  // NOTE: This affects layout math and must be applied before any render calls.
-  ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
-
-  // Activate reader-specific front button mapping (if configured).
-  mappedInput.setReaderMode(true);
-  // The dictionary chosen for the book's language comes before the general one.
-  Dictionary::setBookLanguage(epub->getLanguage().c_str());
-
-  BOOKMARKS.loadForBook(epub->getPath(), epub->getTitle(), epub->getAuthor(), "epub");
-  CLIPPINGS.loadForBook(epub->getPath(), epub->getTitle(), epub->getAuthor(), "epub");
-
+// Picks where to open the book: a bookmark chosen on Home, a position to resume after a silent restart, or the
+// saved progress (the first text chapter for a book never read).
+void EpubReaderActivity::restoreReadingPosition() {
   uint16_t restartPageBuildSpine = UINT16_MAX;
   uint16_t restartPageBuildTarget = 0;
   bool resumeAutoPageTurnAfterRestart = false;
@@ -2488,9 +2444,11 @@ void EpubReaderActivity::onEnter() {
               restartPageBuildTarget);
     }
   }
+}
 
-  // Load reading stats and record session start time.
-  // Session count and reading time are committed on exit once thresholds are met.
+// Loads the reading stats and starts timing this session. Session count and reading time are committed on exit
+// once thresholds are met.
+void EpubReaderActivity::startReadingSession() {
   stats = BookReadingStats::load(epub->getCachePath());
   bookStatsEnabled = BookStatsTracking::isBookEnabled(epub->getCachePath());
   statsTrackingActive = SETTINGS.shouldTrackReadingStats() && bookStatsEnabled;
@@ -2511,6 +2469,57 @@ void EpubReaderActivity::onEnter() {
   globalStats = GlobalReadingStats::load();
 
   initializeCompletionPromptTrigger();
+}
+
+void EpubReaderActivity::onEnter() {
+  Activity::onEnter();
+  openStartedMs = millis();
+  pageLoadRetryCount = 0;
+  touchReaderDrawerState = initialReaderDrawerState(mappedInput.hasTouchHardware());
+
+  MemoryBudget::logEpubHeapPools("reader enter");
+  // NeuInk: with "keep Wi-Fi on", start joining now so a lookup finds it ready.
+  OnlineWifi::readerOpened();
+
+  // epub is a required collaborator: ReaderActivity dereferences it before handing it
+  // over, and onExit() unconditionally tears down the setup below. Returning early here
+  // instead would leave reader mode and the bookmark/clipping stores unbalanced.
+  captureGlobalReaderSettings();
+  epub->setupCacheDir();
+  {
+    GfxRenderer::FrameBufferLoan loan(renderer);
+    epub->ensureOptimizerImageIndex();
+  }
+  loadBookReaderSettings();
+  const unsigned long fontsStartedMs = millis();
+  ensureScriptCapableFont();
+  sdFontSystem.setSettingsPersistenceCallback(persistReaderSdFontSettingsForBook, this);
+  ensureReaderSdFontLoaded(renderer);
+  SpeedLog::recordNamed("open.fonts", millis() - fontsStartedMs);
+  ImageBlock::clearSessionRenderFailures();
+  ImageBlock::setExtractor(
+      epub.get(),
+      [](void* context, const char* source, const char* destination) {
+        return static_cast<Epub*>(context)->extractItemToFile(source, destination);
+      },
+      [](void* context, const char* source, const int width, const int height, const char* destination) {
+        return static_cast<Epub*>(context)->seedOptimizerImageCache(source, width, height, destination);
+      });
+
+  // Configure screen orientation based on settings
+  // NOTE: This affects layout math and must be applied before any render calls.
+  ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
+
+  // Activate reader-specific front button mapping (if configured).
+  mappedInput.setReaderMode(true);
+  // The dictionary chosen for the book's language comes before the general one.
+  Dictionary::setBookLanguage(epub->getLanguage().c_str());
+
+  BOOKMARKS.loadForBook(epub->getPath(), epub->getTitle(), epub->getAuthor(), "epub");
+  CLIPPINGS.loadForBook(epub->getPath(), epub->getTitle(), epub->getAuthor(), "epub");
+
+  restoreReadingPosition();
+  startReadingSession();
 
   // Save current epub as last opened epub and add to recent books
   APP_STATE.openEpubPath = epub->getPath();
@@ -7961,6 +7970,31 @@ void EpubReaderActivity::drawClippingHighlights(const Page& page, const int font
   });
 }
 
+namespace {
+// What the status bar says while the Bluetooth page turner links up or fails to.
+const char* linkNoteLabel(const bleturner::LinkNote note) {
+  switch (note) {
+    case bleturner::LinkNote::Connecting:
+      return tr(STR_BT_CONNECTING);
+    case bleturner::LinkNote::Connected:
+      return tr(STR_BT_CONNECTED);
+    case bleturner::LinkNote::LowMemory:
+      return tr(STR_BT_LOW_MEMORY);
+    default:
+      return tr(STR_BT_FAILED);
+  }
+}
+}  // namespace
+
+// The title of the chapter the reader is in: the table-of-contents entry of the first spine item of its group.
+std::string EpubReaderActivity::currentChapterTitle() const {
+  int titleSpineIndex = currentSpineIndex;
+  int groupLastSpineIndex = currentSpineIndex;
+  epub->resolveChapterGroupRange(currentSpineIndex, titleSpineIndex, groupLastSpineIndex);
+  const int tocIndex = epub->getTocIndexForSpineIndex(titleSpineIndex);
+  return tocIndex != -1 ? epub->getTocItem(tocIndex).title : tr(STR_UNNAMED);
+}
+
 void EpubReaderActivity::renderStatusBar() const {
   if (!statusBarVisible) {
     return;
@@ -8013,15 +8047,7 @@ void EpubReaderActivity::renderStatusBar() const {
   }
 #endif
   else if (uses(ReaderStatusBarItem::TitleChapter)) {
-    chapterTitle = tr(STR_UNNAMED);
-    int titleSpineIndex = currentSpineIndex;
-    int groupLastSpineIndex = currentSpineIndex;
-    epub->resolveChapterGroupRange(currentSpineIndex, titleSpineIndex, groupLastSpineIndex);
-    const int tocIndex = epub->getTocIndexForSpineIndex(titleSpineIndex);
-    if (tocIndex != -1) {
-      const auto tocItem = epub->getTocItem(tocIndex);
-      chapterTitle = tocItem.title;
-    }
+    chapterTitle = currentChapterTitle();
   }
 
   const int bookmarkPageCount = estimatedPageCount > 0 ? estimatedPageCount : 1;
@@ -8054,10 +8080,7 @@ void EpubReaderActivity::renderStatusBar() const {
   const auto linkNote = bleturner::linkNote();
   shownLinkNote.store(static_cast<uint8_t>(linkNote));
   if (linkNote != bleturner::LinkNote::None && !automaticPageTurnActive) {
-    const char* note = linkNote == bleturner::LinkNote::Connecting  ? tr(STR_BT_CONNECTING)
-                       : linkNote == bleturner::LinkNote::Connected ? tr(STR_BT_CONNECTED)
-                       : linkNote == bleturner::LinkNote::LowMemory ? tr(STR_BT_LOW_MEMORY)
-                                                                    : tr(STR_BT_FAILED);
+    const char* note = linkNoteLabel(linkNote);
     content.bookTitle = note;
     content.chapterTitle = note;
   }
