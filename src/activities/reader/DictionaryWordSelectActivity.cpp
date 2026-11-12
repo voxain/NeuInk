@@ -158,10 +158,7 @@ void DictionaryWordSelectActivity::onEnter() {
       renderer.displayBuffer();
       delay(1000);
     }
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
   autoLookupInitialWord_ = false;
@@ -201,10 +198,7 @@ bool DictionaryWordSelectActivity::buildWorkingSet(const bool consumeInitialConf
     if (!selected) {
       // Nothing has been drawn: the page on the panel is still the reader's.
       missedWord_.store(framebufferContainsPage_, std::memory_order_release);
-      ActivityResult result;
-      result.isCancelled = true;
-      setResult(std::move(result));
-      finish();
+      finishCancelled();
       return false;
     }
     touchDragLookup_ = navigator.beginTouchMultiSelect();

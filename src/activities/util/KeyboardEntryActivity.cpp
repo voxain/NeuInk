@@ -1188,8 +1188,5 @@ void KeyboardEntryActivity::onComplete(std::string text) {
 }
 
 void KeyboardEntryActivity::onCancel() {
-  ActivityResult result;
-  result.isCancelled = true;
-  setResult(std::move(result));
-  finish();
+  finishCancelled();
 }

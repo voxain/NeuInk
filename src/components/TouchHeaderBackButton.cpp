@@ -73,6 +73,15 @@ Rect compactHeaderRect(const GfxRenderer& renderer) {
               CompactHeader::headerBottomY(metrics) - metrics.topPadding};
 }
 
+void drawReaderHeader(GfxRenderer& renderer, freeink::ui::GfxRendererTarget& target, const MappedInputManager& input,
+                      const Rect& header, const char* title) {
+  if (input.hasTouchHardware()) {
+    draw(renderer, target, header, title, true);
+  } else {
+    GUI.drawHeader(renderer, header, title, nullptr, true);
+  }
+}
+
 Rect drawPageHeader(GfxRenderer& renderer, const MappedInputManager& input, const char* title) {
   const Rect header = headerRect(renderer, input);
   if (input.hasTouchHardware()) {

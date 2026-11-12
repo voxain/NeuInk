@@ -26,4 +26,11 @@ void Activity::finishAfterBackPress() {
   finish();
 }
 
+void Activity::finishCancelled() {
+  ActivityResult cancelled;
+  cancelled.isCancelled = true;
+  setResult(std::move(cancelled));
+  finish();
+}
+
 void Activity::finish() { activityManager.popActivity(); }

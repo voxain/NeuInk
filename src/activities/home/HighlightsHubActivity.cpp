@@ -217,10 +217,7 @@ void HighlightsHubActivity::buildListScreen(UiApp::ScreenType& screen) {
 void HighlightsHubActivity::loop() {
   if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
 

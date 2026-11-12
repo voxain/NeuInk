@@ -49,10 +49,7 @@ void FileBrowserActionActivity::onEnter() {
 }
 
 void FileBrowserActionActivity::finishCancelled() {
-  ActivityResult result;
-  result.isCancelled = true;
-  setResult(std::move(result));
-  finish();
+  finishCancelled();
 }
 
 void FileBrowserActionActivity::loop() {

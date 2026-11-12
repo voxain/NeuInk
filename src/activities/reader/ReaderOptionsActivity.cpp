@@ -571,14 +571,7 @@ void ReaderOptionsActivity::loop() {
     finishWithResult(true);
     return;
   }
-  if (uiReady) {
-    const fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
-    if (snap.touchPressed || snap.touchReleased) {
-      const auto event = app.route(snap);
-      if (app.invalidated()) requestUpdate();
-      if (event) return;
-    }
-  }
+  if (uiReady && routeTouch(app, mappedInput, [this] { requestUpdate(); })) return;
 
   if (mappedInput.hasTouch()) {
     const auto swipe = mappedInput.wasSwipe();
@@ -764,11 +757,7 @@ void ReaderOptionsActivity::render(RenderLock&&) {
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, !mappedInput.hasTouchHardware(), false);
   header.x = safe.x;
   header.width = safe.width;
-  if (mappedInput.hasTouchHardware()) {
-    TouchHeaderBackButton::draw(renderer, uiTarget, header, tr(STR_READER_OPTIONS), true);
-  } else {
-    GUI.drawHeader(renderer, header, tr(STR_READER_OPTIONS), nullptr, true);
-  }
+  TouchHeaderBackButton::drawReaderHeader(renderer, uiTarget, mappedInput, header, tr(STR_READER_OPTIONS));
 
   uiReady = false;
   app.render();

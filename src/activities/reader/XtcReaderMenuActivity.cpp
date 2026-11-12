@@ -80,10 +80,7 @@ void XtcReaderMenuActivity::onExit() {
 }
 
 void XtcReaderMenuActivity::finishCancelled() {
-  ActivityResult result;
-  result.isCancelled = true;
-  setResult(std::move(result));
-  finish();
+  finishCancelled();
 }
 
 void XtcReaderMenuActivity::selectCurrent() {

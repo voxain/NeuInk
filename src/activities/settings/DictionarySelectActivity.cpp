@@ -262,10 +262,7 @@ void DictionarySelectActivity::loop() {
   if (usesPopup()) {
     optionPopup.handleInput(mappedInput, [this] { requestUpdate(); });
     if (!optionPopup.isActive() && !popupSelectionMade) {
-      ActivityResult result;
-      result.isCancelled = true;
-      setResult(std::move(result));
-      finish();
+      finishCancelled();
     }
     return;
   }
@@ -288,14 +285,7 @@ void DictionarySelectActivity::loop() {
     return;
   }
 
-  if (uiReady) {
-    const fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
-    if (snap.touchPressed || snap.touchReleased) {
-      const auto event = app.route(snap);
-      if (app.invalidated()) requestUpdate();
-      if (event) return;
-    }
-  }
+  if (uiReady && routeTouch(app, mappedInput, [this] { requestUpdate(); })) return;
 
   const auto swipe = mappedInput.wasSwipe();
   if (swipe == MappedInputManager::SwipeDir::Up || swipe == MappedInputManager::SwipeDir::Down) {

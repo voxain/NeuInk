@@ -255,8 +255,5 @@ void NetworkModeSelectionActivity::onModeSelected(NetworkMode mode) {
 }
 
 void NetworkModeSelectionActivity::onCancel() {
-  ActivityResult result;
-  result.isCancelled = true;
-  setResult(std::move(result));
-  finish();
+  finishCancelled();
 }

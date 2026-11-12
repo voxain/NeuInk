@@ -32,6 +32,8 @@ class Activity {
   // Use when a screen exits on Back press instead of Back release so the
   // parent screen does not also receive the held button's release.
   void finishAfterBackPress();
+  // Finish with a cancelled result, the usual way out of a picker.
+  void finishCancelled();
 
  public:
   explicit Activity(std::string name, GfxRenderer& renderer, MappedInputManager& mappedInput)

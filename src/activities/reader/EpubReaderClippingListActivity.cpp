@@ -319,10 +319,7 @@ void EpubReaderClippingListActivity::loop() {
     if (detailMode) {
       closeDetail();
     } else {
-      ActivityResult result;
-      result.isCancelled = true;
-      setResult(std::move(result));
-      finish();
+      finishCancelled();
     }
     return;
   }
@@ -331,10 +328,7 @@ void EpubReaderClippingListActivity::loop() {
       closeDetail();
       return;
     }
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
 
@@ -644,11 +638,7 @@ void EpubReaderClippingListActivity::render(RenderLock&&) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   const Rect header = clippingHeaderRect(safe, metrics, mappedInput);
-  if (mappedInput.hasTouchHardware()) {
-    TouchHeaderBackButton::draw(renderer, uiTarget, header, tr(STR_CLIPPINGS), true);
-  } else {
-    GUI.drawHeader(renderer, header, tr(STR_CLIPPINGS), nullptr, true);
-  }
+  TouchHeaderBackButton::drawReaderHeader(renderer, uiTarget, mappedInput, header, tr(STR_CLIPPINGS));
   uiReady = false;
   app.render();
   swipeActions.draw(renderer);

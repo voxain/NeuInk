@@ -81,14 +81,7 @@ void DictionarySuggestionsActivity::loop() {
     return;
   }
 
-  if (uiReady) {
-    const fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
-    if (snap.touchPressed || snap.touchReleased) {
-      const auto event = app.route(snap);
-      if (app.invalidated()) requestUpdate();
-      if (event) return;
-    }
-  }
+  if (uiReady && routeTouch(app, mappedInput, [this] { requestUpdate(); })) return;
 
   const auto swipe = mappedInput.wasSwipe();
   if (swipe == MappedInputManager::SwipeDir::Up || swipe == MappedInputManager::SwipeDir::Down) {

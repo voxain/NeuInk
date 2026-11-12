@@ -53,10 +53,7 @@ void ConfirmationActivity::render(RenderLock&&) {
 
 void ConfirmationActivity::loop() {
   if (autoCancelMs != 0 && millis() - enteredAtMs >= autoCancelMs) {
-    ActivityResult res;
-    res.isCancelled = true;
-    setResult(std::move(res));
-    finish();
+    finishCancelled();
     return;
   }
 
@@ -71,8 +68,5 @@ void ConfirmationActivity::loop() {
   if (confirmPopup.handleInput(mappedInput, [this] { requestUpdate(); })) return;
 
   // Popup dismissed without a selection (Back button or tap outside): cancel.
-  ActivityResult res;
-  res.isCancelled = true;
-  setResult(std::move(res));
-  finish();
+  finishCancelled();
 }

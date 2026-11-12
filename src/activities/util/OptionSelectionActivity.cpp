@@ -110,10 +110,7 @@ void OptionSelectionActivity::loop() {
 }
 
 void OptionSelectionActivity::cancel() {
-  ActivityResult result;
-  result.isCancelled = true;
-  setResult(std::move(result));
-  finish();
+  finishCancelled();
 }
 
 void OptionSelectionActivity::select() {

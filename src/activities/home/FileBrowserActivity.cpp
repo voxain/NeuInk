@@ -1327,10 +1327,7 @@ void FileBrowserActivity::navigateBack() {
     }
     requestUpdate();
   } else if (mode != Mode::Books) {
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
   } else {
     onGoHome();
   }

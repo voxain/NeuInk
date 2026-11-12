@@ -82,14 +82,7 @@ void KOReaderSettingsActivity::loop() {
 
   // Touch goes through the FreeInkApp: render() registered the row hit rects;
   // route the snapshot and let onRowEvent dispatch.
-  if (uiReady) {
-    const fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
-    if (snap.touchPressed || snap.touchReleased) {
-      const auto event = app.route(snap);
-      if (app.invalidated()) requestUpdate();
-      if (event) return;  // dispatched to onRowEvent
-    }
-  }
+  if (uiReady && routeTouch(app, mappedInput, [this] { requestUpdate(); })) return;
 
   // Handle navigation
   buttonNavigator.onNext([this] {

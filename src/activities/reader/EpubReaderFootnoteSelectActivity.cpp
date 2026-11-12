@@ -30,10 +30,7 @@ void EpubReaderFootnoteSelectActivity::onEnter() {
 }
 
 void EpubReaderFootnoteSelectActivity::cancel() {
-  ActivityResult result;
-  result.isCancelled = true;
-  setResult(std::move(result));
-  finish();
+  finishCancelled();
 }
 
 void EpubReaderFootnoteSelectActivity::performJump() {

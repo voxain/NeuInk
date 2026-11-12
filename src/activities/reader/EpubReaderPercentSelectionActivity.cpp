@@ -244,10 +244,7 @@ void EpubReaderPercentSelectionActivity::onKeypadBackspaceEvent(const fui::Actio
 }
 
 void EpubReaderPercentSelectionActivity::cancel() {
-  ActivityResult result;
-  result.isCancelled = true;
-  setResult(std::move(result));
-  finish();
+  finishCancelled();
 }
 
 void EpubReaderPercentSelectionActivity::confirm() {

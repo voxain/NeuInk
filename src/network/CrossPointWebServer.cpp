@@ -43,6 +43,26 @@
 #include "util/StringUtils.h"
 
 namespace {
+// Opens the file at `path` for a request. Replies with the matching error and returns false when the path is
+// missing, cannot be opened, or is a directory (`directoryMessage` says what the request needed instead).
+bool openExistingFile(WebServer& server, const String& path, const char* directoryMessage, HalFile& file) {
+  if (!Storage.exists(path.c_str())) {
+    server.send(404, "text/plain", "Item not found");
+    return false;
+  }
+  file = Storage.open(path.c_str());
+  if (!file) {
+    server.send(500, "text/plain", "Failed to open file");
+    return false;
+  }
+  if (file.isDirectory()) {
+    file.close();
+    server.send(400, "text/plain", directoryMessage);
+    return false;
+  }
+  return true;
+}
+
 // Folders/files to hide from the web interface file browser.
 // Dot-prefixed items are hidden unless showHiddenFiles is enabled.
 constexpr const char* HIDDEN_ITEMS[] = {"System Volume Information", "XTCache"};
@@ -839,21 +859,8 @@ void CrossPointWebServer::handleDownload() const {
     return;
   }
 
-  if (!Storage.exists(itemPath.c_str())) {
-    server->send(404, "text/plain", "Item not found");
-    return;
-  }
-
-  HalFile file = Storage.open(itemPath.c_str());
-  if (!file) {
-    server->send(500, "text/plain", "Failed to open file");
-    return;
-  }
-  if (file.isDirectory()) {
-    file.close();
-    server->send(400, "text/plain", "Path is a directory");
-    return;
-  }
+  HalFile file;
+  if (!openExistingFile(*server, itemPath, "Path is a directory", file)) return;
 
   String contentType = "application/octet-stream";
   if (isEpubFile(itemPath)) {
@@ -1180,21 +1187,8 @@ void CrossPointWebServer::handleRename() const {
     return;
   }
 
-  if (!Storage.exists(itemPath.c_str())) {
-    server->send(404, "text/plain", "Item not found");
-    return;
-  }
-
-  HalFile file = Storage.open(itemPath.c_str());
-  if (!file) {
-    server->send(500, "text/plain", "Failed to open file");
-    return;
-  }
-  if (file.isDirectory()) {
-    file.close();
-    server->send(400, "text/plain", "Only files can be renamed");
-    return;
-  }
+  HalFile file;
+  if (!openExistingFile(*server, itemPath, "Only files can be renamed", file)) return;
 
   if (Storage.exists(newPath.c_str())) {
     file.close();
@@ -1248,21 +1242,8 @@ void CrossPointWebServer::handleMove() const {
 
   const String itemName = itemPath.substring(itemPath.lastIndexOf('/') + 1);
 
-  if (!Storage.exists(itemPath.c_str())) {
-    server->send(404, "text/plain", "Item not found");
-    return;
-  }
-
-  HalFile file = Storage.open(itemPath.c_str());
-  if (!file) {
-    server->send(500, "text/plain", "Failed to open file");
-    return;
-  }
-  if (file.isDirectory()) {
-    file.close();
-    server->send(400, "text/plain", "Only files can be moved");
-    return;
-  }
+  HalFile file;
+  if (!openExistingFile(*server, itemPath, "Only files can be moved", file)) return;
 
   if (!Storage.exists(destPath.c_str())) {
     file.close();

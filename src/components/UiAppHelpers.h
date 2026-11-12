@@ -236,3 +236,14 @@ inline freeink::ui::InputSnapshot touchSnapshotFrom(const MappedInputManager& ma
   }
   return snap;
 }
+
+// Routes this frame's touch to the UI app, asking for a redraw when it invalidated. Returns true when an
+// element took the event, so the caller can skip its own input handling.
+template <typename App, typename RequestUpdate>
+bool routeTouch(App& app, const MappedInputManager& mappedInput, RequestUpdate&& requestUpdate) {
+  const freeink::ui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
+  if (!snap.touchPressed && !snap.touchReleased) return false;
+  const auto event = app.route(snap);
+  if (app.invalidated()) requestUpdate();
+  return static_cast<bool>(event);
+}

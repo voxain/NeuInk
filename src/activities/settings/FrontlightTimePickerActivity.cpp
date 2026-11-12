@@ -197,10 +197,7 @@ void FrontlightTimePickerActivity::handleKeyboardValue(const int16_t value) {
 void FrontlightTimePickerActivity::loop() {
   if (TouchHeaderBackButton::wasTapped(mappedInput, renderer) ||
       mappedInput.wasPressed(MappedInputManager::Button::Back)) {
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
 

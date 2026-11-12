@@ -74,19 +74,13 @@ void ClipSelectionActivity::onEnter() {
 
   if (wordStore.words.empty()) {
     LOG_ERR("CLIP", "No words available for selection");
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
   buildReadingOrder();
   if (readingOrderSize == 0) {
     LOG_ERR("CLIP", "No readable word order available");
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
   positionCursorAtInitialPageCenter();
@@ -94,19 +88,13 @@ void ClipSelectionActivity::onEnter() {
 
   if (hasDictionaryRequest) {
     if (!finishDictionarySelection()) {
-      ActivityResult result;
-      result.isCancelled = true;
-      setResult(std::move(result));
-      finish();
+      finishCancelled();
     }
     return;
   }
 
   if (!switchToPage(0)) {
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
   requestUpdate();
@@ -126,10 +114,7 @@ void ClipSelectionActivity::onExit() {
 }
 
 bool ClipSelectionActivity::handleHomeGesture() {
-  ActivityResult result;
-  result.isCancelled = true;
-  setResult(std::move(result));
-  finish();
+  finishCancelled();
   return true;
 }
 
@@ -369,10 +354,7 @@ void ClipSelectionActivity::loop() {
       return;
     }
 
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
   }
 }
 

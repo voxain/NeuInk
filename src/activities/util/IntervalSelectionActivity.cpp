@@ -401,10 +401,7 @@ void IntervalSelectionActivity::loop() {
   }
 
   if (showTouchHeaderBackButton && TouchHeaderBackButton::wasTapped(mappedInput, renderer)) {
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
 
@@ -485,19 +482,13 @@ void IntervalSelectionActivity::loop() {
     }
     if (touchedAction == 1) {
       mappedInput.suppressCurrentTouchContact();
-      ActivityResult result;
-      result.isCancelled = true;
-      setResult(std::move(result));
-      finish();
+      finishCancelled();
       return;
     }
   }
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
 
@@ -539,10 +530,7 @@ void IntervalSelectionActivity::loop() {
 
     if (ty >= renderer.getScreenHeight() - 80) {
       if (tx < screenWidth / 3) {
-        ActivityResult result;
-        result.isCancelled = true;
-        setResult(std::move(result));
-        finish();
+        finishCancelled();
       } else if (tx > screenWidth * 2 / 3) {
         setResult(IntervalResult{static_cast<uint32_t>(value)});
         finish();

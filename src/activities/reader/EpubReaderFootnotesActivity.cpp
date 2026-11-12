@@ -69,20 +69,10 @@ void EpubReaderFootnotesActivity::loop() {
                     TouchHeaderBackButton::height(metrics, mappedInput)};
   if (TouchHeaderBackButton::wasTapped(mappedInput, header) ||
       mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    ActivityResult result;
-    result.isCancelled = true;
-    setResult(std::move(result));
-    finish();
+    finishCancelled();
     return;
   }
-  if (uiReady) {
-    const fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
-    if (snap.touchPressed || snap.touchReleased) {
-      const auto event = app.route(snap);
-      if (app.invalidated()) requestUpdate();
-      if (event) return;
-    }
-  }
+  if (uiReady && routeTouch(app, mappedInput, [this] { requestUpdate(); })) return;
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm) ||
       mappedInput.wasReleased(MappedInputManager::Button::Power)) {
     selectFootnote();
@@ -152,11 +142,7 @@ void EpubReaderFootnotesActivity::render(RenderLock&&) {
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   const Rect header{safe.x, safe.y + metrics.topPadding, safe.width,
                     TouchHeaderBackButton::height(metrics, mappedInput)};
-  if (mappedInput.hasTouchHardware()) {
-    TouchHeaderBackButton::draw(renderer, uiTarget, header, tr(STR_FOOTNOTES), true);
-  } else {
-    GUI.drawHeader(renderer, header, tr(STR_FOOTNOTES), nullptr, true);
-  }
+  TouchHeaderBackButton::drawReaderHeader(renderer, uiTarget, mappedInput, header, tr(STR_FOOTNOTES));
   uiReady = false;
   app.render();
   uiReady = true;

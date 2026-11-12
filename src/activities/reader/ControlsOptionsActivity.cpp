@@ -240,14 +240,7 @@ void ControlsOptionsActivity::loop() {
     finish();
     return;
   }
-  if (uiReady) {
-    const fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
-    if (snap.touchPressed || snap.touchReleased) {
-      const auto event = app.route(snap);
-      if (app.invalidated()) requestUpdate();
-      if (event) return;
-    }
-  }
+  if (uiReady && routeTouch(app, mappedInput, [this] { requestUpdate(); })) return;
 
   if (mappedInput.hasTouch()) {
     const auto swipe = mappedInput.wasSwipe();
@@ -398,11 +391,7 @@ void ControlsOptionsActivity::render(RenderLock&&) {
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, !mappedInput.hasTouchHardware(), false);
   header.x = safe.x;
   header.width = safe.width;
-  if (mappedInput.hasTouchHardware()) {
-    TouchHeaderBackButton::draw(renderer, uiTarget, header, tr(STR_CAT_CONTROLS), true);
-  } else {
-    GUI.drawHeader(renderer, header, tr(STR_CAT_CONTROLS), nullptr, true);
-  }
+  TouchHeaderBackButton::drawReaderHeader(renderer, uiTarget, mappedInput, header, tr(STR_CAT_CONTROLS));
 
   uiReady = false;
   app.render();
